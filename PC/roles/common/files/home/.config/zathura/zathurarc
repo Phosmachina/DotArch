@@ -1,0 +1,10 @@
+set selection-clipboard clipboard
+
+set default-fg "#C5C8C6"
+set default-bg "#1D1F21"
+set recolor-keephue true
+set recolor-reverse-video true
+set recolor-darkcolor "#C5C8C6"
+set recolor-lightcolor "#1D1F21"
+
+map <C-i> recolor

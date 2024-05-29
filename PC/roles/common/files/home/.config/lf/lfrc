@@ -1,0 +1,164 @@
+####################
+# Options section  #
+####################
+
+# set colors
+set icons
+set period 1
+set hidden!
+set hiddenfiles ".*:*.aux:*.log:*.bbl:*.bcf:*.blg:*.run.xml"
+set cleaner '~/.config/lf/cleaner'
+set previewer '~/.config/lf/previewer'
+set promptfmt "
+\033[38;2;255;255;255m %w
+\033[38;2;40;47;62;48;2;58;67;89m
+\033[38;2;255;255;255m %f
+\033[;38;2;58;67;89;49m\033[m"
+set incsearch
+set ignorecase
+set anchorfind false
+set incfilter
+set ratios 2:3:4 # 2:3:7:7
+set truncatechar "…"
+set waitmsg "\033[1;31m⏎\033[m"
+set timefmt "02/01/2006 15:04:05 "
+set infotimefmtnew '02/01 15:04'
+set infotimefmtold '02/01/06'
+set errorfmt "\033[1;31m"
+set numberfmt "\033[38;2;75;87;116m"
+set dircounts
+set tabstop 2
+set scrolloff 5
+set wrapscroll
+set shell zsh
+set ifs "\n"
+set shellopts '-euy'
+set rulerfmt 'df:acc:progress:selection:filter:ind'
+set cursorpreviewfmt "\033[7;90m"
+
+&[ $LF_LEVEL -eq 1 ] || lf -remote "send $id echoerr \"Warning: You're in a nested lf instance!\""
+
+####################
+# Keybindings      #
+####################
+
+cmap <up> up
+cmap <down> down
+cmap <up> find-prev
+cmap <down> find-next
+
+map ; read
+map m
+
+map <c-space> :toggle; up
+
+map <delete> trash
+map P push :delete<enter>y
+map a push :mkdir-p<space>
+
+map op yank-path
+map od yank-parent-folder
+map of yank-filename
+
+map <enter> shell
+
+map <c-n> open-terminal
+map <a-n> mkdir-with-selected
+
+map r
+map ra rename
+map rs :rename; cmd-delete-home
+map rd :rename; cmd-end; cmd-delete-home
+
+####################
+# Commands section #
+####################
+
+cmd open ${{
+        xdg-open $f > /dev/null 2>&1 &
+}}
+
+cmd trash %trash-put $fx
+
+cmd open-terminal ${{
+        setsid -f $TERMINAL
+}}
+
+cmd mkdir-p ${{
+        mkdir -p "$1"
+}}
+
+cmd mkdir-with-selected ${{
+        set -f
+        read directory_name
+        mkdir -- "$directory_name"
+        mv -- $fx "$directory_name"
+}}
+
+cmd compress ${{
+        clear; tput cup $(($(tput lines)/3)); tput bold
+        set -f
+        printf "\tGive archive name: "
+        read archive
+        apack "$archive".tar.gz $fs
+}}
+
+cmd delete ${{
+        clear; tput cup $(($(tput lines)/3)); tput bold
+        set -f
+        printf -- "%s\n" $fx | sed 's|'"$HOME"'||'
+        printf "\t\033[1;33mDelete? \033[37m[\033[32my\033[37m/\033[31mN\033[37m]\033[m "
+        read -r REPLY
+        case "$REPLY" in
+            [yY]) rm -rf -- $fx ;;
+        esac
+}}
+
+cmd chmodx ${{
+        chmod u+x $fx
+        lf -remote "send $id reload"
+}}
+
+cmd yank-parent-folder $dirname -- "$f" | head -c-1 | xclip -i -selection clipboard
+
+cmd yank-path $printf '%s' "$fx" | xclip -i -selection clipboard
+
+cmd yank-filename $basename -a -- $fx | head -c-1 | xclip -i -selection clipboard
+
+cmd bulk-rename ${{
+        old=$(mktemp)
+        new=$(mktemp)
+        [ -n "$fs" ] && fs=$(ls)
+        printf "$fs\n" > $old
+        printf "$fs\n" > $new
+        code -n $new
+        printf "Press key to confirm bulk rename...\n"
+        read
+        [ $(cat $new | wc -l) -ne $(cat $old | wc -l) ] && exit
+        paste $old $new | while read names; do
+            src=$(printf $names | cut -f1)
+            dst=$(printf $names | cut -f2)
+            [ $src = $dst ] && continue
+            [ -e $dst ] && continue
+            mv $src $dst
+        done
+        rm $old $new
+        lf -remote "send $id unselect"
+}}
+
+# Zoxide integration comands:
+
+cmd z %{{
+        result="$(zoxide query --exclude $PWD $@ | sed 's/\\/\\\\/g;s/"/\\"/g')"
+        lf -remote "send $id cd \"$result\""
+}}
+
+cmd zi ${{
+        result="$(zoxide query -i | sed 's/\\/\\\\/g;s/"/\\"/g')"
+        lf -remote "send $id cd \"$result\""
+}}
+
+cmd on-cd &{{
+        printf "\033]0; $(pwd | sed "s|$HOME|~|")\007"
+        zoxide add "$PWD"
+}}
