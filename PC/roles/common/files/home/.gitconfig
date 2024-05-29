@@ -1,0 +1,9 @@
+[user]
+	email = paronnaud@disroot.org
+	name = Michel Paronnaud
+
+[credential]
+	helper = store
+
+[core]
+	autocrlf = input
