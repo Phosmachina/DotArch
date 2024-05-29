@@ -1,0 +1,15 @@
+
+services:
+   ansible:
+      build:
+         context: .
+      networks:
+         default:
+            aliases:
+               - host.docker.internal
+      environment:
+         ENCRYPT: "false"
+         DEPLOY: "true"
+      volumes:
+         - .:/ansible
+         - ~/.ssh:/root/.ssh

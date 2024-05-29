@@ -1,0 +1,7 @@
+---
+- name: Deploy the Arch configuration
+  hosts: target
+  remote_user: '{{ username }}'
+
+  roles:
+    - {{ target_role }}
