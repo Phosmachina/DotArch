@@ -1,0 +1,31 @@
+#!/bin/bash
+
+SOCKET='/tmp/mpvsocket'
+
+TIMECODE=$(xclip -o -selection clipboard)
+
+if [ -z "$TIMECODE" ]; then
+    exit 1
+fi
+
+VIDEO_NAME="$(echo "$TIMECODE" | awk -F ' \\\| ' '{print $1}' )"
+VIDEO_TIMECODE="$(echo "$TIMECODE" | awk -F ' \\\| ' '{print $2}' )"
+
+if pgrep -x "mpv" > /dev/null; then
+    # mpv est déjà en cours d'exécution
+    if [ "$(echo '{ "command": ["get_property", "filename"] }' | socat - $SOCKET | jq -r ".data")" = "$VIDEO_NAME" ]; then
+        # mpv est déjà en train de lire la vidéo demandée
+        echo "{ \"command\": [\"set_property\", \"time-pos\", \"$VIDEO_TIMECODE\"] }" | socat - $SOCKET
+
+        if [ "$(echo '{ "command": ["get_property", "pause"] }' | socat - $SOCKET | jq -r ".data")" = "true" ]; then
+            echo cycle pause | socat - $SOCKET
+        fi
+    else
+        # mpv est en train de lire une autre vidéo
+        notify-send "Erreur" "mpv est déjà en cours d'exécution avec une autre vidéo."
+        exit 1
+    fi
+else
+    # mpv n'est pas en cours d'exécution, on le lance
+    mpv "$VIDEO_NAME" --start="${VIDEO_TIMECODE}" &
+fi

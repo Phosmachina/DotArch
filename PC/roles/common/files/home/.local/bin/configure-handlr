@@ -1,0 +1,28 @@
+#!/bin/sh
+
+handlr set x-scheme-handler/terminal kitty.desktop
+
+handlr add application/x-shellscript micro.desktop
+handlr add application/x-shellscript code.desktop
+handlr add 'text/*' micro.desktop
+handlr add 'text/*' code.desktop
+handlr add application/xml micro.desktop
+handlr add application/xml code.desktop
+handlr add application/yaml micro.desktop
+handlr add application/yaml code.desktop
+
+handlr add 'image/*' qimgv.desktop
+handlr add 'video/*' mpv.desktop
+
+handlr add application/postscript org.pwmt.zathura.desktop
+handlr add application/pdf org.pwmt.zathura.desktop
+handlr add application/epub+zip org.pwmt.zathura.desktop
+
+handlr add application/vnd.openxmlformats-officedocument.wordprocessingml.document libreoffice-writer.desktop
+handlr add application/vnd.openxmlformats-officedocument.spreadsheetml.sheet libreoffice-calc.desktop
+handlr add text/csv libreoffice-calc.desktop
+
+handlr add x-scheme-handler/http firefox.desktop
+handlr add x-scheme-handler/https firefox.desktop
+handlr add .htm firefox.desktop
+handlr add .html firefox.desktop

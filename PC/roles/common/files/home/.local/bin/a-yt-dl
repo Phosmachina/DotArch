@@ -1,0 +1,15 @@
+#!/bin/sh
+
+trap "printf '\n'; exit 0" 2 3
+
+o_url=$(xclip -selection clipboard -o)
+while clipnotify; do
+	url=$(xclip -selection clipboard -o)
+	[ "$o_url" = "$url" ] && continue
+	case $url in
+	http*youtu.be* | http*youtube.com*)
+		tsp yt-dl "$url"
+		;;
+	esac
+	o_url=$url
+done

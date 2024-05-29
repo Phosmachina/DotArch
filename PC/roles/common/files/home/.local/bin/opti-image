@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Check if correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <max_size> <input_image_path>"
+    exit 1
+fi
+
+# Get arguments
+max_size="$1"
+input_image="$2"
+
+# Output file name (webp format)
+output_file=$(basename "$input_image" .${input_image##*.}).avif
+
+# Optimize image and convert to webp using ImageMagick
+magick "$input_image" -resize "$max_size"\> -quality 85 "$output_file"

@@ -1,0 +1,34 @@
+#!/bin/sh
+
+case $2 in
+    ''|*[!0-9]*) num=5 ;;
+    *)           num=$2 ;;
+esac
+
+usage() {
+    echo "Usage: ${0##*/} up|down [NUM]"
+    echo "       ${0##*/} notify|volume"
+}
+
+# if [ -f "$XDG_RUNTIME_DIR/pulse/pid" ]; then
+    up() { pulsemixer --change-volume +$num; }
+    down() { pulsemixer --change-volume -$num; }
+    volume() { pulsemixer --get-volume | cut -d' ' -f1; }
+#  else
+#      up() { amixer sset Master $num%+; }
+#      down() { amixer sset Master $num%-; }
+#      volume() { amixer | grep "Mono: Playback .* \[on\]$" | cut -d' ' -f6; }
+#  fi
+
+notify() {
+	msgID="9991049"
+	dunstify "volume: $(volume)" -r $msgID;
+}
+
+case $1 in
+    up)     up ;;
+    down)   down ;;
+    notify) notify ;;
+    volume) volume ;;
+    *)      usage; exit 1 ;;
+esac

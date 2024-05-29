@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Vérifier que l'argument est bien une URL
+if [[ $1 != http* ]]; then
+    echo "Erreur : argument invalide"
+    dunstify "Erreur" "Argument invalide" -u critical
+    exit 1
+fi
+
+title=$(yt-dlp --get-title "$1")
+
+# Télécharger la vidéo
+dunstify "Téléchargement" "Début du téléchargement de la vidéo" -u low
+yt-dlp "$1"
+
+# Créer le fichier de note
+notefilename="$title".md
+echo "# $title" > "$notefilename"
+
+# Lancer la vidéo et la fenêtre de code
+mpv "$title".mp4 &
+code "$notefilename"

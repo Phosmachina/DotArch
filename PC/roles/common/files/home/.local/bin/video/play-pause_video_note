@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SOCKET='/tmp/mpvsocket'
+
+VIDEO_NAME="$(echo '{ "command": ["get_property", "filename"] }' | socat - $SOCKET | jq -r ".data")"
+
+if [ -z "$VIDEO_NAME" ]; then
+    exit 1
+fi
+
+if [ "$(echo '{ "command": ["get_property", "pause"] }' | socat - $SOCKET | jq -r ".data")" = "false" ]; then
+    # La vidéo est en lecture
+    TIMECODE=$(echo '{ "command": ["get_property", "time-pos"] }' | socat - $SOCKET | jq -r ".data" )
+    echo -n "${VIDEO_NAME} | ${TIMECODE}" | xclip -selection clipboard
+fi
+
+echo cycle pause | socat - $SOCKET

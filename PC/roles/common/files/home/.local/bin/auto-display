@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Wait for a short period to allow for proper detection of display changes
+sleep 1
+
+# Get the current user's environment variables
+user=$(who | awk 'NR==1{print $1}')
+# userenv=$(grep -z "^DBUS_SESSION_BUS_ADDRESS" /proc/$user/environ | sed -e 's/DBUS_SESSION_BUS_ADDRESS=//')
+
+# Set the environment variables
+export DISPLAY=:0
+export XAUTHORITY=/home/$user/.Xauthority
+export DBUS_SESSION_BUS_ADDRESS="-unix:path=/run/user/$UID/bus"
+
+# Get the connected display(s) using xrandr
+connected_displays=$(xrandr -q | awk '/ connected/ {print $1}')
+
+# Customize the screen disposition based on the connected display(s)
+if [[ $connected_displays == *"DP-2"* ]]; then
+    # Display connected, customize the screen disposition
+    xrandr --output eDP-1 --off --output DP-1 --off --output HDMI-1 --off --output DP-2 --mode 3440x1440 --pos 0x0 --rotate normal --scale 1.35x1.35 --output DP-3 --off --output DP-4 --off
+else
+    # Display disconnected, reset the screen disposition to default
+    xrandr --auto
+fi
+
+herbstclient detect_monitors

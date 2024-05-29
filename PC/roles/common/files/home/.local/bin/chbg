@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export DISPLAY=':0'
+
+path=~/Images/Wallpapers
+
+feh --bg-fill -z "$path"
+
+ls "$path" | sort -R | while read file; do
+    betterlockscreen -u "$path/$file"
+    exit
+done

@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+[ "$1" ] || exit 1
+
+# Set default value for max-width if the argument is missing
+max_width=1080
+[ "$2" ] && {
+  max_width="$1"
+  shift 
+}
+url="$1"
+#echo width: $max_width url: $url arg2: $2
+#exit 0
+title=$(yt-dlp -e "$url")
+
+cd "$HOME/Downloads/youtube-dl" || exit 1
+
+dl_op="--external-downloader aria2c --external-downloader-args '-c -j3 -x3 -s3 -k 1M'"
+output='%(uploader)s/%(title)s-%(duration)s-%(resolution)s.%(ext)s'
+format="bestvideo[height<=$max_width]+bestaudio/best"
+
+while ! {
+	notify-send -u low 'Try to download :' "$title"
+	eval yt-dlp "$dl_op" -o '$output' -f '$format' '$1'
+}; do
+	notify-send -t 5 -u critical 'Fail to download:' "$title"
+	sleep 10
+done
+
+notify-send -u normal 'Video downloaded :' "$title"

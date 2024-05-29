@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Get the current tag (workspace)
+current_tag=$(herbstclient attr clients.focus.tag)
+
+# Get a list of all tags (workspaces)
+all_tags=$(herbstclient tag_status | awk '{for (i=1; i<=NF; i++) {print $i}}' \
+| sed 's/[#:.]//')
+
+# Remove the current tag from the list and create a menu with the other tags
+other_tags=$(echo "$all_tags" | grep -v "^$current_tag$")
+
+# Create a Rofi menu with the other tags
+selected_tag=$(echo "$other_tags" | rofi -dmenu -p 'Swap with:')
+
+# If a tag was selected, swap the workspaces
+if [ -n "$selected_tag" ]; then
+    # Get the index of the current and selected tags
+    current_index=$(herbstclient get_attr tags.by-name.${current_tag}.index)
+    selected_index=$(herbstclient get_attr tags.by-name.${selected_tag}.index)
+
+    # Lock the window manager to prevent it from being modified during the swap
+    herbstclient lock
+
+    # Temporarily rename the current and selected tags to hold their indexes
+    herbstclient rename $current_tag ${current_tag}_hold
+    herbstclient rename $selected_tag $current_tag
+    herbstclient rename ${current_tag}_hold $selected_tag
+
+    # Set the indexes of the current and selected tags to their original values
+    herbstclient set_attr tags.by-name.${current_tag}.index $current_index
+    herbstclient set_attr tags.by-name.${selected_tag}.index $selected_index
+
+    # Unlock the window manager
+    herbstclient unlock
+fi
