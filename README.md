@@ -38,11 +38,11 @@ without polluting the local environment.
 To use DotArch, follow these steps:
 
 1. You need a fresh installation of Arch Linux with:
-   - sudo configured,
-   - network configured,
-   - ssh enabled.
+    - sudo configured,
+    - network configured,
+    - ssh enabled.
 2. Clone this repository to your local machine.
-3. Customize the `common`, `desktop`, and `laptop` tasks according to your needs and 
+3. Customize the `common`, `desktop`, and `laptop` tasks according to your needs and
    select `laptop` or `desktop` in the playbook.
 4. Run the Ansible playbook using Docker (see `docker-compose.yml`).
 5. Enjoy your fully configured Arch Linux system.
@@ -55,8 +55,3 @@ This project is open-source, and your input is valuable to us.
 ## License 📜
 
 DotArch is available under the MIT License.
-
-[//]: # (## TODO)
-[//]: # (- Update common .zprofile to handle recursive script dir.)
-[//]: # (- Take in account double configuration for polybar.)
-[//]: # (- Add a way to encrypt file with ansible.)
