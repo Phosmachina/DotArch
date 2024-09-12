@@ -1,0 +1,16 @@
+---
+-  name: Copy the opendoas config file
+   copy:
+      src: 'etc/doas.conf'
+      dest: '/etc/doas.conf'
+      mode: '0400'
+      owner: root
+      group: root
+   become: yes
+
+-  name: Install opendoas
+   pacman:
+      name:
+         - opendoas
+      state: present
+   become: yes

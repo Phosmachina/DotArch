@@ -1,0 +1,170 @@
+---
+-  name: Set hostname
+   template:
+      src: 'etc/hostname.j2'
+      dest: "/etc/hostname"
+      owner: root
+      group: root
+      mode: '0644'
+   become: yes
+
+-  name: Sync local scripts
+   synchronize:
+      src: 'home/.local/bin/'
+      dest: '/home/{{ username }}/.local/bin/'
+      recursive: yes
+   become: yes
+
+-  name: Set script files permissions
+   file:
+      path: '/home/{{ username }}/.local/bin/'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+      mode: '0755'
+      recurse: yes
+
+# TODO make system.yml laptop specific
+#-  name: Install packages
+#   shell: >
+#      pacman -Syu --noconfirm
+#      acpi
+#      acpilight
+#      arc-icon-theme
+#      bluetuith
+#      broot
+#      bumblebee
+#      clipnotify
+#      connect-tunnel
+#      ctpv-git
+#      dark-icon-theme-git
+#      davfs2
+#      i3lock-color
+#      lxappearance
+#      materia-gtk-theme
+#      mediainfo
+#      mesa-utils
+#      papirus-icon-theme
+#      qt-avif-image-plugin-libavif-git
+#      qt5-styleplugins
+#      rshred-git
+#      touchegg
+#   become: yes
+
+# Audio tools
+-  name: Install audio tools
+   pacman:
+      name:
+         - pandoc-cli
+         - alsa-utils
+         - pulsemixer
+         - playerctl
+      state: present
+   become: yes
+
+# System tools
+-  name: Install system tools
+   pacman:
+      name:
+         - numlockx
+         - docker
+         - docker-compose
+         - man-db
+         - btop
+         - nvtop
+         - progress
+         - usbutils
+         - socat
+         - handlr-regex
+         - rsync
+         - wget
+      state: present
+   become: yes
+
+# Xorg tools
+-  name: Install Xorg tools
+   pacman:
+      name:
+         - arandr
+         - xorg-server-xephyr
+         - xorg-xdpyinfo
+         - xorg-xev
+         - xorg-xinit
+         - xorg-xinput
+         - wmctrl
+      state: present
+   become: yes
+
+# Network tools
+-  name: Install network tools
+   pacman:
+      name:
+         - cifs-utils
+      state: present
+   become: yes
+
+# Math tools
+-  name: Install math tools
+   pacman:
+      name:
+         - bc
+         - qalculate-gtk
+      state: present
+   become: yes
+
+# TeXlive tools
+-  name: Install TeXlive tools
+   pacman:
+      name:
+         - texlive-bibtexextra
+         - texlive-fontsextra
+         - texlive-langfrench
+         - texlive-latexextra
+      state: present
+   become: yes
+
+-  name: Install necessary packages
+   shell: >
+      yay -Sy --noconfirm 
+      dasel-bin
+      task-spooler
+      texlive-latexindent-meta
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Ensure handlr directory exists
+   file:
+      path: '/home/{{ username }}/.config/handlr'
+      state: directory
+
+-  name: Copy handlr config
+   copy:
+      src: 'home/.config/handlr/handlr.toml'
+      dest: '/home/{{ username }}/.config/handlr/handlr.toml'
+
+-  name: Ensure POOL_1_DATA mount is present in fstab
+   lineinfile:
+      dest: /etc/fstab
+      line: '//10.0.0.1/pool_1_data /mnt/POOL_1_DATA cifs x-systemd.automount,_netdev,credentials=/etc/.cifscredentials,vers=3.1.1,uid=1000,gid=1000,file_mode=0755,dir_mode=0755,iocharset=utf8 0 0'
+      state: present
+   become: yes
+
+-  name: Copy .cifscredentials for fstab cifs mount
+   copy:
+      src: 'etc/.cifscredentials'
+      dest: '/etc/.cifscredentials'
+      mode: '0600'
+      owner: root
+      group: root
+   become: yes
+
+-  name: Ensure systemd getty for tty1 directory exists
+   file:
+      path: '/etc/systemd/system/getty@tty1.service.d'
+      state: directory
+   become: yes
+
+-  name: Copy skip-username.conf for getty config
+   template:
+      src: 'etc/systemd/system/getty@tty1.service.d/skip-username.conf.j2'
+      dest: '/etc/systemd/system/getty@tty1.service.d/skip-username.conf'
+   become: yes

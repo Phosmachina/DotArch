@@ -1,0 +1,9 @@
+---
+-  name: Sync fonts config
+   synchronize:
+      src: 'home/.local/share/fonts'
+      dest: '/home/{{ username }}/.local/share'
+
+-  name: Update fonts list
+   shell: fc-cache -fv "/home/{{ username }}/.local/share"
+   become: yes

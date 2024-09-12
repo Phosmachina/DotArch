@@ -1,0 +1,36 @@
+---
+-  name: Install pipewire and related packages
+   pacman:
+      name:
+         - pipewire
+         - pipewire-pulse
+         - pipewire-alsa
+         - pipewire-jack
+         - gst-plugin-pipewire
+         - libpulse
+      state: present
+   become: yes
+
+-  name: Start Pipewire services
+   systemd:
+      name: '{{ item }}'
+      state: started
+      enabled: yes
+      scope: user
+   loop:
+      - pipewire
+      - pipewire-pulse
+
+-  name: Install WirePlumber
+   pacman:
+      name:
+         - wireplumber
+      state: present
+   become: yes
+
+-  name: Enable WirePlumber
+   systemd:
+      name: wireplumber
+      state: started
+      enabled: yes
+      scope: user

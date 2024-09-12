@@ -1,0 +1,47 @@
+---
+-  name: Install necessary packages with pacman
+   pacman:
+      name:
+         - lf
+         - ueberzugpp
+         - trash-cli
+         - mpv
+         - zathura
+         - atool
+         - fzf
+         - zoxide
+         - xclip
+         - ffmpegthumbnailer
+         - jq
+         - lynx
+         - poppler
+         - lynx
+      state: present
+   become: yes
+
+-  name: Install necessary packages with yay
+   shell: >
+      yay -Sy --noconfirm 
+      qimgv
+      visual-studio-code-bin
+      dragon-drop
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Sync lf config
+   synchronize:
+      src: 'home/.config/lf'
+      dest: '/home/{{ username }}/.config/'
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Sync mpv and zathura configs
+   synchronize:
+      src: 'home/.config/{{ item }}'
+      dest: '/home/{{ username }}/.config/'
+   with_items:
+      - mpv
+      - zathura
+
+   become: yes
+   become_user: '{{ username }}'

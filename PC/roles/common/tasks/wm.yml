@@ -1,0 +1,97 @@
+---
+-  name: Install necessary packages
+   pacman:
+      name:
+         - xorg-server
+         - xorg-xinit
+         - herbstluftwm
+         - sxhkd
+         #         - picom
+         - polybar
+         - dunst
+         - kitty
+         - feh
+         - maim
+         - bitwarden-cli
+         - ttf-jetbrains-mono-nerd
+      state: present
+   become: yes
+
+-  name: Install necessary packages
+   shell: >
+      yay -Sy --noconfirm 
+      siji-ttf
+      rofi-gpaste-git
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Copy xinit configuration
+   copy:
+      src: 'home/.xinitrc'
+      dest: '/home/{{ username }}/.xinitrc'
+      mode: '0644'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+   become: yes
+
+-  name: Copy .zprofile configuration
+   copy:
+      src: 'home/.zprofile'
+      dest: '/home/{{ username }}/.zprofile'
+      mode: '0644'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+
+-  name: Ensure wallpaper directory exists
+   file:
+      path: '/home/{{ username }}/Images/Wallpapers'
+      state: directory
+
+-  name: Copy a wallpaper
+   copy:
+      src: 'home/Images/Wallpapers/1.jpg'
+      dest: '/home/{{ username }}/Images/Wallpapers/1.jpg'
+
+-  name: Ensure rofi theme directory exists
+   file:
+      path: '/usr/share/rofi/themes'
+      state: directory
+
+-  name: Copy the rofi theme
+   copy:
+      src: 'usr/share/rofi/themes/onedark.rasi'
+      dest: '/usr/share/rofi/themes/onedark.rasi'
+   become: yes
+
+-  name: Sync herbstluftwm and all others wm relative configs
+   synchronize:
+      src: 'home/.config/{{ item }}'
+      dest: '/home/{{ username }}/.config/'
+   with_items:
+      - herbstluftwm
+      - picom
+      - rofi
+      - dunst
+      - kitty
+      - polybar
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Copy the bitwarden password file
+   copy:
+      src: 'home/.config/Bitwarden CLI/.pass'
+      dest: '/home/{{ username }}/.config/Bitwarden CLI/.pass'
+      mode: '0600'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+
+-  name: Configure the bitwarden server
+   shell: >
+      test unauthenticated = $(bw status | jq -r '.status') && bw config server vault.phosmachina.com
+
+-  name: Clone themes for kitty
+   git:
+      repo: 'https://github.com/dexpota/kitty-themes'
+      dest: '/home/{{ username }}/.config/kitty/kitty-themes'
+      clone: yes
+      update: yes

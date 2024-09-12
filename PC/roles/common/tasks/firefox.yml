@@ -1,0 +1,30 @@
+---
+-  name: Find session directory
+   find:
+      paths: '/home/{{ username }}/.mozilla/firefox'
+      file_type: directory
+      patterns: '*default-release'
+      recurse: no
+   register: matching_dirs
+
+-  name: Confirm presence of directories matching the pattern
+   fail:
+      msg: 'No directories found matching the pattern'
+   when: matching_dirs.files | length == 0
+
+-  name: Copy the session config file
+   copy:
+      src: 'home/.mozilla/firefox/default-release/user.js'
+      dest: '{{ matching_dirs.files[0].path }}/user.js'
+      mode: '0644'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+
+-  name: Git clone to the first matched directory
+   git:
+      repo: 'https://git.gay/freeplay/Firefox-Onebar.git'
+      dest: '{{ matching_dirs.files[0].path }}/chrome'
+      clone: yes
+      update: yes
+   ignore_errors: true
+   
