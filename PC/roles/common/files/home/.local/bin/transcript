@@ -26,7 +26,7 @@ stop_recording() {
     read record_pid notify_pid tempfile < "/tmp/recording_info"
     kill -INT $record_pid
     
-    notify-send -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcript..."
+    notify-send -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcript..."
     
     transcribe_audio "$tempfile" | xclip -selection clipboard
     
@@ -46,13 +46,10 @@ transcribe_audio() {
     sox "$1" "$f1" silence 1 0.1 0.1% -1 0.1 0.1% -t high 2>/dev/null
     
     # Accelerate the audio:
-    sox "$f1" "$f2" tempo 1.3
-    
-    deepctl infer -m "openai/whisper-large" -i "audio=@$f2" | jq -r ".text"
-    # deepctl infer -m "phosmachina/fast-whisper-large" -i "audio=@$f2" | tr -d '[:cntrl:]' | jq -r '.output.text'
-    
-    # Cleaning
-    # rm "$1" "$f1" "$f2"
+    sox "$f1" "$f2" tempo 1.3 2>/dev/null
+
+    # Infer audio with openai whisper model:
+    deepctl infer -m "openai/whisper-large-v3" -i "audio=@$f2" | jq -r ".text"
 }
 
 # Extract audio from video if provided and perform transcription.
@@ -95,5 +92,3 @@ fi
 
 # TODO:
 # - Créer un historique des enregistrements faits par ce script associé avec un fichier texte des transcriptions réalisées.
-# BUG:
-# - Vérifier la capacité du script à établir des enregistrements audio simultanés.
