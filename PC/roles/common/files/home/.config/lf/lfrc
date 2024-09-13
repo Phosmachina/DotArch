@@ -75,7 +75,7 @@ map rd :rename; cmd-end; cmd-delete-home
 ####################
 
 cmd open ${{
-        xdg-open $f > /dev/null 2>&1 &
+        setsid -f xdg-open $f > /dev/null 2>&1
 }}
 
 cmd trash %trash-put $fx
