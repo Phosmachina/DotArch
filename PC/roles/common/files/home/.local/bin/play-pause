@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Use a consistent temp file name
+SAVED_PLAYERS_FILE="/tmp/saved_players"
+
+get_playing_players() {
+    paste <(playerctl -a status) <(playerctl -l) | awk '$1 == "Playing" {print $2}'
+}
+
+get_target_players() {
+    cat "$SAVED_PLAYERS_FILE" 2>/dev/null || playerctl -l | head -n 1
+}
+
+play_players() {
+    while read -r player; do
+      playerctl -p  "$player" play
+    done <<< "$1"
+}
+
+main() {
+    playing_players=$(get_playing_players)
+    
+    if [ -n "$playing_players" ]; then
+        # Save the playing players
+        echo "$playing_players" > "$SAVED_PLAYERS_FILE"
+        
+        # Pause all players
+        playerctl -a pause
+    else
+        if [ -f "$SAVED_PLAYERS_FILE" ]; then
+            target_players="$(get_target_players)"
+            play_players "$target_players"
+        else
+            first_player=$(playerctl -l | head -n 1)
+            play_players "$first_player"
+        fi
+    fi
+}
+
+main

@@ -21,7 +21,7 @@ super + Escape
 
 # swap tag:
 super + shift + s
-	swap-workspaces
+	swap_workspaces
 
 
 #
@@ -43,9 +43,13 @@ XF86MonBrightness{Down,Up}
 #
 
 
-# Automatic player control previous, play/pause, next
-XF86Audio{Prev,Play,Next}
-	playerctl {previous,-a play-pause,next}
+# Automatic player control previous, next
+XF86Audio{Prev,Next}
+	playerctl -a {previous,next}
+
+# Automatic player control play/pause
+XF86AudioPlay
+	play-pause
 
 # sound master down / up
 XF86Audio{Lower,Raise}Volume
@@ -88,10 +92,10 @@ super + v
 super + alt + p
 	polybar-msg cmd toggle & bspc config top_padding 0
 
-# toggle video from or/read timecodes
+# toggle video from or/read timecode
 super + d ; {p,r}
 	{play-pause_video_note,play-pause_video_from_clip}
 
 # call transcript script: start/stop audio record and perform transcription
 super + a
-	{transcript}
+	transcript
