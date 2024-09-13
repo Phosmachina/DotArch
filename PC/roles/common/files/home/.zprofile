@@ -1,4 +1,4 @@
-# Export PATH recursively:
+# Add local scripts to PATH:
 for dir in "$HOME/.local/bin"/*/; do
   export PATH="$dir:$PATH"
 done
@@ -16,13 +16,15 @@ export FILE="setsid -f kitty -e 'lf \"%s\"'"
 export XDG_CONFIG_HOME=$HOME/.config
 export XDG_DATA_HOME=$HOME/.local/share
 
+# Bitwarden
+export BW_SESSION=$(bw unlock --passwordfile ~/.config/Bitwarden\ CLI/.pass --raw)
+
 # ~/ Clean up:
 export lESSHISTFILE="-"
 export ZDOTDIR="$HOME/.config/zsh"
 
 # Other:
 export _JAVA_AWT_WM_NONREPARENTING=1
-export LF_BOOKMARK_PATH="$XDG_CONFIG_HOME/lf/bookmarks"
 
 # Added by Toolbox App
 export PATH="$PATH:/home/michel/.local/share/JetBrains/Toolbox/scripts"
