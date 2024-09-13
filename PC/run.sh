@@ -1,18 +1,22 @@
 #!/bin/sh
 
 FILES_TO_ENCRYPT="
+roles/common/files/etc/.cifscredentials
 roles/common/files/home/.cache/zsh/history
+roles/common/files/home/.config/Bitwarden CLI/.pass
 "
 
 test "${ENCRYPT}" = "true" && {
-  for file in $FILES_TO_ENCRYPT
-  do
-     # Test if the file is not already encrypted
-     if ! ansible-vault view --vault-password-file ./password.sh ${file} &> /dev/null
-     then
-         ansible-vault encrypt "${file}" --vault-password-file ./password.sh
-     fi
-  done
+    while read -r file; do
+
+        test -f "$file" || continue
+
+        # Test if the file is not already encrypted
+        ansible-vault view --vault-password-file password.sh "$file" &>/dev/null || {
+            ansible-vault encrypt "$file" --vault-password-file password.sh
+        }
+
+    done <<<"$FILES_TO_ENCRYPT"
 }
 
-test "${DEPLOY}" = "true" && ansible-playbook playbook.yml --vault-password-file password
+test "${DEPLOY}" = "true" && ansible-playbook playbook.yml --vault-password-file password.sh
