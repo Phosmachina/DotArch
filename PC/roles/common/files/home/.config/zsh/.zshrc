@@ -7,10 +7,12 @@ export ZSH="$ZDOTDIR/ohmyzsh"
 ZSH_THEME="arrow"
 DISABLE_AUTO_TITLE="false"
 ENABLE_CORRECTION="true"
+CORRECT_IGNORE="[_|.]*"
 COMPLETION_WAITING_DOTS="true"
 
 plugins=(
     git
+    fzf
     aliases
     compleat
     command-not-found
