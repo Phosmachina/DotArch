@@ -1,0 +1,5 @@
+---
+-  name: Copy the laptop specific config file
+   copy:
+      src: 'home/{{ username }}/.config/polybar/config.ini'
+      dest: '/home/{{ username }}/.config/polybar/config.ini'
