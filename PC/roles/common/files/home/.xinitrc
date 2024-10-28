@@ -7,6 +7,7 @@ picom &
 sxhkd -c ~/.config/herbstluftwm/sxhkd/sxhkdrc &
 /usr/lib/gpaste/gpaste-daemon &
 syncthing &
+lxpolkit &
 
 xrdb -merge $HOME/.Xresources
 setxkbmap -option compose:ralt
