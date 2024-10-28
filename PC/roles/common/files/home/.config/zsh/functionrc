@@ -1,0 +1,9 @@
+rm_sync_conflict() {
+    test -d "$1" || return 1
+    find "$1" -iname '*sync-conflict*' -print0 | xargs -0 rm -fv
+}
+
+mpv_random() {
+    test -d "$1" || return 1
+    setsid -f mpv "$(find "$1" -type f | shuf -n 1)" &>/dev/null
+}

@@ -27,8 +27,16 @@
 
 -  name: Copy aliasrc
    copy:
-      src: 'home/.config/aliasrc'
-      dest: '/home/{{ username }}/.config/aliasrc'
+      src: 'home/.config/zsh/aliasrc'
+      dest: '/home/{{ username }}/.config/zsh/aliasrc'
+      mode: '0644'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+
+-  name: Copy functionrc
+   copy:
+      src: 'home/.config/zsh/functionrc'
+      dest: '/home/{{ username }}/.config/zsh/functionrc'
       mode: '0644'
       owner: '{{ username }}'
       group: '{{ username }}'
@@ -48,10 +56,10 @@
      path: '/home/{{ username }}/.cache/zsh'
      state: directory
 
--  name: Copy zsh history
-   copy:
-      src: 'home/.cache/zsh/history'
-      dest: '/home/{{ username }}/.cache/zsh/history'
+#-  name: Copy zsh history
+#   copy:
+#      src: 'home/.cache/zsh/history'
+#      dest: '/home/{{ username }}/.cache/zsh/history'
 
 -  name: Clone oh-my-zsh
    git:

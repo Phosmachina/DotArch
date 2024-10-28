@@ -28,15 +28,18 @@ plugins=(
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
+f="$HOME/.config/zsh/aliasrc" && test -f "$f" && source "$f"
+f="$HOME/.config/zsh/functionrc" && test -f "$f" && source "$f"
 
-[ -f "$HOME/.config/aliasrc" ] && source "$HOME/.config/aliasrc"
-# Load zsh-syntax-highlighting; should be last.
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
 # Load zsh-autosuggestions.
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null
 source /usr/share/zsh/plugins/zsh-autopair/autopair.zsh 2>/dev/null
 
+# Load zsh-syntax-highlighting; should be last.
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
+
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>'
+MOTION_WORDCHARS='~!#$%^&*(){}[]<>?.+;-/'
 autoload -U select-word-style
 select-word-style normal
 
