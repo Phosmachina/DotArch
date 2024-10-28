@@ -1,7 +1,7 @@
 ---
 - include_tasks: yay.yml
-- include_tasks: doas.yml
-- include_tasks: system.yml
+- include_tasks: system/system.yml
+- include_tasks: system/numlock.yml
 - include_tasks: keymap.yml
 - include_tasks: wm.yml
 - include_tasks: zsh.yml

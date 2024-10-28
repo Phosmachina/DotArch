@@ -1,0 +1,38 @@
+---
+-  name: Install necessary packages with pacman
+   pacman:
+      name:
+         - numlockx
+
+-  name: Ensure /usr/local/bin directory exists
+   file:
+      path: '/usr/local/bin'
+      state: directory
+   become: yes
+
+-  name: Copy numlock script
+   copy:
+      src: 'usr/local/bin/numlock'
+      dest: '/usr/local/bin/numlock'
+      mode: '0755'
+   become: yes
+
+-  name: Ensure /etc/systemd/system directory exists
+   file:
+      path: '/etc/systemd/system'
+      state: directory
+   become: yes
+
+-  name: Copy numlock service
+   copy:
+      src: 'etc/systemd/system/numlock.service'
+      dest: '/etc/systemd/system/numlock.service'
+      mode: '0755'
+   become: yes
+
+- name: Enable systemd service to activate numlock on bootup
+  systemd:
+     name: numlock.service
+     enabled: yes
+     state: started
+  become: yes
