@@ -1,12 +1,5 @@
 ---
-- include_tasks: yay.yml
+
 - include_tasks: system/system.yml
-- include_tasks: system/numlock.yml
-- include_tasks: keymap.yml
-- include_tasks: wm.yml
-- include_tasks: zsh.yml
-- include_tasks: lf.yml
-- include_tasks: apps.yml
-- include_tasks: fonts.yml
-- include_tasks: pipewire.yml
-- include_tasks: firefox.yml
+- include_tasks: wm/wm.yml
+- include_tasks: app/apps.yml

@@ -11,11 +11,13 @@
    become: yes
 
 -  name: Install some desktop apps from AUR
-   shell: >
-      yay -Sy --noconfirm 
-      jetbrains-toolbox
-      spotify-adblock-git
-      surfshark-client
-      visual-studio-code-bin
+   shell: 'yay -Sy --noconfirm {{ aur_packages }}'
    become: yes
    become_user: '{{ username }}'
+   vars:
+      aur_packages:
+         - jetbrains-toolbox
+         - tidal-hifi-bin
+         - surfshark-client
+         - visual-studio-code-bin
+#         - spotify-adblock-git

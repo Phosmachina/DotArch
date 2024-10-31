@@ -1,0 +1,15 @@
+---
+-  name: Sync local scripts
+   synchronize:
+      src: 'home/.local/bin/'
+      dest: '/home/{{ username }}/.local/bin/'
+      recursive: yes
+   become: yes
+
+-  name: Set script files permissions
+   file:
+      path: '/home/{{ username }}/.local/bin/'
+      owner: '{{ username }}'
+      group: '{{ username }}'
+      mode: '0755'
+      recurse: yes

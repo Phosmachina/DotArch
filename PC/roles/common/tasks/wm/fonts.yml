@@ -1,0 +1,23 @@
+---
+-  name: Install font packages
+   pacman:
+      name:
+         - ttf-jetbrains-mono-nerd
+      state: present
+   become: yes
+
+-  name: Install font packages
+   shell: >
+      yay -Sy --noconfirm 
+      siji-ttf
+   become: yes
+   become_user: '{{ username }}'
+
+-  name: Sync fonts config
+   synchronize:
+      src: 'home/.local/share/fonts'
+      dest: '/home/{{ username }}/.local/share'
+
+-  name: Update fonts list
+   shell: fc-cache -fv "/home/{{ username }}/.local/share"
+   become: yes

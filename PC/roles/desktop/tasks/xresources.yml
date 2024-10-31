@@ -6,4 +6,3 @@
      mode: '0644'
      owner: '{{ username }}'
      group: '{{ username }}'
-  become: yes

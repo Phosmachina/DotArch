@@ -25,6 +25,11 @@
    become: yes
    become_user: '{{ username }}'
 
+-  name: Ensure .config/zsh directory exists
+   file:
+      path: '/home/{{ username }}/.config/zsh'
+      state: directory
+
 -  name: Copy aliasrc
    copy:
       src: 'home/.config/zsh/aliasrc'
@@ -41,20 +46,15 @@
       owner: '{{ username }}'
       group: '{{ username }}'
 
-- name: Ensure .config/zsh directory exists
-  file:
-     path: '/home/{{ username }}/.config/zsh'
-     state: directory
-
 -  name: Copy zsh config
    copy:
       src: 'home/.config/zsh/.zshrc'
       dest: '/home/{{ username }}/.config/zsh/.zshrc'
 
-- name: Ensure .cache/zsh directory exists
-  file:
-     path: '/home/{{ username }}/.cache/zsh'
-     state: directory
+-  name: Ensure .cache/zsh directory exists
+   file:
+      path: '/home/{{ username }}/.cache/zsh'
+      state: directory
 
 #-  name: Copy zsh history
 #   copy:

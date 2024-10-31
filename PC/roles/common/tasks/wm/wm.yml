@@ -1,0 +1,8 @@
+---
+- include_tasks: packages.yml
+- include_tasks: config.yml
+- include_tasks: lf.yml
+- include_tasks: bitwarden.yml
+- include_tasks: keymap.yml
+- include_tasks: fonts.yml
+- include_tasks: wallpaper.yml

@@ -1,0 +1,25 @@
+---
+-  name: Install necessary packages
+   pacman:
+      name:
+         - xorg-server
+         - xorg-xinit
+         - herbstluftwm
+         - sxhkd
+         - picom
+         - polybar
+         - dunst
+         - kitty
+         - feh
+         - maim
+         - lxsession-gtk3
+         - bitwarden-cli
+      state: present
+   become: yes
+
+-  name: Install necessary packages
+   shell: >
+      yay -Sy --noconfirm 
+      rofi-gpaste-git
+   become: yes
+   become_user: '{{ username }}'

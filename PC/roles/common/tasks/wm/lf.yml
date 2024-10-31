@@ -15,7 +15,6 @@
          - jq
          - lynx
          - poppler
-         - lynx
       state: present
    become: yes
 

@@ -1,0 +1,10 @@
+---
+-  name: Ensure wallpaper directory exists
+   file:
+      path: '/home/{{ username }}/Images/Wallpapers'
+      state: directory
+
+-  name: Copy a wallpaper
+   copy:
+      src: 'home/Images/Wallpapers/1.jpg'
+      dest: '/home/{{ username }}/Images/Wallpapers/1.jpg'
