@@ -1,0 +1,24 @@
+---
+- name: Ensure necessary packages are installed
+  pacman:
+     name:
+        - wireguard-tools
+     state: present
+  become: yes
+
+- name: Copy WireGuard config
+  copy:
+     src: etc/wireguard/wg0.conf
+     dest: /etc/wireguard/wg0.conf
+     owner: root
+     group: root
+     mode: '0600'
+  notify: Restart WireGuard
+  become: yes
+
+- name: Ensure WireGuard is running and enabled at boot
+  systemd:
+     name: wg-quick@wg0
+     state: started
+     enabled: yes
+  become: yes
