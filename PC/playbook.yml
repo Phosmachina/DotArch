@@ -2,6 +2,7 @@
 - name: Deploy the Arch configuration
   hosts: target
   remote_user: '{{ username }}'
-
+  vars_files:
+    - group_vars/all/variables.yml
   roles:
-    - {{ target_role }}
+    - '{{ target_role }}'
