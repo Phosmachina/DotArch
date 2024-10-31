@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Please replace with your markdown file path
+BOOKMARK_FILE="bookmarks.md"
+
+find_url () {
+  # Construct an associative array where the key is the url and the value is the title
+  declare -A urls_map
+
+  while IFS="" read -r line
+  do
+    title=$(echo "$line" | sed -n -e 's/.*\[\(.*\)\].*/\1/p');
+    url=$(echo "$line" | sed -n -e 's/.*(\(.*\))/\1/p');
+    urls_map[$url]=$title;
+  done < <(grep -o -P '\[.+\]\(.+\)' "$BOOKMARK_FILE")
+
+  # Use fzf for fuzzy find with urls_map
+  # After the url will be selected, it will be opened in the default browser using xdg-open
+  for url in "${!urls_map[@]}";
+  do
+    echo "${urls_map[$url]}";
+  done | fzf --tiebreak=index | while IFS= read -r title;
+  do
+    for url in "${!urls_map[@]}";
+    do
+      if [[ "$title" == "${urls_map[$url]}" ]];
+      then
+        xdg-open "$url"
+      fi
+    done
+  done
+}
+
+store_new_input () {
+  # Get current clipboard content
+  clipboard_content=$(xsel -b)
+
+  # Check if the clipboard content respects the format '- []()' before appending it to the bookmarks file
+  if [[ "$clipboard_content" =~ ^-\ \[.*\]\(.*\)$ ]]; then
+    echo "$clipboard_content" >> $BOOKMARK_FILE
+    echo "Added successfully to $BOOKMARK_FILE."
+  else
+    echo "The clipboard content does not meet the required format '- []()'."
+  fi
+}
+
+# Call the appropriate function based on the passed argument
+if [[ "$1" == "find-url" ]] ; then
+  find_url
+elif [[ "$1" == "store-input" ]]; then
+  store_new_input
+else
+  echo "unknown command. available commands: find_url, store_new_input"
+fi
