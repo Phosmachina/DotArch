@@ -8,7 +8,7 @@ services:
             aliases:
                - host.docker.internal
       environment:
-         ENCRYPT: "false"
+         ENCRYPT: "true"
          DEPLOY: "true"
       volumes:
          - .:/ansible
