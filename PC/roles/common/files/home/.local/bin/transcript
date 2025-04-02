@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of dependencies
-dependencies=("arecord" "deepctl" "jq" "xclip" "xdotool" "notify-send")
+dependencies=("arecord" "deepctl" "jq" "xclip" "xdotool" "dunstify")
 
 # Global variable for inference model name
 inference_model="openai/whisper-large-v3-turbo"
@@ -17,7 +17,7 @@ check_dependencies() {
 
 # Start recording: use arecord tool to start an audio record.
 start_recording() {
-    notify_pid=$(notify-send -p -t 0 -u normal "Whisper Transcript" "Recording started...")
+    notify_pid=$(dunstify -p -t 0 -u normal "Whisper Transcript" "Recording started...")
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
     arecord -f cd "$tempfile" >/dev/null &
     record_pid=$!
@@ -30,14 +30,14 @@ stop_recording() {
     read record_pid notify_pid tempfile <"/tmp/recording_info"
 
     kill -INT "$record_pid"
-    notify-send -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcript..."
+    dunstify -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcript..."
 
     # Prepare audio file for transcription
     local processed_audio=$(prepare_audio "$tempfile")
     transcribe_audio "$processed_audio" | format_txt | xclip -selection clipboard
 
     xdotool key --clearmodifiers ctrl+shift+v
-    notify-send -r "$notify_pid" "Whisper Transcript" "Transcript complete"
+    dunstify -r "$notify_pid" "Whisper Transcript" "Transcript complete"
 
     # Clean up temporary files
     rm "/tmp/recording_info" "$tempfile" "${processed_audio}"
