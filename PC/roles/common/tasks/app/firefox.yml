@@ -26,5 +26,4 @@
       dest: '{{ matching_dirs.files[0].path }}/chrome'
       clone: yes
       update: yes
-   ignore_errors: true
-   
+   failed_when: false
