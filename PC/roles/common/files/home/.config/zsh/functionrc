@@ -8,14 +8,14 @@ mpv_random() {
     setsid -f mpv "$(find "$1" -type f | shuf -n 1)" &>/dev/null
 }
 
-vagrant(){
-  docker run -it --rm \
-    -e LIBVIRT_DEFAULT_URI \
-    -v /var/run/libvirt/:/var/run/libvirt/ \
-    -v ~/.vagrant.d:/.vagrant.d \
-    -v $(realpath "${PWD}"):${PWD} \
-    -w "${PWD}" \
-    --network host \
-    vagrantlibvirt/vagrant-libvirt:latest \
-      vagrant $@
+vagrant() {
+    docker run -it --rm \
+        -e LIBVIRT_DEFAULT_URI \
+        -v /var/run/libvirt/:/var/run/libvirt/ \
+        -v ~/.vagrant.d:/.vagrant.d \
+        -v $(realpath "${PWD}"):${PWD} \
+        -w "${PWD}" \
+        --network host \
+        vagrantlibvirt/vagrant-libvirt:latest \
+        vagrant $@
 }
