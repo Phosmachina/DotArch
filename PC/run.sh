@@ -6,17 +6,48 @@ roles/common/files/home/.cache/zsh/history
 roles/common/files/home/.config/Bitwarden CLI/.pass
 "
 
-test "${ENCRYPT}" = "true" && {
-    while read -r file; do
+ENCRYPT=false
+DEPLOY=false
 
-        test -f "$file" || continue
+# Parse CLI arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --encrypt)
+        ENCRYPT=true
+        ;;
+    --deploy)
+        DEPLOY=true
+        ;;
+    --all)
+        ENCRYPT=true
+        DEPLOY=true
+        ;;
+    *)
+        echo "Usage: $0 [--encrypt] [--deploy] [--all]"
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+if [ ! -f "password.sh" ] || [ ! -x "password.sh" ]; then
+    echo "Error: password.sh file missing or not executable"
+    exit 1
+fi
+
+# Encrypt step
+if [ "$ENCRYPT" = true ]; then
+    while read -r file; do
+        [ -f "$file" ] || continue
 
         # Test if the file is not already encrypted
         ansible-vault view --vault-password-file password.sh "$file" &>/dev/null || {
             ansible-vault encrypt "$file" --vault-password-file password.sh
         }
-
     done <<<"$FILES_TO_ENCRYPT"
-}
+fi
 
-test "${DEPLOY}" = "true" && ansible-playbook playbook.yml --vault-password-file password.sh
+# Deploy step
+if [ "$DEPLOY" = true ]; then
+    ansible-playbook playbook.yml --vault-password-file password.sh
+fi

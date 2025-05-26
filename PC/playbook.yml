@@ -1,8 +1,23 @@
 ---
 - name: Deploy the Arch configuration
   hosts: target
-  remote_user: '{{ username }}'
   vars_files:
     - group_vars/all/variables.yml
+
+  pre_tasks:
+    - name: “Check for a battery device (laptop?)”
+      stat:
+        path: /sys/class/power_supply/BAT0
+      register: bat
+
+    - name: “Set target to 'laptop' if battery found, else 'desktop'”
+      set_fact:
+        target: "{{ 'laptop' if bat.stat.exists else 'desktop' }}"
+
   roles:
-    - '{{ target_role }}'
+    - role: desktop
+      when: target == 'desktop'
+
+    - role: laptop
+      when: target == 'laptop'
+
