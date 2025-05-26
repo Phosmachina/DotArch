@@ -9,6 +9,7 @@
 - include_tasks: getty.yml
 - include_tasks: fstab.yml
 - include_tasks: scripts.yml
+- include_tasks: virtualization.yml
 
 
 # TODO make system.yml laptop specific
