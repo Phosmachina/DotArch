@@ -1,3 +1,23 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-handlr open "$@"
+# xdg-open replacement: try handlr first, else
+# rofi -show-icons -matching glob -show drun
+
+file="$1"
+
+# 1) Detect MIME
+mime=$(handlr mime --json "$file" \
+       | jq -r '.[0].mime')
+
+# 2) Try using handlr directly - it should handle its own wildcards
+if handlr open "$file" 2>/dev/null; then
+  # If handlr succeeded, we're done
+  exit 0
+fi
+
+# 3) Fallback: invoke rofi drun and hand the chosen entry + file to gtk-launch
+exec rofi \
+     -show-icons \
+     -matching glob \
+     -show drun \
+     -drun-command "gtk-launch {cmd} '$file'"
