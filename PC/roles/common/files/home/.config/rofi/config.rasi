@@ -1,1 +1,6 @@
-@theme "/usr/share/rofi/themes/onedark.rasi"
+configuration {
+    matching: "fuzzy";
+    levenshtein-sort: "true";
+}
+
+@theme "/usr/share/rofi/themes/spotlight-custom.rasi"

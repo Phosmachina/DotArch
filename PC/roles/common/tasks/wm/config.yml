@@ -9,7 +9,6 @@
       src: 'home/.zprofile'
       dest: '/home/{{ username }}/.zprofile'
 
-
 -  name: Ensure rofi theme directory exists
    file:
       path: '/usr/share/rofi/themes'
@@ -17,8 +16,8 @@
 
 -  name: Copy the rofi theme
    copy:
-      src: 'usr/share/rofi/themes/onedark.rasi'
-      dest: '/usr/share/rofi/themes/onedark.rasi'
+      src: 'usr/share/rofi/themes/spotlight-custom.rasi'
+      dest: '/usr/share/rofi/themes/spotlight-custom.rasi'
    become: yes
 
 -  name: Sync herbstluftwm and all others wm relative configs
