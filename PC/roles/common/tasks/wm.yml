@@ -13,7 +13,6 @@
          - feh
          - maim
          - bitwarden-cli
-         - ttf-jetbrains-mono-nerd
       state: present
    become: yes
 
