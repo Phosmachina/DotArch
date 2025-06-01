@@ -20,4 +20,3 @@
 
     - role: laptop
       when: target == 'laptop'
-

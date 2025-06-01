@@ -76,7 +76,7 @@
    shell: >
       yay -Sy --noconfirm 
       dasel-bin
-      task-spooler
       texlive-latexindent-meta
+#      task-spooler TODO check why this package can't compile
    become: yes
    become_user: '{{ username }}'

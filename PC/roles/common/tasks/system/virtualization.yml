@@ -54,7 +54,7 @@
     name: '{{ username }}'
     groups: libvirt
     append: yes
-  when: '{{ username }}' != "root"
+  when: username != "root"
   become: yes
 
 # Ensure polkit rules for libvirt are set up

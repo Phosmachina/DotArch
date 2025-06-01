@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of dependencies
-dependencies=("arecord" "deepctl" "jq" "xclip" "xdotool" "dunstify")
+dependencies=("arecord" "deepctl" "jq" "xclip" "xdotool" "dunstify" "sox" "ffmpeg")
 
 # Global variable for inference model name
 inference_model="openai/whisper-large-v3-turbo"

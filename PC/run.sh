@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -euo pipefail
+
 FILES_TO_ENCRYPT="
 roles/common/files/etc/.cifscredentials
 roles/common/files/home/.cache/zsh/history
