@@ -2,9 +2,7 @@
 alias grep='grep --color=auto'
 alias l='exa -F --group-directories-first'
 alias ll='exa -F -1la --icons --group-directories-first'
-alias llt='exa -FR -aL2 --icons --group-directories-first'
 alias cat="bat --theme 'Sublime Snazzy'"
-alias doas='doas --'
 
 # File
 alias df='df -h'
@@ -25,6 +23,5 @@ alias wcn='iw dev wlan0 link | grep SSID:'
 
 alias zhist_eval='eval $(cat ~/.cache/zsh/history | fzf --tac --no-sort)'
 alias zhist='echo $(cat ~/.cache/zsh/history | fzf --tac --no-sort)'
-alias grammalecte='grammalecte-cli -owe -off apos esp nbsp tu unit typo'
+#alias grammalecte='grammalecte-cli -owe -off apos esp nbsp tu unit typo'
 alias chm='chmod +x'
-alias config='$DOTFILE/manage_config'
