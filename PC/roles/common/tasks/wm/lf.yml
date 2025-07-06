@@ -22,6 +22,11 @@
    shell: >
       yay -Sy --noconfirm 
       qimgv
+      qtraw
+      qt5-heic-image-plugin
+      qt6-heic-image-plugin
+      qt5-avif-image-plugin
+      qt6-avif-image-plugin
       visual-studio-code-bin
       dragon-drop
    become: yes
