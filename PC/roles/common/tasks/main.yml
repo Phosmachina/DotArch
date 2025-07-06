@@ -1,5 +1,6 @@
 ---
-
-- include_tasks: system/system.yml
-- include_tasks: wm/wm.yml
-- include_tasks: app/apps.yml
+- include_tasks: system/main.yml
+- include_tasks: wm/main.yml
+- include_tasks: app/main.yml
+- include_tasks: maintenance/main.yml
+  tags: [ maintenance ]

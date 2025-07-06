@@ -1,0 +1,11 @@
+---
+# Main maintenance tasks file
+
+- include_tasks: package_cleanup.yml
+  tags: [ maintenance, cleanup, packages ]
+
+- include_tasks: system_cleanup.yml
+  tags: [ maintenance, cleanup, system ]
+
+- include_tasks: update_system.yml
+  tags: [ maintenance, update ]
