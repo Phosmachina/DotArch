@@ -1,0 +1,38 @@
+---
+# Main tasks for Hyprland window manager setup
+
+-   include_tasks: environment.yml
+    tags: [ wm, hyprland, environment ]
+
+-   include_tasks: hyprland.yml
+    tags: [ wm, hyprland, core ]
+
+-   include_tasks: hyprland-plugins.yml
+    tags: [ wm, hyprland, plugins ]
+
+-   include_tasks: hyprland-tools.yml
+    tags: [ wm, hyprland, tools ]
+
+-   include_tasks: terminal.yml
+    tags: [ wm, hyprland, wezterm ]
+
+-   include_tasks: file-manager.yml
+    tags: [ wm, hyprland, yazi ]
+
+-   include_tasks: rofi.yml
+    tags: [ wm, hyprland, rofi ]
+
+-   include_tasks: status-bar.yml
+    tags: [ wm, hyprland, ashell ]
+
+-   include_tasks: notification.yml
+    tags: [ wm, hyprland, notification ]
+
+-   include_tasks: screenshot.yml
+    tags: [ wm, hyprland, screenshot ]
+
+-   include_tasks: clipboard.yml
+    tags: [ wm, hyprland, cliphist ]
+
+-   include_tasks: greetd.yml
+    tags: [ wm, hyprland, greetd ]

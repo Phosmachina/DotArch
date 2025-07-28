@@ -1,0 +1,37 @@
+# System-wide Hyprland environment variables
+
+# Nvidia specific
+LIBVA_DRIVER_NAME=nvidia
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+NVD_BACKEND=direct
+
+# XDG specific
+XDG_SESSION_TYPE=wayland
+XDG_CURRENT_DESKTOP=Hyprland
+XDG_SESSION_DESKTOP=Hyprland
+
+# QT specific
+QT_AUTO_SCREEN_SCALE_FACTOR=1
+QT_QPA_PLATFORM=wayland,xcb
+QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+QT_QPA_PLATFORMTHEME=qt5ct
+
+# GTK specific
+GDK_BACKEND=wayland,x11
+
+# Toolkit backend variables
+SDL_VIDEODRIVER=wayland
+CLUTTER_BACKEND=wayland
+
+# Firefox
+MOZ_ENABLE_WAYLAND=1
+
+# Elementary/EFL
+ELM_DISPLAY=wl
+ECORE_EVAS_ENGINE=wayland_egl
+
+# Java applications
+_JAVA_AWT_WM_NONREPARENTING=1
+
+# Cursor size
+XCURSOR_SIZE=24
