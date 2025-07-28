@@ -1,0 +1,25 @@
+---
+# Tasks for WezTerm terminal configuration
+# WezTerm is the replacement for kitty
+
+-   name: Install WezTerm
+    package:
+        name: wezterm
+        state: present
+    become: yes
+    tags: [ wm, hyprland, wezterm ]
+
+-   name: Ensure wezterm config directory exists
+    file:
+        path: '/home/{{ username }}/.config/wezterm'
+        state: directory
+        mode: '0755'
+    tags: [ wm, hyprland, wezterm, terminal, directory ]
+
+-   name: Sync wezterm configuration files
+    synchronize:
+        src: 'home/.config/wezterm/'
+        dest: '/home/{{ username }}/.config/wezterm/'
+    become: yes
+    become_user: '{{ username }}'
+    tags: [ wm, hyprland, wezterm, terminal, config ]
