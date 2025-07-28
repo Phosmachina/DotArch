@@ -1,0 +1,29 @@
+---
+# Tasks for cliphist clipboard manager configuration
+
+-   name: Install cliphist
+    package:
+        name: cliphist
+        state: present
+    become: yes
+    tags: [ wm, hyprland, cliphist ]
+
+-   name: Install cliphist-rofi-img from AUR
+    shell: 'yay -Sy --noconfirm cliphist-rofi-img'
+    become: yes
+    become_user: '{{ username }}'
+    tags: [ wm, hyprland, cliphist ]
+
+-   name: Ensure cliphist config directory exists
+    file:
+        path: '/home/{{ username }}/.config/cliphist'
+        state: directory
+        mode: '0755'
+    tags: [ wm, hyprland, tools, cliphist, directory ]
+
+-   name: Configure cliphist with rofi integration
+    copy:
+        src: 'home/.config/cliphist/cliphist-rofi.sh'
+        dest: '/home/{{ username }}/.config/cliphist/cliphist-rofi.sh'
+        mode: '0755'
+    tags: [ wm, hyprland, tools, cliphist, config ]
