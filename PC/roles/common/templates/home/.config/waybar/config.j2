@@ -1,0 +1,140 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 22,
+    "spacing": 4,
+    "margin-top": 4,
+    "margin-left": 6,
+    "margin-right": 6,
+    "margin-bottom": 0,
+
+    "modules-left": [
+        "hyprland/workspaces",
+        "hyprland/window",
+        "temperature",
+        "cpu",
+        "memory",
+    ],
+    "modules-center": ["clock"],
+    "modules-right": [
+        "network",
+        {% if target == 'laptop' %}
+        "battery",
+        "backlight",
+        {% endif %}
+        "pulseaudio",
+        "disk",
+        "tray"
+    ],
+
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "on-click": "activate",
+        "format-icons": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10",
+            "urgent": "",
+            "default": ""
+        },
+        "sort-by-number": true
+    },
+
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 50,
+        "separate-outputs": true
+    },
+
+    "tray": {
+        "spacing": 10
+    },
+
+    "clock": {
+        "format": " {:%a, %b %d %H:%M}",
+        "format-alt": " {:%a, %b %d :%H:%M:%S}",
+        "format-alt-click": true,
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    "cpu": {
+        "format": "{icon} {usage}%",
+        "tooltip": true,
+        "format-icons": [
+             "<span color='#69ff94'></span>", // green
+             "<span color='#2aa9ff'></span>", // blue
+             "<span color='#f8f8f2'></span>", // white
+             "<span color='#f8f8f2'></span>", // white
+             "<span color='#ffffa5'></span>", // yellow
+             "<span color='#ffffa5'></span>", // yellow
+             "<span color='#ff9977'></span>", // orange
+             "<span color='#dd532e'></span>"  // red
+        ],
+        "interval": 1
+    },
+    "memory": {
+        "format": "  {used}GiB/{total}GiB",
+        "interval": 5
+    },
+
+    "temperature": {
+        "thermal-zone": 10,
+        "critical-threshold": 80,
+        "format": "{icon} {temperatureC}°C",
+        "format-icons": [
+            "<span color='#69ff94'></span>",
+            "<span color='#ff9977'></span>",
+            "<span color='#dd532e'></span>"
+        ]
+    },
+
+    "network": {
+        "interval": 1,
+        "format-wifi": "  {bandwidthDownOctets}⇩ {bandwidthUpOctets}⇧",
+        "format-ethernet": "󰈁 {bandwidthDownOctets}⇩ {bandwidthUpOctets}⇧",
+        "format-disconnected": "󰈂 Disconnected",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
+    },
+
+    {% if target == 'laptop' %}
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": "󰢟 {capacity}%",
+        "format-plugged": "󰂄 {capacity}%",
+        "format-icons": [
+            "󰁹","󰁺","󰁻","󰁼","󰁽",
+            "󰁾","󰁿","󰂀","󰂁","󰂂"
+        ]
+    },
+
+    "backlight": {
+        "format": "{icon} {percent}%",
+        "format-icons": ["󱩎", "󱩐", "󱩓", "󰛨"]
+    },
+    {% endif %}
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟 Muted",
+        "format-icons": {
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "amixer set Master toggle"
+    },
+
+    "disk": {
+        "format": "󰆼 {used}/{total}"
+    }
+}

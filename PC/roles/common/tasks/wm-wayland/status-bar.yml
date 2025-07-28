@@ -1,0 +1,32 @@
+---
+# Tasks for waybar status bar configuration
+
+-   name: Install waybar from official repositories
+    package:
+        name: waybar
+        state: present
+    become: true
+    tags: [ wm, hyprland, waybar ]
+
+-   name: Ensure waybar config directory exists
+    file:
+        path: '/home/{{ username }}/.config/waybar'
+        state: directory
+        mode: '0755'
+    tags: [ wm, hyprland, waybar, directory ]
+
+-   name: Create waybar configuration template
+    template:
+        src: 'home/.config/waybar/config.j2'
+        dest: '/home/{{ username }}/.config/waybar/config.jsonc'
+        mode: '0644'
+    notify: restart waybar
+    tags: [ wm, hyprland, waybar, config ]
+
+-   name: Copy waybar CSS style
+    copy:
+        src: 'home/.config/waybar/style.css'
+        dest: '/home/{{ username }}/.config/waybar/style.css'
+        mode: '0644'
+    notify: restart waybar
+    tags: [ wm, hyprland, waybar, config ]
