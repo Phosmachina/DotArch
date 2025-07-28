@@ -1,0 +1,13 @@
+---
+# Handlers for common role
+
+- name: restart greetd
+  service:
+    name: greetd
+    state: restarted
+  become: true
+
+- name: restart waybar
+  command: pkill -SIGUSR2 waybar
+  ignore_errors: yes
+  become: yes

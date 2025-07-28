@@ -1,0 +1,36 @@
+---
+# Tasks for greetd/tuigreet login manager configuration
+
+-   name: Install greetd and tuigreet
+    package:
+        name:
+            - greetd
+            - greetd-tuigreet
+        state: present
+    become: yes
+    tags: [ wm, hyprland, greetd ]
+
+-   name: Ensure greetd configuration directory exists
+    file:
+        path: '/etc/greetd'
+        state: directory
+        mode: '0755'
+    become: yes
+    tags: [ wm, hyprland, greetd, config ]
+
+-   name: Configure greetd service
+    copy:
+        src: 'etc/greetd/config.toml'
+        dest: '/etc/greetd/config.toml'
+        mode: '0644'
+    notify: restart greetd
+    become: true
+    tags: [ wm, hyprland, greetd ]
+
+-   name: Enable greetd service
+    systemd:
+        name: greetd
+        enabled: yes
+        state: started
+    become: yes
+    tags: [ wm, hyprland, greetd, service ]
