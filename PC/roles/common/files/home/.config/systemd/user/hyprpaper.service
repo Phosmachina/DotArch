@@ -1,0 +1,6 @@
+[Unit]
+Description=Hyprland random wallpaper switcher
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/hypr/scripts/hyprpaper-hourly.sh
