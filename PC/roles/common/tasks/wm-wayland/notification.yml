@@ -1,0 +1,23 @@
+---
+# Tasks for SwayNotificationCenter configuration
+
+-   name: Install SwayNC notification center
+    package:
+        name: swaync
+        state: present
+    become: yes
+    tags: [ wm, hyprland, notification ]
+
+-   name: Ensure swaync config directory exists
+    file:
+        path: '/home/{{ username }}/.config/swaync'
+        state: directory
+        mode: '0755'
+    tags: [ wm, hyprland, notification, swaync, directory ]
+
+-   name: Copy SwayNC configuration files
+    copy:
+        src: 'home/.config/swaync/config.json'
+        dest: '/home/{{ username }}/.config/swaync/config.json'
+        mode: '0644'
+    tags: [ wm, hyprland, notification, swaync, config ]
