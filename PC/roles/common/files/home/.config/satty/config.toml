@@ -1,0 +1,40 @@
+# Satty configuration
+
+[general]
+# Start Satty in fullscreen mode
+fullscreen = true
+
+# Select the tool on startup [possible values: pointer, crop, line, arrow, rectangle, text, marker, blur, brush]
+initial-tool = "rectangle"
+
+# Configure the command to be called on copy, for example `wl-copy`
+copy-command = "wl-copy"
+
+# Disable notifications
+disable-notifications = true
+
+# Filename to use for saving action. Omit disabling saving to file.
+# Might contain format specifiers: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+output-filename = "/tmp/test-%Y-%m-%d_%H:%M:%S.png"
+
+# Actions to trigger on Enter key (order is important)
+# [possible values: save-to-clipboard, save-to-file, exit]
+actions-on-enter = ["save-to-clipboard"]
+
+# Actions to trigger on Escape key (order is important)
+# [possible values: save-to-clipboard, save-to-file, exit]
+actions-on-escape = ["exit"]
+
+[font]
+family = "JetBrains Mono Nerd Font 12"
+
+[color-palette]
+# These will be shown in the toolbar for quick selection
+palette = [
+    "#00ffff",
+    "#a52a2a",
+    "#dc143c",
+    "#ff1493",
+    "#ffd700",
+    "#008000",
+]

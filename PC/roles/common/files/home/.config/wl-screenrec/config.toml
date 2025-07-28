@@ -1,0 +1,27 @@
+# wl-screenrec configuration
+
+[output]
+# Output file name format
+file_format = "recording_%F_%H-%M-%S.mp4"
+# Output directory
+output_dir = "~/Videos/Recordings"
+
+[video]
+# Video format
+format = "mp4"
+# Video codec
+codec = "av1"
+# Video bitrate
+bitrate = 5000000
+# Frame rate
+framerate = 60
+
+[audio]
+# Audio codec
+codec = "aac"
+# Audio bitrate
+bitrate = 128000
+# Audio sample rate
+sample_rate = 44100
+# Capture microphone
+capture_microphone = false
