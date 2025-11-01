@@ -1,0 +1,47 @@
+---
+# Main Hyprland configuration tasks
+
+- name: Install Hyprland and core components
+  pacman:
+    name:
+      - hyprland
+      - hyprland-protocols
+      - xdg-desktop-portal-hyprland
+      - libva-nvidia-driver
+      - qt5-wayland
+      - qt6-wayland
+      - cmake
+      - meson
+      - cpio
+      - pkg-config
+      - git
+      - gcc
+      - lxsession
+      - syncthing
+      - wev
+      - zed
+    state: present
+    extra_args: --overwrite '*'
+  become: yes
+  tags: [ wm, hyprland, core ]
+
+- name: Create base configuration directories
+  file:
+    path: '/home/{{ username }}/{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+    - '.config/hypr'
+    - '.config/hypr/plugins'
+    - '.config/hypr/scripts'
+  tags: [ wm, hyprland, core, directory ]
+
+- name: Copy hyprland configuration files
+  copy:
+    src: 'home/.config/hypr/{{ item }}'
+    dest: '/home/{{ username }}/.config/hypr/{{ item }}'
+    mode: '0644'
+  with_items:
+    - 'hyprland.conf'
+    - 'keybindings.conf'
+  tags: [ wm, hyprland, config, core ]

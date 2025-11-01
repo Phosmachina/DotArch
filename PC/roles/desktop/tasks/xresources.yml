@@ -1,8 +1,0 @@
----
-- name: Copy .Xresources configuration
-  copy:
-     src: home/.Xresources
-     dest: '/home/{{ username }}/.Xresources'
-     mode: '0644'
-     owner: '{{ username }}'
-     group: '{{ username }}'

@@ -1,0 +1,14 @@
+---
+# Locale configuration tasks
+# Sets up system locale and language settings
+
+- name: Copy locale configuration
+  ansible.builtin.copy:
+    src: etc/locale.conf
+    dest: /etc/locale.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  become: yes
+

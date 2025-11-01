@@ -1,0 +1,7 @@
+[Unit]
+Description=Empty trash older than 14 days
+Requires=trash-empty.timer
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/trash-empty 14

@@ -1,0 +1,56 @@
+---
+# Apps Media role - media applications configuration
+# This role manages media viewing and editing applications
+
+- name: Install media viewers with pacman
+  become: true
+  community.general.pacman:
+    name:
+      - mpv
+      - zathura
+      - zathura-pdf-poppler
+    state: present
+  tags: [ apps, media, package ]
+
+- name: Install media viewers with yay
+  shell: >
+    yay -Sy --noconfirm 
+    qimgv
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ apps, media, package ]
+
+- name: Create media app config directories
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - mpv
+    - qimgv
+    - zathura
+  tags: [ apps, media, config ]
+
+- name: Copy MPV configuration
+  ansible.builtin.copy:
+    src: files/home/.config/mpv/mpv.conf
+    dest: "{{ ansible_user_dir }}/.config/mpv/mpv.conf"
+    mode: '0644'
+  tags: [ apps, media, config ]
+
+- name: Copy Qimgv configuration
+  ansible.builtin.copy:
+    src: "files/home/.config/qimgv/{{ item }}"
+    dest: "{{ ansible_user_dir }}/.config/qimgv/{{ item }}"
+    mode: '0644'
+  loop:
+    - qimgv.conf
+    - theme.conf
+  tags: [ apps, media, config ]
+
+- name: Copy Zathura configuration
+  ansible.builtin.copy:
+    src: files/home/.config/zathura/zathurarc
+    dest: "{{ ansible_user_dir }}/.config/zathura/zathurarc"
+    mode: '0644'
+  tags: [ apps, media, config ]

@@ -1,0 +1,41 @@
+---
+# System core role - handles base system configuration
+# This role manages foundational system components that are not UI-specific
+
+- include_tasks: yay.yml
+
+- include_tasks: packages.yml
+  tags: [ system, packages ]
+
+- include_tasks: hostname.yml
+  tags: [ system, hostname ]
+
+- include_tasks: locale.yml
+  tags: [ system, locale ]
+
+#- include_tasks: keyboard.yml
+#  tags: [ system, keyboard ]
+
+- include_tasks: numlock.yml
+  tags: [ system, numlock ]
+
+- include_tasks: bluetooth.yml
+  tags: [ system, bluetooth ]
+
+- include_tasks: audio.yml
+  tags: [ system, audio ]
+
+- include_tasks: fstab.yml
+  tags: [ system, fstab ]
+
+- include_tasks: virtualization.yml
+  tags: [ system, virtualization ]
+
+#- include_tasks: vpn.yml
+#  tags: [ system, vpn ]
+
+- include_tasks: scripts.yml
+  tags: [ system, scripts ]
+
+- include_tasks: trash.yml
+  tags: [ system, trash ]

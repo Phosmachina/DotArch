@@ -1,0 +1,23 @@
+---
+- name: Install necessary packages with pacman
+  pacman:
+    name:
+      - bluez
+      - bluez-obex
+  become: yes
+
+- name: Set Bluetooth auto-enable
+  lineinfile:
+    path: /etc/bluetooth/main.conf
+    regexp: '^#?AutoEnable=true'
+    line: 'AutoEnable=true'
+    backrefs: yes
+    state: present
+  become: yes
+
+- name: Enable bluetooth service to activate bluetooth on boot
+  systemd:
+    name: bluetooth.service
+    enabled: yes
+    state: started
+  become: yes

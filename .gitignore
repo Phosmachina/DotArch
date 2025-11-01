@@ -1,5 +1,8 @@
+# Virtual environments
+.venv
+
+# IDE
 .idea
 
-/PC/password.sh
-
-/Install Arch
+# Local configuration overrides
+password.sh

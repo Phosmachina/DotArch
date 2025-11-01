@@ -1,0 +1,12 @@
+---
+# Desktop Hyprland role - core Hyprland WM only
+# This role manages only the essential Hyprland components
+
+- include_tasks: hyprland.yml
+  tags: [ desktop, hyprland, core ]
+
+- include_tasks: hyprland-plugins.yml
+  tags: [ desktop, hyprland, plugins ]
+
+- include_tasks: hyprland-tools.yml
+  tags: [ desktop, hyprland, tools ]

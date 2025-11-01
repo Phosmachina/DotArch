@@ -1,0 +1,24 @@
+---
+# Apps Firefox role - Firefox browser configuration
+# This role manages Firefox web browser setup
+
+- name: Install Firefox
+  become: true
+  community.general.pacman:
+    name: firefox
+    state: present
+  tags: [ apps, firefox, package ]
+
+- name: Create Firefox config directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/.mozilla/firefox/default-release"
+    state: directory
+    mode: '0755'
+  tags: [ apps, firefox, config ]
+
+- name: Copy Firefox user configuration
+  ansible.builtin.copy:
+    src: files/home/.config/.mozilla/firefox/default-release/user.js
+    dest: "{{ ansible_user_dir }}/.config/.mozilla/firefox/default-release/user.js"
+    mode: '0644'
+  tags: [ apps, firefox, config ]

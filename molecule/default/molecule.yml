@@ -1,0 +1,43 @@
+
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+platforms:
+  - name: archlinux
+    box: generic/arch
+    memory: 4096
+    cpus: 2
+    provider_options:
+      driver: kvm
+    provider_raw_config_args:
+      - "cpu_mode = 'host-passthrough'"
+      - "machine_virtual_size = 40"
+      - "volume_cache = 'writeback'"
+provisioner:
+  env:
+    ANSIBLE_ROLES_PATH: ../../roles/
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        ansible_user: vagrant
+        username: vagrant
+        ansible_ssh_common_args: '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+  playbooks:
+    converge: ../common/playbook.yml
+    prepare: ../common/prepare.yml
+    cleanup: ../common/cleanup.yml
+  config_options:
+    defaults:
+      remote_tmp: /tmp/.ansible-${USER}/tmp
+      host_key_checking: false
+verifier:
+  name: ansible
+lint: |
+  set -e
+  yamllint .
+  ansible-lint

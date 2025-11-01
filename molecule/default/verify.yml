@@ -1,0 +1,58 @@
+---
+- name: Verify DotArch deployment
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Check if Hyprland is installed
+      command: which hyprland
+      register: hyprland_check
+      changed_when: false
+      failed_when: hyprland_check.rc != 0
+
+    - name: Check if essential desktop components are installed
+      command: which {{ item }}
+      register: component_check
+      changed_when: false
+      failed_when: component_check.rc != 0
+      loop:
+        - wezterm
+        - rofi
+        - yazi
+        - waybar
+        - grim
+        - slurp
+        - wl-clipboard
+
+    - name: Check if user configurations exist
+      stat:
+        path: "{{ ansible_user_dir }}/.config/{{ item }}"
+      register: config_check
+      loop:
+        - hyprland
+        - waybar
+        - rofi
+        - yazi
+        - wezterm
+      failed_when: not config_check.stat.exists
+
+    - name: Verify shell configuration
+      stat:
+        path: "{{ ansible_user_dir }}/.config/zsh/.zshrc"
+      register: shell_config
+      failed_when: not shell_config.stat.exists
+
+    - name: Test configuration file syntax
+      command: bash -n "{{ ansible_user_dir }}/.config/zsh/.zshrc"
+      register: shell_syntax
+      changed_when: false
+      failed_when: shell_syntax.rc != 0
+
+    - name: Display verification results
+      debug:
+        msg:
+          - "✅ Hyprland is correctly installed"
+          - "✅ All desktop components are available"
+          - "✅ User configuration files are in place"
+          - "✅ Shell configuration syntax is valid"
+          - "🎯 DotArch deployment verification successful!"

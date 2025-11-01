@@ -1,0 +1,57 @@
+---
+# Desktop Greetd role - display manager configuration
+# This role manages Greetd display manager setup
+
+- name: Install Greetd
+  become: true
+  community.general.pacman:
+    name: greetd
+    state: present
+  tags: [ desktop, greetd, package ]
+
+- name: Install tuigreet (greeter frontend)
+  become: true
+  community.general.pacman:
+    name: greetd-tuigreet
+    state: present
+  tags: [ desktop, greetd, package ]
+
+- name: Create greetd config directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/greetd
+    state: directory
+    mode: '0755'
+  tags: [ desktop, greetd, config ]
+
+- name: Copy greetd configuration
+  become: true
+  ansible.builtin.copy:
+    src: files/etc/greetd/config.toml
+    dest: /etc/greetd/config.toml
+    mode: '0644'
+  tags: [ desktop, greetd, config ]
+
+- name: Create bin directory for display launcher
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+  tags: [ desktop, greetd, config ]
+
+- name: Copy display launcher script
+  become: true
+  ansible.builtin.copy:
+    src: usr/local/bin/xdph-launcher.sh
+    dest: /usr/local/bin/xdph-launcher.sh
+    mode: '0755'
+  tags: [ desktop, greetd, config ]
+
+- name: Enable and start greetd service
+  become: true
+  ansible.builtin.systemd:
+    name: greetd.service
+    enabled: true
+    state: started
+  tags: [ desktop, greetd, service ]

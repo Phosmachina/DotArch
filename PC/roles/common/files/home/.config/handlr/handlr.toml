@@ -1,3 +1,0 @@
-enable_selector = true
-selector = "rofi -dmenu -i -p 'Open With: '"
-term_exec_args = '-e'

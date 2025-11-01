@@ -1,0 +1,12 @@
+# ~/.zprofile - loaded for login shells (SSH, TTY login)
+
+# Add local scripts to PATH:
+for dir in "$HOME/.local/bin"/*(N/); do
+  export PATH="$dir:$PATH"
+done
+
+# Core PATH settings
+export PATH="$HOME/go/bin:$HOME/.local/bin:$PATH"
+
+# ZSH default config directory
+export ZDOTDIR="$HOME/.config/zsh"

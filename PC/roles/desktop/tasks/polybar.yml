@@ -1,5 +1,0 @@
----
--  name: Copy the desktop specific config file
-   copy:
-      src: 'home/.config/polybar/config.ini'
-      dest: '/home/{{ username }}/.config/polybar/config.ini'

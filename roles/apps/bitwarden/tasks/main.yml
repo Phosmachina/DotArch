@@ -1,0 +1,17 @@
+---
+# Apps Bitwarden role - Bitwarden password manager
+# This role manages Bitwarden CLI and desktop app
+
+- name: Install Bitwarden CLI
+  become: true
+  community.general.pacman:
+    name: bitwarden-cli
+    state: present
+  tags: [ apps, bitwarden, package ]
+
+- name: Install Bitwarden desktop app
+  become: true
+  community.general.pacman:
+    name: bitwarden
+    state: present
+  tags: [ apps, bitwarden, package ]

@@ -1,3 +1,0 @@
----
-- include_tasks: wireguard.yml
-- include_tasks: polybar.yml

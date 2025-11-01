@@ -1,0 +1,60 @@
+---
+- name: Prepare test environment
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Setup nameserver
+      raw: |
+        # Configure nameserver if not present
+        if [ ! -s /etc/resolv.conf ] || ! grep -q "nameserver" /etc/resolv.conf; then
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        fi
+      changed_when: false
+
+    - name: Bootstrap Python and initialize keyring
+      raw: |
+        # Initialize pacman keyring
+        pacman -Sy --noconfirm archlinux-keyring
+        
+        #pacman-key --refresh-keys
+        #pacman-key --populate
+        
+        # Install Python if not present
+        if ! command -v python3 &> /dev/null; then
+          pacman -Sy --noconfirm python
+        fi
+      changed_when: false
+
+    - name: Gather facts now that Python is installed
+      ansible.builtin.setup:
+
+    - name: Perform a full upgrade
+      community.general.pacman:
+        upgrade: true
+      when: ansible_distribution == "Archlinux"
+
+    - name: Install base-devel and git for building packages
+      community.general.pacman:
+        name:
+          - base-devel
+        state: present
+      when: ansible_distribution == "Archlinux"
+
+    - name: Create test user
+      ansible.builtin.user:
+        name: "{{ username }}"
+        state: present
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add passwordless sudo for test user
+      ansible.builtin.lineinfile:
+        path: "/etc/sudoers.d/{{ username }}"
+        line: "{{ username }} ALL=(ALL) NOPASSWD: ALL"
+        state: present
+        mode: '0440'
+        create: true
+        validate: 'visudo -cf %s'

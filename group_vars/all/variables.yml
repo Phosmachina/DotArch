@@ -1,0 +1,11 @@
+---
+ansible_become_pass: '{{ vault_ansible_become_pass }}'
+
+# Username will be set by environment-specific vars
+username: 'michel'
+
+# Hostname dynamically set based on target and environment
+hostname: "{% if target | default('desktop') == 'desktop' %}{{ hostname_prefix | default('FC_L') }}-ANTLIA{% else %}{{ hostname_prefix | default('LP_L') }}-CENTAURUS{% endif %}"
+
+# System type detection - this will be overridden by the pre-task if it exists
+target: "{{ target | default('desktop') }}"

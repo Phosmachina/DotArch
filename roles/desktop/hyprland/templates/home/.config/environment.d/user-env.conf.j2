@@ -1,0 +1,14 @@
+# User-specific environment variables
+
+# Default programs
+EDITOR=micro
+TERMINAL=kitty
+BROWSER=firefox
+READER=zathura
+
+# XDG directories
+XDG_CONFIG_HOME={{ ansible_env.HOME }}/.config
+XDG_DATA_HOME={{ ansible_env.HOME }}/.local/share
+
+# History cleanup
+LESSHISTFILE=-

@@ -1,0 +1,22 @@
+---
+# Desktop Fonts role - font management
+# This role manages desktop fonts installation
+
+- name: Create local fonts directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.local/share/fonts"
+    state: directory
+    mode: '0755'
+  tags: [ desktop, fonts ]
+
+- name: Copy waffle font
+  ansible.builtin.copy:
+    src: files/home/.local/share/fonts/waffle-10.bdf
+    dest: "{{ ansible_user_dir }}/.local/share/fonts/waffle-10.bdf"
+    mode: '0644'
+  tags: [ desktop, fonts ]
+
+- name: Update font cache
+  ansible.builtin.command: fc-cache -f
+  become: false
+  tags: [ desktop, fonts ]

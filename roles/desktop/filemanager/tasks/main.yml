@@ -1,0 +1,43 @@
+---
+# Desktop File Manager role - file manager configuration
+# This role manages Yazi file manager setup
+
+- name: Install Yazi
+  become: true
+  community.general.pacman:
+    name: yazi
+    state: present
+  tags: [ desktop, filemanager, yazi, package ]
+
+- name: Create Yazi config directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/yazi"
+    state: directory
+    mode: '0755'
+  tags: [ desktop, filemanager, yazi, config ]
+
+- name: Create Yazi flavor directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/yazi/flavors/flexoki-dark.yazi"
+    state: directory
+    mode: '0755'
+  tags: [ desktop, filemanager, yazi, config ]
+
+- name: Copy Yazi configurations
+  ansible.builtin.copy:
+    src: "files/home/.config/yazi/{{ item }}"
+    dest: "{{ ansible_user_dir }}/.config/yazi/{{ item }}"
+    mode: '0644'
+  loop:
+    - yazi.toml
+    - keymap.toml
+    - theme.toml
+    - init.lua
+  tags: [ desktop, filemanager, yazi, config ]
+
+- name: Copy Yazi flavor configuration
+  ansible.builtin.copy:
+    src: files/home/.config/yazi/flavors/flexoki-dark.yazi/flavor.toml
+    dest: "{{ ansible_user_dir }}/.config/yazi/flavors/flexoki-dark.yazi/flavor.toml"
+    mode: '0644'
+  tags: [ desktop, filemanager, yazi, config ]

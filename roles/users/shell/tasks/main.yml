@@ -1,0 +1,4 @@
+---
+# Shell configuration (zsh)
+-   include_tasks: zsh.yml
+    tags: [ system, zsh ]

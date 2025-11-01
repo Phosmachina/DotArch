@@ -1,0 +1,20 @@
+---
+- name: Deploy the Arch configuration
+  hosts: "{{ target_hosts | default('all') }}"
+  vars_files:
+    - group_vars/all/variables.yml
+
+  pre_tasks:
+    - name: "Check for a battery device (laptop?)"
+      stat:
+        path: /sys/class/power_supply/BAT0
+      register: bat
+      tags: [ target-selection ]
+
+    - name: "Set target to 'laptop' if battery found, else 'desktop'"
+      set_fact:
+        target: "{{ 'laptop' if bat.stat.exists else 'desktop' }}"
+      tags: [ target-selection ]
+
+  roles:
+    - role: profiles/desktop-hyprland

@@ -1,0 +1,4 @@
+---
+# Molecule-specific variables - override vault for testing
+ansible_become_pass: molecule_test_pass
+username: vagrant

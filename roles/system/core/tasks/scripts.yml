@@ -1,0 +1,37 @@
+---
+-   name: Ensure /usr/bin directory exists
+    file:
+        path: /usr/bin
+        state: directory
+        mode: '0755'
+    become: yes
+
+-   name: Copy system scripts to /usr/bin
+    copy:
+        src: "usr/bin/{{ item }}"
+        dest: "/usr/bin/{{ item }}"
+        mode: '0755'
+        owner: root
+        group: root
+    loop:
+        - sound
+        - play-pause
+        - transcript
+        - xdg-open
+    become: yes
+
+-   name: Sync local scripts
+    synchronize:
+        src: 'home/.local/bin/'
+        dest: '/home/{{ username }}/.local/bin/'
+        recursive: yes
+    become: yes
+
+-   name: Set script files permissions
+    file:
+        path: '/home/{{ username }}/.local/bin/'
+        owner: '{{ username }}'
+        group: '{{ username }}'
+        mode: '0755'
+        recurse: yes
+    become: yes

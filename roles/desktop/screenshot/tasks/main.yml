@@ -1,0 +1,41 @@
+---
+# Desktop Screenshot role - screenshot and screen recording tools
+# This role manages Satty annotation tool and wl-screenrec
+
+- name: Install screenshot tools
+  shell: >
+    yay -Sy --noconfirm 
+    grim
+    slurp
+    satty
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ desktop, screenshot, package ]
+
+- name: Create Satty config directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/satty"
+    state: directory
+    mode: '0755'
+  tags: [ desktop, screenshot, config ]
+
+- name: Create wl-screenrec config directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.config/wl-screenrec"
+    state: directory
+    mode: '0755'
+  tags: [ desktop, screenshot, config ]
+
+- name: Copy Satty configuration
+  ansible.builtin.copy:
+    src: files/home/.config/satty/config.toml
+    dest: "{{ ansible_user_dir }}/.config/satty/config.toml"
+    mode: '0644'
+  tags: [ desktop, screenshot, config ]
+
+- name: Copy wl-screenrec configuration
+  ansible.builtin.copy:
+    src: files/home/.config/wl-screenrec/config.toml
+    dest: "{{ ansible_user_dir }}/.config/wl-screenrec/config.toml"
+    mode: '0644'
+  tags: [ desktop, screenshot, config ]

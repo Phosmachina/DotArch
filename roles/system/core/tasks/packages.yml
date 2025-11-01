@@ -1,0 +1,27 @@
+---
+
+# Base system packages - core system components
+- name: Install base system packages
+  become: true
+  community.general.pacman:
+    name:
+      - btop
+      - cifs-utils
+      - ldns # Provide drill command
+      - man-db
+      - pacman-contrib
+      - resolvconf # Required for WireGuard DNS management
+      - rsync
+      - socat
+      - usbutils
+      - wget
+      - progress
+      - reflector
+    state: present
+
+- name: Install system tools with yay
+  shell: 'yay -Sy --noconfirm {{ item }}'
+  become: yes
+  become_user: '{{ username }}'
+  with_items:
+    - dasel-bin

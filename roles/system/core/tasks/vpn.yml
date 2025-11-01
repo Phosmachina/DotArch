@@ -1,0 +1,37 @@
+---
+# VPN configuration with WireGuard
+
+- name: Install WireGuard packages
+  pacman:
+    name:
+      - wireguard-tools
+    state: present
+  become: yes
+  tags: [ system, vpn ]
+
+- name: Ensure WireGuard config directory exists
+  file:
+    path: /etc/wireguard
+    state: directory
+    mode: '0700'
+  become: yes
+  tags: [ system, vpn ]
+
+- name: Copy WireGuard configuration file based on hostname
+  copy:
+    src: "etc/wireguard/Peer_{{ hostname }}.conf"
+    dest: "/etc/wireguard/wg0.conf"
+    mode: '0600'
+    owner: root
+    group: root
+  become: yes
+  notify: Restart WireGuard
+  tags: [ system, vpn ]
+
+- name: Enable and start WireGuard service
+  systemd:
+    name: "wg-quick@wg0"
+    enabled: yes
+    state: started
+  become: yes
+  tags: [ system, vpn ]

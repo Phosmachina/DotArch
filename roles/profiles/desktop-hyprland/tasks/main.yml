@@ -1,0 +1,78 @@
+---
+# Profile role for complete Desktop Hyprland setup
+# This meta role orchestrates all required dependencies for a full Hyprland desktop
+
+- name: Include system core configuration
+  include_role:
+    name: system/core
+  tags: [ desktop, profile ]
+
+- name: Include user shell configuration
+  include_role:
+    name: users/shell
+  tags: [ desktop, profile ]
+
+- name: Include desktop fonts
+  include_role:
+    name: desktop/fonts
+  tags: [ desktop, profile ]
+
+- name: Include core Hyprland window manager
+  include_role:
+    name: desktop/hyprland
+  tags: [ desktop, profile ]
+
+- name: Include display manager
+  include_role:
+    name: desktop/greetd
+  tags: [ desktop, profile ]
+
+- name: Include terminal emulator
+  include_role:
+    name: desktop/terminal
+  tags: [ desktop, profile ]
+
+- name: Include application launcher
+  include_role:
+    name: desktop/rofi
+  tags: [ desktop, profile ]
+
+- name: Include status bar
+  include_role:
+    name: desktop/waybar
+  tags: [ desktop, profile ]
+
+- name: Include notification center
+  include_role:
+    name: desktop/notifications
+  tags: [ desktop, profile ]
+
+- name: Include file manager
+  include_role:
+    name: desktop/filemanager
+  tags: [ desktop, profile ]
+
+- name: Include clipboard management
+  include_role:
+    name: desktop/clipboard
+  tags: [ desktop, profile ]
+
+- name: Include screenshot tools
+  include_role:
+    name: desktop/screenshot
+  tags: [ desktop, profile ]
+
+- name: Include Firefox browser
+  include_role:
+    name: apps/firefox
+  tags: [ desktop, profile ]
+
+- name: Include Bitwarden password manager
+  include_role:
+    name: apps/bitwarden
+  tags: [ desktop, profile ]
+
+- name: Include media applications
+  include_role:
+    name: apps/media
+  tags: [ desktop, profile ]
