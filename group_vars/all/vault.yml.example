@@ -1,0 +1,6 @@
+---
+# Example vault file - copy to vault.yml and encrypt with ansible-vault
+# Run: cp vault.yml.example vault.yml && ansible-vault encrypt vault.yml
+
+# Sudo password for remote hosts
+vault_ansible_become_pass: your_sudo_password_here

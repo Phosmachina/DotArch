@@ -1,52 +1,44 @@
 ---
 # Desktop Terminal role - terminal emulator configuration
-# This role manages terminal emulator setup (WezTerm and Kitty)
+# This role manages Kitty terminal emulator setup
 
-#- name: Install WezTerm
-#  become: true
-#  community.general.pacman:
-#    name: wezterm
-#    state: present
-#  tags: [ desktop, terminal, wezterm, package ]
-
-- name: Install Kitty
+- name: Install Kitty terminal emulator (Arch)
   become: true
   community.general.pacman:
     name: kitty
     state: present
-  tags: [ desktop, terminal, kitty, package ]
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop ]
 
-#- name: Create WezTerm config directory
-#  ansible.builtin.file:
-#    path: "{{ ansible_user_dir }}/.config/wezterm"
-#    state: directory
-#    mode: '0755'
-#  tags: [ desktop, terminal, wezterm, config ]
+- name: Install Kitty terminal emulator (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name: kitty
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop ]
 
 - name: Create Kitty config directory
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/kitty"
+    path: "/home/{{ username }}/.config/kitty"
     state: directory
     mode: '0755'
-  tags: [ desktop, terminal, kitty, config ]
-
-#- name: Copy WezTerm configurations
-#  ansible.builtin.copy:
-#    src: "files/home/.config/wezterm/{{ item }}"
-#    dest: "{{ ansible_user_dir }}/.config/wezterm/{{ item }}"
-#    mode: '0644'
-#  loop:
-#    - wezterm.lua
-#    - colors.lua
-#    - keybindings.lua
-#  tags: [ desktop, terminal, wezterm, config ]
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
 
 - name: Copy Kitty configurations
   ansible.builtin.copy:
     src: "files/home/.config/kitty/{{ item }}"
-    dest: "{{ ansible_user_dir }}/.config/kitty/{{ item }}"
+    dest: "/home/{{ username }}/.config/kitty/{{ item }}"
     mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
   loop:
     - kitty.conf
     - Dark_Pastel.conf
-  tags: [ desktop, terminal, kitty, config ]
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+  failed_when: false

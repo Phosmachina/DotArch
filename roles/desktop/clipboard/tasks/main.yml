@@ -2,13 +2,55 @@
 # Desktop Clipboard role - clipboard management configuration
 # This role manages clipboard history with cliphist
 
-- name: Install clipboard tools
+- name: Install clipboard tools (Arch)
   become: true
   community.general.pacman:
     name:
       - cliphist
       - wl-clipboard
     state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop, clipboard, package ]
+
+- name: Install clipboard tools (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - wl-clipboard
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop, clipboard, package ]
+
+- name: Install cliphist from source (Ubuntu)
+  block:
+    - name: Install Go for cliphist (Ubuntu)
+      become: true
+      ansible.builtin.apt:
+        name: golang-go
+        state: present
+
+    - name: Clone cliphist repository
+      git:
+        repo: https://github.com/sentriz/cliphist.git
+        dest: /tmp/cliphist
+        version: master
+
+    - name: Build cliphist
+      shell: |
+        cd /tmp/cliphist
+        go build
+      args:
+        creates: /tmp/cliphist/cliphist
+
+    - name: Install cliphist
+      copy:
+        src: /tmp/cliphist/cliphist
+        dest: /usr/local/bin/cliphist
+        mode: '0755'
+        remote_src: true
+      become: true
+  when: ansible_facts.distribution == 'Ubuntu'
   tags: [ desktop, clipboard, package ]
 
 - name: Create cliphist config directory

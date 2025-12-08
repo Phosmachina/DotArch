@@ -1,9 +1,9 @@
 {
-    "Alt-/": "lua:comment.comment",
-    "Alt-k": "DeleteLine",
-    "Alt-s": "Save,Quit",
-    "Ctrl-Backspace": "DeleteWordLeft",
-    "Ctrl-Delete": "DeleteWordRight",
-    "Ctrl-l": "SelectLine",
-    "CtrlUnderscore": "lua:comment.comment"
+  "Alt-/": "lua:comment.comment",
+  "Alt-k": "DeleteLine",
+  "Alt-s": "Save,Quit",
+  "Ctrl-Backspace": "DeleteWordLeft",
+  "Ctrl-Delete": "DeleteWordRight",
+  "Ctrl-l": "SelectLine",
+  "CtrlUnderscore": "lua:comment.comment"
 }

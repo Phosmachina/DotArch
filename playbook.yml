@@ -1,20 +1,31 @@
 ---
-- name: Deploy the Arch configuration
+- name: Deploy DotArch desktop environment
   hosts: "{{ target_hosts | default('all') }}"
   vars_files:
     - group_vars/all/variables.yml
+    - group_vars/all/deployment_config.yml
 
   pre_tasks:
-    - name: "Check for a battery device (laptop?)"
-      stat:
+    - name: Check for battery device (laptop detection)
+      ansible.builtin.stat:
         path: /sys/class/power_supply/BAT0
       register: bat
-      tags: [ target-selection ]
+      tags: [system]
 
-    - name: "Set target to 'laptop' if battery found, else 'desktop'"
-      set_fact:
+    - name: Set target type based on hardware detection
+      ansible.builtin.set_fact:
         target: "{{ 'laptop' if bat.stat.exists else 'desktop' }}"
-      tags: [ target-selection ]
+      tags: [system]
+
+    - name: Display deployment information
+      ansible.builtin.debug:
+        msg:
+          - "Target host: {{ ansible_host | default(inventory_hostname) }}"
+          - "Distribution: {{ ansible_facts.distribution }}"
+          - "Target type: {{ target }}"
+          - "Username: {{ username }}"
+          - "Hostname: {{ hostname }}"
+      tags: [system]
 
   roles:
     - role: profiles/desktop-hyprland

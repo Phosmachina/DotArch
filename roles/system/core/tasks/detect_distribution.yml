@@ -1,0 +1,42 @@
+---
+# Distribution detection and setup
+
+- name: Set OS family facts
+  ansible.builtin.set_fact:
+    os_family: "{{ ansible_facts.os_family }}"
+    distribution: "{{ ansible_facts.distribution }}"
+    distribution_version: "{{ ansible_facts.distribution_version }}"
+
+- name: Verify distribution is supported
+  ansible.builtin.fail:
+    msg: "Unsupported distribution: {{ ansible_facts.distribution }}. Only Archlinux and Ubuntu are supported."
+  when: ansible_facts.distribution not in ['Archlinux', 'Ubuntu']
+
+- name: Display detected distribution
+  ansible.builtin.debug:
+    msg:
+      - "OS Family: {{ ansible_facts.os_family }}"
+      - "Distribution: {{ ansible_facts.distribution }}"
+      - "Version: {{ ansible_facts.distribution_version }}"
+      - "Package Manager: {{ package_manager }}"
+      - "AUR Helper: {{ aur_helper }}"
+
+- name: Enable universe repository (Ubuntu)
+  ansible.builtin.apt_repository:
+    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+    state: present
+  become: true
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Enable multiverse repository (Ubuntu)
+  ansible.builtin.apt_repository:
+    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse"
+    state: present
+  become: true
+  when: ansible_facts.distribution == 'Ubuntu'
+
+- name: Update package cache
+  action:
+    module: "{{ package_manager_module }}"
+    update_cache: true
+  become: true

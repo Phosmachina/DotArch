@@ -1,11 +1,11 @@
 {
-    "autosave": 5,
-    "colorscheme": "twilight",
-    "diffgutter": true,
-    "mkparents": true,
-    "reload": "auto",
-    "rmtrailingws": true,
-    "scrollbar": true,
-    "softwrap": true,
-    "tabstospaces": true
+  "autosave": 5,
+  "colorscheme": "twilight",
+  "diffgutter": true,
+  "mkparents": true,
+  "reload": "auto",
+  "rmtrailingws": true,
+  "scrollbar": true,
+  "softwrap": true,
+  "tabstospaces": true
 }

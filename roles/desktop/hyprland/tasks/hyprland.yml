@@ -1,13 +1,13 @@
 ---
-# Main Hyprland configuration tasks
+# Main Hyprland window manager installation and configuration
 
-- name: Install Hyprland and core components
-  pacman:
+- name: Install Hyprland and core components (Arch)
+  become: true
+  community.general.pacman:
     name:
       - hyprland
       - hyprland-protocols
       - xdg-desktop-portal-hyprland
-      - libva-nvidia-driver
       - qt5-wayland
       - qt6-wayland
       - cmake
@@ -17,31 +17,227 @@
       - git
       - gcc
       - lxsession
-      - syncthing
       - wev
-      - zed
+      - kanshi
+      - power-profiles-daemon
     state: present
     extra_args: --overwrite '*'
-  become: yes
-  tags: [ wm, hyprland, core ]
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop ]
+
+- name: Install Syncthing (Arch)
+  become: true
+  community.general.pacman:
+    name: syncthing
+    state: present
+  when:
+    - ansible_facts.distribution == 'Archlinux'
+    - enable_syncthing | default(true)
+  tags: [ desktop ]
+
+- name: Install Hyprland prerequisites (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - cmake
+      - meson
+      - ninja-build
+      - pkg-config
+      - libwayland-dev
+      - wayland-protocols
+      - libxkbcommon-dev
+      - libegl1-mesa-dev
+      - libgles2-mesa-dev
+      - libdrm-dev
+      - libgbm-dev
+      - libinput-dev
+      - libxcb-composite0-dev
+      - libxcb-dri3-dev
+      - libxcb-present-dev
+      - libxcb-render-util0-dev
+      - libxcb-res0-dev
+      - libxcb-ewmh-dev
+      - libxcb-icccm4-dev
+#      - hwdata-dev
+      - libliftoff-dev
+      - libdisplay-info-dev
+      - libudev-dev
+      - libseat-dev
+      - libxcb-xinput-dev
+      - git
+      - gcc
+      - cpio
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop ]
+
+- name: Add Hyprland PPA (Ubuntu)
+  ansible.builtin.apt_repository:
+    repo: ppa:hyprland/hyprland
+    state: present
+  become: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  failed_when: false
+  tags: [ desktop ]
+
+- name: Install Hyprland and core components (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - hyprland
+      - xdg-desktop-portal-hyprland
+      - qtwayland5
+      - qt6-wayland
+      - lxsession
+      - kanshi
+      - power-profiles-daemon
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop ]
+
+- name: Install Syncthing (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name: syncthing
+    state: present
+  when:
+    - ansible_facts.distribution == 'Ubuntu'
+    - enable_syncthing | default(true)
+  tags: [ desktop ]
+
+- name: Install Nvidia drivers (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name: nvidia-driver-535
+    state: present
+  when:
+    - ansible_facts.distribution == 'Ubuntu'
+    - enable_nvidia | default(false)
+  tags: [ desktop, nvidia ]
+
+- name: Install Nvidia drivers (Arch)
+  become: true
+  community.general.pacman:
+    name:
+      - nvidia
+      - nvidia-utils
+      - libva-nvidia-driver
+    state: present
+  when:
+    - ansible_facts.distribution == 'Archlinux'
+    - enable_nvidia | default(false)
+  tags: [ desktop, nvidia ]
+
+- name: Install wev from source (Ubuntu)
+  block:
+    - name: Clone wev repository
+      ansible.builtin.git:
+        repo: https://git.sr.ht/~sircmpwn/wev
+        dest: /tmp/wev
+        version: master
+
+    - name: Build wev
+      ansible.builtin.shell: |
+        cd /tmp/wev
+        meson build
+        ninja -C build
+      args:
+        creates: /tmp/wev/build/wev
+
+    - name: Install wev
+      ansible.builtin.copy:
+        src: /tmp/wev/build/wev
+        dest: /usr/local/bin/wev
+        mode: '0755'
+        remote_src: true
+      become: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop ]
 
 - name: Create base configuration directories
-  file:
+  ansible.builtin.file:
     path: '/home/{{ username }}/{{ item }}'
     state: directory
     mode: '0755'
-  with_items:
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  loop:
     - '.config/hypr'
     - '.config/hypr/plugins'
     - '.config/hypr/scripts'
-  tags: [ wm, hyprland, core, directory ]
+    - '.config/kanshi'
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+
+- name: Copy hyprland scripts
+  ansible.builtin.copy:
+    src: 'home/.config/hypr/scripts/{{ item }}'
+    dest: '/home/{{ username }}/.config/hypr/scripts/{{ item }}'
+    mode: '0755'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  loop:
+    - 'power-monitor.sh'
+    - 'hyprpaper-hourly.sh'
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+
+- name: Copy hypridle configurations
+  ansible.builtin.template:
+    src: 'home/.config/hypr/{{ item }}'
+    dest: '/home/{{ username }}/.config/hypr/{{ item | splitext | first }}'
+    mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  loop:
+    - 'hypridle_ac.conf.j2'
+    - 'hypridle_bat.conf.j2'
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
 
 - name: Copy hyprland configuration files
-  copy:
+  ansible.builtin.copy:
     src: 'home/.config/hypr/{{ item }}'
     dest: '/home/{{ username }}/.config/hypr/{{ item }}'
     mode: '0644'
-  with_items:
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  loop:
     - 'hyprland.conf'
     - 'keybindings.conf'
-  tags: [ wm, hyprland, config, core ]
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+  failed_when: false
+
+- name: Create kanshi config directory
+  ansible.builtin.file:
+    path: '/home/{{ username }}/.config/kanshi'
+    state: directory
+    mode: '0755'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+
+- name: Copy kanshi configuration
+  ansible.builtin.template:
+    src: 'home/.config/kanshi/config.j2'
+    dest: '/home/{{ username }}/.config/kanshi/config'
+    mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+
+- name: Copy Hyprland environment config
+  ansible.builtin.template:
+    src: 'home/.config/hypr/env.conf.j2'
+    dest: '/home/{{ username }}/.config/hypr/env.conf'
+    mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]

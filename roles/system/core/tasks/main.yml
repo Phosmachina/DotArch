@@ -2,40 +2,55 @@
 # System core role - handles base system configuration
 # This role manages foundational system components that are not UI-specific
 
-- include_tasks: yay.yml
+- name: Detect distribution and set facts
+  ansible.builtin.include_tasks: detect_distribution.yml
+  tags: [ system ]
 
-- include_tasks: packages.yml
-  tags: [ system, packages ]
+- name: Install AUR helper (Arch only)
+  ansible.builtin.include_tasks: yay.yml
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system ]
 
-- include_tasks: hostname.yml
-  tags: [ system, hostname ]
+- name: Install base system packages
+  ansible.builtin.include_tasks: packages.yml
+  tags: [ system ]
 
-- include_tasks: locale.yml
-  tags: [ system, locale ]
+- name: Configure system hostname
+  ansible.builtin.include_tasks: hostname.yml
+  tags: [ system ]
 
-#- include_tasks: keyboard.yml
-#  tags: [ system, keyboard ]
+- name: Configure system locale
+  ansible.builtin.include_tasks: locale.yml
+  tags: [ system ]
 
-- include_tasks: numlock.yml
-  tags: [ system, numlock ]
+- name: Configure numlock
+  ansible.builtin.include_tasks: numlock.yml
+  when: enable_numlock | default(true)
+  tags: [ system ]
 
-- include_tasks: bluetooth.yml
-  tags: [ system, bluetooth ]
+- name: Configure bluetooth
+  ansible.builtin.include_tasks: bluetooth.yml
+  when: configure_bluetooth | default(true)
+  tags: [ system ]
 
-- include_tasks: audio.yml
-  tags: [ system, audio ]
+- name: Configure audio system
+  ansible.builtin.include_tasks: audio.yml
+  when: configure_audio | default(true)
+  tags: [ system ]
 
-- include_tasks: fstab.yml
-  tags: [ system, fstab ]
+- name: Configure network mounts
+  ansible.builtin.include_tasks: fstab.yml
+  when: mount_network_shares | default(false)
+  tags: [ system ]
 
-- include_tasks: virtualization.yml
-  tags: [ system, virtualization ]
+- name: Configure virtualization
+  ansible.builtin.include_tasks: virtualization.yml
+  tags: [ system ]
 
-#- include_tasks: vpn.yml
-#  tags: [ system, vpn ]
+- name: Install system scripts
+  ansible.builtin.include_tasks: scripts.yml
+  tags: [ system, config ]
 
-- include_tasks: scripts.yml
-  tags: [ system, scripts ]
-
-- include_tasks: trash.yml
-  tags: [ system, trash ]
+- name: Configure trash management
+  ansible.builtin.include_tasks: trash.yml
+  tags: [ system, config ]

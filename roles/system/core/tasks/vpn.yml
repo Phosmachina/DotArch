@@ -2,9 +2,9 @@
 # VPN configuration with WireGuard
 
 - name: Install WireGuard packages
-  pacman:
-    name:
-      - wireguard-tools
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ vpn_packages }}"
     state: present
   become: yes
   tags: [ system, vpn ]
@@ -27,6 +27,7 @@
   become: yes
   notify: Restart WireGuard
   tags: [ system, vpn ]
+  when: not deploy_without_passwords | default(false)
 
 - name: Enable and start WireGuard service
   systemd:

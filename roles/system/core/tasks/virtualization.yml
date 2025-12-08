@@ -2,85 +2,80 @@
 # Virtualization support with QEMU/KVM and libvirt
 
 # Check if CPU virtualization is supported
--   name: Check if CPU virtualization is supported
-    shell: grep -E 'vmx|svm' /proc/cpuinfo
-    register: virt_supported
-    failed_when: false
-    changed_when: false
-    check_mode: no
+- name: Check if CPU virtualization is supported
+  shell: grep -E 'vmx|svm' /proc/cpuinfo
+  register: virt_supported
+  failed_when: false
+  changed_when: false
+  check_mode: no
 
--   name: Verify hardware virtualization support
-    fail:
-        msg: "Hardware virtualization is not supported on this CPU"
-    when: virt_supported.rc != 0
+- name: Verify hardware virtualization support
+  fail:
+    msg: "Hardware virtualization is not supported on this CPU"
+  when: virt_supported.rc != 0
 
 # Check if virtualization is enabled in BIOS/UEFI
--   name: Check if virtualization is enabled in BIOS/UEFI
-    shell: lscpu | grep -i "Virtualization"
-    register: virt_enabled
-    failed_when: false
-    changed_when: false
+- name: Check if virtualization is enabled in BIOS/UEFI
+  shell: lscpu | grep -i "Virtualization"
+  register: virt_enabled
+  failed_when: false
+  changed_when: false
 
--   name: Verify hardware virtualization is enabled
-    fail:
-        msg: 'Hardware virtualization is supported but not enabled in BIOS/UEFI. Please enable it and try again.'
-    when: virt_supported.rc == 0 and virt_enabled.stdout == ""
+- name: Verify hardware virtualization is enabled
+  fail:
+    msg: 'Hardware virtualization is supported but not enabled in BIOS/UEFI. Please enable it and try again.'
+  when: virt_supported.rc == 0 and virt_enabled.stdout == ""
 
 # Install virtualization packages
--   name: Remove conflicting iptables package
-    pacman:
-        name: iptables
-        state: absent
-        force: yes
-    become: yes
-    failed_when: false
+- name: Remove conflicting iptables package
+  community.general.pacman:
+    name: iptables
+    state: absent
+    force: yes
+  become: yes
+  failed_when: false
+  when: ansible_facts.distribution == 'Archlinux'
 
--   name: Install QEMU and libvirt packages
-    pacman:
-        name:
-            - qemu-full
-            - libvirt
-            - virt-manager
-            - dnsmasq
-            - bridge-utils
-            - ebtables
-            - iptables-nft
-        state: present
-    become: yes
+- name: Install QEMU and libvirt packages
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ virtualization_packages }}"
+    state: present
+  become: yes
 
 # Enable and start libvirtd service
--   name: Enable and start libvirtd service
-    systemd:
-        name: libvirtd
-        enabled: yes
-        state: started
-    become: yes
+- name: Enable and start libvirtd service
+  systemd:
+    name: libvirtd
+    enabled: yes
+    state: started
+  become: yes
 
 # Add current user to libvirt group
--   name: Add user to libvirt group
-    user:
-        name: '{{ username }}'
-        groups: libvirt
-        append: yes
-    when: username != "root"
-    become: yes
+- name: Add user to libvirt group
+  user:
+    name: '{{ username }}'
+    groups: libvirt
+    append: yes
+  when: username != "root"
+  become: yes
 
 # Ensure polkit rules for libvirt are set up
--   name: Create polkit rules directory if it doesn't exist
-    file:
-        path: /etc/polkit-1/rules.d
-        state: directory
-        mode: '0755'
-    become: yes
+- name: Create polkit rules directory if it doesn't exist
+  file:
+    path: /etc/polkit-1/rules.d
+    state: directory
+    mode: '0755'
+  become: yes
 
--   name: Configure polkit rules for libvirt
-    copy:
-        src: 'etc/polkit-1/rules.d/50-libvirt.rules'
-        dest: '/etc/polkit-1/rules.d/50-libvirt.rules'
-    become: yes
+- name: Configure polkit rules for libvirt
+  copy:
+    src: 'etc/polkit-1/rules.d/50-libvirt.rules'
+    dest: '/etc/polkit-1/rules.d/50-libvirt.rules'
+  become: yes
 
--   name: Configure libvirt network
-    copy:
-        src: 'etc/libvirt/network.conf'
-        dest: '/etc/libvirt/network.conf'
-    become: yes
+- name: Configure libvirt network
+  copy:
+    src: 'etc/libvirt/network.conf'
+    dest: '/etc/libvirt/network.conf'
+  become: yes

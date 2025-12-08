@@ -1,0 +1,74 @@
+# DotArch System-wide shell configuration
+# Combines aliases and functions for all users
+
+# Only load if we are in an interactive shell
+if [ -n "$BASH_VERSION" ]; then
+    if [[ $- != *i* ]]; then return; fi
+elif [ -n "$ZSH_VERSION" ]; then
+    if [[ ! -o interactive ]]; then return; fi
+fi
+
+# ==============================================================================
+# ALIASES
+# ==============================================================================
+
+# Basic
+alias grep='grep --color=auto'
+alias l='eza -F --group-directories-first'
+alias ll='eza -F -1la --icons --group-directories-first'
+alias llt='eza -FR -aL2 --icons --group-directories-first'
+alias cat="bat --theme 'Sublime Snazzy'"
+
+# File
+alias df='df -h'
+alias du='du -sh'
+alias progress='progress -wM'
+
+# Editor
+alias m='micro'
+alias c='code'
+
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
+
+# Wrapper for yazi to change directory on exit
+# Note: This function uses read -d which is bash/zsh specific.
+# Pure sh implementations might fail here.
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	if [ -n "$BASH_VERSION" ]; then
+		IFS= read -r -d '' cwd < "$tmp"
+	elif [ -n "$ZSH_VERSION" ]; then
+		IFS= read -r -d '' cwd < "$tmp"
+	else 
+		# Fallback for other shells if possible, or just read line
+		cwd=$(cat "$tmp")
+	fi
+	
+	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+	rm -f -- "$tmp"
+}
+
+rm_sync_conflict() {
+    test -d "$1" || return 1
+    find "$1" -iname '*sync-conflict*' -print0 | xargs -0 rm -fv
+}
+
+mpv_random() {
+    test -d "$1" || return 1
+    setsid -f mpv "$(find "$1" -type f | shuf -n 1)" &>/dev/null
+}
+
+vagrant() {
+    docker run -it --rm \
+        -e LIBVIRT_DEFAULT_URI \
+        -v /var/run/libvirt/:/var/run/libvirt/ \
+        -v ~/.vagrant.d:/.vagrant.d \
+        -v $(realpath "${PWD}"):${PWD} \
+        -w "${PWD}" \
+        --network host \
+        vagrantlibvirt/vagrant-libvirt:latest \
+        vagrant $@
+}

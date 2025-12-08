@@ -1,0 +1,27 @@
+# Hypridle configuration (Battery Power)
+# Aggressive settings: Dim 60s, Lock/Off 5m, Suspend 30m
+
+general {
+    lock_cmd = hyprlock                        # command to run when locking the screen
+    unlock_cmd = notify-send "Unlocked"        # command run after unlock
+    before_sleep_cmd = loginctl lock-session   # command to run before sleep
+    after_sleep_cmd = hyprctl dispatch dpms on # command to run after sleep
+    ignore_dbus_inhibit = false                # whether to ignore dbus-sent idle-inhibit requests
+}
+
+listener {
+    timeout = 60                           # 60 seconds
+    on-timeout = brightnessctl -s set 50%- # dim the screen by 50%
+    on-resume = brightnessctl -r           # restore brightness
+}
+
+listener {
+    timeout = 300                            # 5 minutes
+    on-timeout = hyprlock; hyprctl dispatch dpms off # Lock and turn off screen
+    on-resume = hyprctl dispatch dpms on     # Turn on screen on resume
+}
+
+listener {
+    timeout = 1800                           # 30 minutes
+    on-timeout = systemctl suspend           # suspend system
+}

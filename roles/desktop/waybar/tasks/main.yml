@@ -2,11 +2,21 @@
 # Desktop Waybar role - status bar configuration
 # This role manages Waybar status bar setup
 
-- name: Install Waybar
+- name: Install Waybar (Arch)
   become: true
   community.general.pacman:
     name: waybar
     state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop, waybar, package ]
+
+- name: Install Waybar (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name: waybar
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
   tags: [ desktop, waybar, package ]
 
 - name: Create Waybar config directory

@@ -1,0 +1,22 @@
+# Kanshi configuration
+
+# Laptop only
+profile {
+    output eDP-1 enable
+}
+
+# Laptop + 1 External (Docked) - Laptop off
+profile {
+    output eDP-1 disable
+    output "DP-1" enable preferred
+    output "HDMI-A-1" enable preferred
+}
+
+# Laptop + 2 External (Work) - Laptop off
+profile {
+    output eDP-1 disable
+    output "DP-1" enable preferred
+    output "DP-2" enable preferred
+    output "HDMI-A-1" enable preferred
+    output "HDMI-A-2" enable preferred
+}

@@ -1,4 +1,6 @@
 ---
 # Shell configuration (zsh)
--   include_tasks: zsh.yml
-    tags: [ system, zsh ]
+- name: Configure user shell environment
+  ansible.builtin.include_tasks: zsh.yml
+  when: configure_shell | default(true)
+  tags: [ system ]

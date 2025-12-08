@@ -1,107 +1,165 @@
 ---
 # Tasks for Hyprland tools configuration
--   name: Install Hyprland tools from AUR
-    shell: 'yay -Sy --noconfirm {{ item }}'
-    become: yes
-    become_user: '{{ username }}'
-    with_items:
-        - hyprpaper
-        - hyprpicker
-        - hyprsunset
-        - hypridle
-        - hyprlock
-    tags: [ wm, hyprland, tools ]
+- name: Install Hyprland tools from AUR (Arch)
+  shell: 'yay -Sy --noconfirm {{ item }}'
+  become: yes
+  become_user: '{{ username }}'
+  with_items:
+    - hyprpaper
+    - hyprpicker
+    - hyprsunset
+    - hypridle
+    - hyprlock
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ wm, hyprland, tools ]
 
--   name: Configure Hyprland tools
-    copy:
-        src: 'home/.config/hypr/{{ item }}.conf'
-        dest: '/home/{{ username }}/.config/hypr/{{ item }}.conf'
-        mode: '0644'
-    with_items:
-        - hyprsunset
-        - hypridle
-        - hyprlock
-        - hyprpaper
-    tags: [ wm, hyprland, tools ]
+- name: Install Hyprland tools from source (Ubuntu)
+  block:
+    - name: Install Hyprland tools dependencies (Ubuntu)
+      become: true
+      ansible.builtin.apt:
+        name:
+          - cargo
+          - libpam0g-dev
+          - libcairo2-dev
+          - libpango1.0-dev
+          - libwayland-dev
+          - wayland-protocols
+        state: present
+        update_cache: true
 
--   name: Ensure required directories exist
-    file:
-        path: '/home/{{ username }}/{{ item }}'
-        state: directory
-        mode: '0755'
-    with_items:
-        - 'Images/Wallpapers'
-    tags: [ wm, hyprland, tools ]
+    - name: Clone and build hyprpaper
+      shell: |
+        git clone https://github.com/hyprwm/hyprpaper /tmp/hyprpaper || true
+        cd /tmp/hyprpaper
+        cmake -DCMAKE_BUILD_TYPE=Release -B build
+        cmake --build build
+        sudo cmake --install build
+      args:
+        creates: /usr/local/bin/hyprpaper
 
--   name: Copy wallpaper
-    copy:
-        src: 'home/Images/Wallpapers/1.jpg'
-        dest: '/home/{{ username }}/Images/Wallpapers/1.jpg'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+    - name: Clone and build hyprpicker
+      shell: |
+        git clone https://github.com/hyprwm/hyprpicker /tmp/hyprpicker || true
+        cd /tmp/hyprpicker
+        cmake -DCMAKE_BUILD_TYPE=Release -B build
+        cmake --build build
+        sudo cmake --install build
+      args:
+        creates: /usr/local/bin/hyprpicker
 
--   name: Create hypr scripts directory
-    file:
-        path: '/home/{{ username }}/.config/hypr/scripts'
-        state: directory
-        mode: '0755'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+    - name: Clone and build hypridle
+      shell: |
+        git clone https://github.com/hyprwm/hypridle /tmp/hypridle || true
+        cd /tmp/hypridle
+        cmake -DCMAKE_BUILD_TYPE=Release -B build
+        cmake --build build
+        sudo cmake --install build
+      args:
+        creates: /usr/local/bin/hypridle
 
--   name: Copy the hyprpaper rotation script
-    copy:
-        src: 'home/.config/hypr/scripts/hyprpaper-hourly.sh'
-        dest: '/home/{{ username }}/.config/hypr/scripts/hyprpaper-hourly.sh'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-        mode: '0755'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+    - name: Clone and build hyprlock
+      shell: |
+        git clone https://github.com/hyprwm/hyprlock /tmp/hyprlock || true
+        cd /tmp/hyprlock
+        cmake -DCMAKE_BUILD_TYPE=Release -B build
+        cmake --build build
+        sudo cmake --install build
+      args:
+        creates: /usr/local/bin/hyprlock
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ wm, hyprland, tools ]
 
--   name: Create systemd user directory
-    file:
-        path: '/home/{{ username }}/.config/systemd/user'
-        state: directory
-        mode: '0755'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+- name: Configure Hyprland tools
+  copy:
+    src: 'home/.config/hypr/{{ item }}.conf'
+    dest: '/home/{{ username }}/.config/hypr/{{ item }}.conf'
+    mode: '0644'
+  with_items:
+    - hyprsunset
+    - hypridle
+    - hyprlock
+    - hyprpaper
+  tags: [ wm, hyprland, tools ]
 
--   name: Copy hyprpaper systemd service file
-    copy:
-        src: 'home/.config/systemd/user/hyprpaper.service'
-        dest: '/home/{{ username }}/.config/systemd/user/hyprpaper.service'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-        mode: '0644'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+- name: Ensure required directories exist
+  file:
+    path: '/home/{{ username }}/{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+    - 'Images/Wallpapers'
+  tags: [ wm, hyprland, tools ]
 
--   name: Copy hyprpaper systemd timer file
-    copy:
-        src: 'home/.config/systemd/user/hyprpaper.timer'
-        dest: '/home/{{ username }}/.config/systemd/user/hyprpaper.timer'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-        mode: '0644'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+- name: Copy wallpaper
+  copy:
+    src: 'home/Images/Wallpapers/1.jpg'
+    dest: '/home/{{ username }}/Images/Wallpapers/1.jpg'
+  tags: [ wm, hyprland, tools, hyprpaper ]
 
--   name: Enable and start hyprpaper timer
-    systemd:
-        name: hyprpaper.timer
-        scope: user
-        enabled: yes
-        state: started
-        daemon_reload: yes
-    become: yes
-    become_user: '{{ username }}'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+- name: Create hypr scripts directory
+  file:
+    path: '/home/{{ username }}/.config/hypr/scripts'
+    state: directory
+    mode: '0755'
+    owner: '{{ username }}'
+    group: '{{ username }}'
+  tags: [ wm, hyprland, tools, hyprpaper ]
 
--   name: Enable and start hyprpaper timer
-    systemd:
-        name: hyprpaper.timer
-        scope: user
-        enabled: yes
-        state: started
-        daemon_reload: yes
-    become: yes
-    become_user: '{{ username }}'
-    tags: [ wm, hyprland, tools, hyprpaper ]
+- name: Copy the hyprpaper rotation script
+  copy:
+    src: 'home/.config/hypr/scripts/hyprpaper-hourly.sh'
+    dest: '/home/{{ username }}/.config/hypr/scripts/hyprpaper-hourly.sh'
+    owner: '{{ username }}'
+    group: '{{ username }}'
+    mode: '0755'
+  tags: [ wm, hyprland, tools, hyprpaper ]
+
+- name: Create systemd user directory
+  file:
+    path: '/home/{{ username }}/.config/systemd/user'
+    state: directory
+    mode: '0755'
+    owner: '{{ username }}'
+    group: '{{ username }}'
+  tags: [ wm, hyprland, tools, hyprpaper ]
+
+- name: Copy hyprpaper systemd service file
+  copy:
+    src: 'home/.config/systemd/user/hyprpaper.service'
+    dest: '/home/{{ username }}/.config/systemd/user/hyprpaper.service'
+    owner: '{{ username }}'
+    group: '{{ username }}'
+    mode: '0644'
+  tags: [ wm, hyprland, tools, hyprpaper ]
+
+- name: Copy hyprpaper systemd timer file
+  copy:
+    src: 'home/.config/systemd/user/hyprpaper.timer'
+    dest: '/home/{{ username }}/.config/systemd/user/hyprpaper.timer'
+    owner: '{{ username }}'
+    group: '{{ username }}'
+    mode: '0644'
+  tags: [ wm, hyprland, tools, hyprpaper ]
+
+- name: Enable and start hyprpaper timer
+  systemd:
+    name: hyprpaper.timer
+    scope: user
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ wm, hyprland, tools, hyprpaper ]
+
+- name: Enable and start hyprpaper timer
+  systemd:
+    name: hyprpaper.timer
+    scope: user
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ wm, hyprland, tools, hyprpaper ]

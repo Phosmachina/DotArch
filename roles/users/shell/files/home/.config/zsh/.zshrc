@@ -28,8 +28,9 @@ plugins=(
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
-f="$HOME/.config/zsh/aliasrc" && test -f "$f" && source "$f"
-f="$HOME/.config/zsh/functionrc" && test -f "$f" && source "$f"
+# Aliases and functions are now loaded from /etc/profile.d/dotarch.sh
+# f="$HOME/.config/zsh/aliasrc" && test -f "$f" && source "$f"
+# f="$HOME/.config/zsh/functionrc" && test -f "$f" && source "$f"
 
 # Load zsh-autosuggestions.
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null

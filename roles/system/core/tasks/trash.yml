@@ -1,38 +1,39 @@
 ---
 # Setup systemd user-level timer for daily trash-empty
--   name: Ensure trash command is installed
-    pacman:
-        name: trash-cli
-        state: present
-    become: yes
-    tags: [ system, trash ]
+- name: Ensure trash command is installed
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ trash_packages }}"
+    state: present
+  become: yes
+  tags: [ system, trash ]
 
--   name: Create systemd user directory
-    file:
-        path: "{{ ansible_env.HOME }}/.config/systemd/user"
-        state: directory
-        mode: '0755'
-    tags: [ system, trash ]
+- name: Create systemd user directory
+  file:
+    path: "{{ ansible_env.HOME }}/.config/systemd/user"
+    state: directory
+    mode: '0755'
+  tags: [ system, trash ]
 
--   name: Copy trash-empty service file
-    copy:
-        src: "home/.config/systemd/user/trash-empty.service"
-        dest: "{{ ansible_env.HOME }}/.config/systemd/user/trash-empty.service"
-        mode: '0644'
-    tags: [ system, trash ]
+- name: Copy trash-empty service file
+  copy:
+    src: "home/.config/systemd/user/trash-empty.service"
+    dest: "{{ ansible_env.HOME }}/.config/systemd/user/trash-empty.service"
+    mode: '0644'
+  tags: [ system, trash ]
 
--   name: Copy trash-empty timer file
-    copy:
-        src: "home/.config/systemd/user/trash-empty.timer"
-        dest: "{{ ansible_env.HOME }}/.config/systemd/user/trash-empty.timer"
-        mode: '0644'
-    tags: [ system, trash ]
+- name: Copy trash-empty timer file
+  copy:
+    src: "home/.config/systemd/user/trash-empty.timer"
+    dest: "{{ ansible_env.HOME }}/.config/systemd/user/trash-empty.timer"
+    mode: '0644'
+  tags: [ system, trash ]
 
--   name: Enable and start trash-empty timer
-    systemd:
-        scope: user
-        name: trash-empty.timer
-        enabled: yes
-        state: started
-        daemon_reload: yes
-    tags: [ system, trash ]
+- name: Enable and start trash-empty timer
+  systemd:
+    scope: user
+    name: trash-empty.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  tags: [ system, trash ]

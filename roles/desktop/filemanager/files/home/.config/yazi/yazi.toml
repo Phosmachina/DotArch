@@ -28,25 +28,25 @@ image_quality = 90
 
 [opener]
 play = [
-	{ run = 'mpv "$@"', orphan = true, for = "unix" },
+    { run = 'mpv "$@"', orphan = true, for = "unix" },
 ]
 edit = [
-	{ run = '$EDITOR "$@"', block = true, for = "unix" },
+    { run = '$EDITOR "$@"', block = true, for = "unix" },
 ]
 open = [
-	{ run = 'xdg-open "$@"', desc = "Open" },
+    { run = 'xdg-open "$@"', desc = "Open" },
 ]
 
 [open]
 rules = [
-	{ mime = "text/*", use = "edit" },
-	{ mime = "video/*", use = "play" },
+    { mime = "text/*", use = "edit" },
+    { mime = "video/*", use = "play" },
 
-	# { mime = "application/json", use = "edit" },
-	{ name = "*.json", use = "edit" },
+    # { mime = "application/json", use = "edit" },
+    { name = "*.json", use = "edit" },
 
-	# Multiple openers for a single rule
-	{ name = "*.html", use = [ "open", "edit" ] },
+    # Multiple openers for a single rule
+    { name = "*.html", use = ["open", "edit"] },
 ]
 
 [tasks]
@@ -55,4 +55,3 @@ micro_workers = 5
 
 # Macro-mode settings
 macro_workers = 10
-

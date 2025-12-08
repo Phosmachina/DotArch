@@ -18,19 +18,19 @@
 #        - { name: "hy3", revision: "hl0.50.0", url: "https://github.com/outfoxxed/hy3" }
 #    tags: [ wm, hyprland, plugins ]
 
--   name: Ensure plugins configuration directories exist
-    file:
-        path: '/home/{{ username }}/.config/hypr/plugins'
-        state: directory
-        mode: '0755'
-    tags: [ wm, hyprland, plugins ]
+- name: Ensure plugins configuration directories exist
+  file:
+    path: '/home/{{ username }}/.config/hypr/plugins'
+    state: directory
+    mode: '0755'
+  tags: [ wm, hyprland, plugins ]
 
--   name: Copy plugins configuration files
-    copy:
-        src: 'home/.config/hypr/plugins/{{ item }}.conf'
-        dest: '/home/{{ username }}/.config/hypr/plugins/{{ item }}.conf'
-    with_items:
-        - hy3
-    #        - hyprfocus
-    #        - hyprspace
-    tags: [ wm, hyprland, plugins ]
+- name: Copy plugins configuration files
+  copy:
+    src: 'home/.config/hypr/plugins/{{ item }}.conf'
+    dest: '/home/{{ username }}/.config/hypr/plugins/{{ item }}.conf'
+  with_items:
+    - hy3
+  #        - hyprfocus
+  #        - hyprspace
+  tags: [ wm, hyprland, plugins ]

@@ -315,7 +315,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ansible" },
+    { name = "ansible", specifier = ">=12.2.0" },
     { name = "ansible-lint", specifier = ">=25.9.2" },
     { name = "molecule", specifier = "==25.1.0" },
     { name = "molecule-plugins", extras = ["vagrant"], specifier = ">=25.8.12" },

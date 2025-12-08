@@ -2,7 +2,7 @@
 # Desktop Screenshot role - screenshot and screen recording tools
 # This role manages Satty annotation tool and wl-screenrec
 
-- name: Install screenshot tools
+- name: Install screenshot tools (Arch)
   shell: >
     yay -Sy --noconfirm 
     grim
@@ -10,6 +10,36 @@
     satty
   become: yes
   become_user: '{{ username }}'
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop, screenshot, package ]
+
+- name: Install screenshot tools (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - grim
+      - slurp
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop, screenshot, package ]
+
+- name: Install satty from source (Ubuntu)
+  block:
+    - name: Install satty dependencies (Ubuntu)
+      become: true
+      ansible.builtin.apt:
+        name:
+          - cargo
+          - libgtk-4-dev
+          - libadwaita-1-dev
+        state: present
+
+    - name: Install satty via cargo
+      shell: cargo install satty
+      become: yes
+      become_user: '{{ username }}'
+  when: ansible_facts.distribution == 'Ubuntu'
   tags: [ desktop, screenshot, package ]
 
 - name: Create Satty config directory

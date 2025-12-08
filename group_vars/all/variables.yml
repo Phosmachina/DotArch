@@ -1,11 +1,21 @@
 ---
-ansible_become_pass: '{{ vault_ansible_become_pass }}'
+# Authentication - skip vault if deploy_without_passwords is true
+ansible_become_pass: "{{ vault_ansible_become_pass if not (deploy_without_passwords | default(false)) else (plain_ansible_become_pass | default('')) }}"
 
 # Username will be set by environment-specific vars
-username: 'michel'
+username: 'michel_paronnaud'
 
-# Hostname dynamically set based on target and environment
-hostname: "{% if target | default('desktop') == 'desktop' %}{{ hostname_prefix | default('FC_L') }}-ANTLIA{% else %}{{ hostname_prefix | default('LP_L') }}-CENTAURUS{% endif %}"
+# Hostname logic with override support
+hostname: >-
+  {% if target | default('desktop') == 'laptop' and laptop_hostname %}
+    {{ laptop_hostname }}
+  {% elif target | default('desktop') == 'desktop' and desktop_hostname %}
+    {{ desktop_hostname }}
+  {% elif target | default('desktop') == 'desktop' %}
+    {{ hostname_prefix | default('FC_L') }}-ANTLIA
+  {% else %}
+    {{ hostname_prefix | default('LP_L') }}-CENTAURUS
+  {% endif %}
 
 # System type detection - this will be overridden by the pre-task if it exists
 target: "{{ target | default('desktop') }}"

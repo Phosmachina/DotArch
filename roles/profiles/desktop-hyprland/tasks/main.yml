@@ -3,76 +3,101 @@
 # This meta role orchestrates all required dependencies for a full Hyprland desktop
 
 - name: Include system core configuration
-  include_role:
+  ansible.builtin.include_role:
     name: system/core
-  tags: [ desktop, profile ]
+  tags: [ system ]
 
 - name: Include user shell configuration
-  include_role:
+  ansible.builtin.include_role:
     name: users/shell
-  tags: [ desktop, profile ]
+  tags: [ system ]
+  when: configure_shell | default(true)
 
 - name: Include desktop fonts
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/fonts
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include core Hyprland window manager
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/hyprland
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include display manager
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/greetd
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
+  when: not skip_greetd | default(false)
 
 - name: Include terminal emulator
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/terminal
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include application launcher
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/rofi
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include status bar
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/waybar
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include notification center
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/notifications
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include file manager
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/filemanager
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include clipboard management
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/clipboard
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include screenshot tools
-  include_role:
+  ansible.builtin.include_role:
     name: desktop/screenshot
-  tags: [ desktop, profile ]
+  tags: [ desktop ]
 
 - name: Include Firefox browser
-  include_role:
+  ansible.builtin.include_role:
     name: apps/firefox
-  tags: [ desktop, profile ]
+  tags: [ apps ]
+  when: enable_firefox | default(true)
 
 - name: Include Bitwarden password manager
-  include_role:
+  ansible.builtin.include_role:
     name: apps/bitwarden
-  tags: [ desktop, profile ]
+  tags: [ apps ]
+  when: enable_bitwarden | default(true)
 
-- name: Include media applications
-  include_role:
-    name: apps/media
-  tags: [ desktop, profile ]
+- name: Include mpv
+  ansible.builtin.include_role:
+    name: apps/mpv
+  tags: [ apps, mpv ]
+  when: enable_mpv | default(true)
+
+- name: Include zathura
+  ansible.builtin.include_role:
+    name: apps/zathura
+  tags: [ apps, zathura ]
+  when: enable_zathura | default(true)
+
+- name: Include qimgv
+  ansible.builtin.include_role:
+    name: apps/qimgv
+  tags: [ apps, qimgv ]
+  when: enable_qimgv | default(true)
+
+- name: Include company compliance apps
+  ansible.builtin.include_role:
+    name: apps/company
+  tags: [ apps, company ]
+  when:
+    - company_compliance | default(false)
+    - ansible_facts.distribution == 'Ubuntu'

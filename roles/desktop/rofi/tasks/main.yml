@@ -2,27 +2,44 @@
 # Desktop Rofi role - application launcher configuration
 # This role manages Rofi application launcher setup
 
-- name: Install Rofi
+- name: Install Rofi application launcher (Arch)
   become: true
   community.general.pacman:
     name: rofi
     state: present
-  tags: [ desktop, rofi, package ]
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop ]
+
+- name: Install Rofi application launcher (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name: rofi
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ desktop ]
 
 - name: Create Rofi config directory
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/rofi"
+    path: "/home/{{ username }}/.config/rofi"
     state: directory
     mode: '0755'
-  tags: [ desktop, rofi, config ]
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
 
 - name: Copy Rofi configurations
   ansible.builtin.copy:
     src: "files/home/.config/rofi/{{ item }}"
-    dest: "{{ ansible_user_dir }}/.config/rofi/{{ item }}"
+    dest: "/home/{{ username }}/.config/rofi/{{ item }}"
     mode: '0644'
+    owner: "{{ username }}"
+    group: "{{ username }}"
   loop:
     - config.rasi
     - onedark.rasi
     - spotlight-custom.rasi
-  tags: [ desktop, rofi, config ]
+  when: install_dotfiles | default(true)
+  tags: [ desktop, config ]
+  failed_when: false

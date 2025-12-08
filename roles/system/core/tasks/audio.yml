@@ -1,13 +1,8 @@
 ---
 - name: Install pipewire and related packages
-  pacman:
-    name:
-      - pipewire
-      - pipewire-pulse
-      - pipewire-alsa
-      - pipewire-jack
-      - gst-plugin-pipewire
-      - libpulse
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ audio_packages }}"
     state: present
   become: yes
 
@@ -20,13 +15,6 @@
   loop:
     - pipewire
     - pipewire-pulse
-
-- name: Install WirePlumber
-  pacman:
-    name:
-      - wireplumber
-    state: present
-  become: yes
 
 - name: Enable WirePlumber
   systemd:

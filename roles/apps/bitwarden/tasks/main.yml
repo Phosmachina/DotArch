@@ -2,16 +2,56 @@
 # Apps Bitwarden role - Bitwarden password manager
 # This role manages Bitwarden CLI and desktop app
 
-- name: Install Bitwarden CLI
+- name: Install Bitwarden CLI (Arch)
   become: true
   community.general.pacman:
     name: bitwarden-cli
     state: present
-  tags: [ apps, bitwarden, package ]
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ apps ]
 
-- name: Install Bitwarden desktop app
+- name: Install Bitwarden desktop app (Arch)
   become: true
   community.general.pacman:
     name: bitwarden
     state: present
-  tags: [ apps, bitwarden, package ]
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ apps ]
+
+- name: Install Bitwarden CLI (Ubuntu)
+  block:
+    - name: Download Bitwarden CLI
+      ansible.builtin.get_url:
+        url: https://vault.bitwarden.com/download/?app=cli&platform=linux
+        dest: /tmp/bw.zip
+        mode: '0644'
+
+    - name: Install unzip
+      become: true
+      ansible.builtin.apt:
+        name: unzip
+        state: present
+
+    - name: Extract Bitwarden CLI
+      ansible.builtin.unarchive:
+        src: /tmp/bw.zip
+        dest: /tmp/
+        remote_src: true
+
+    - name: Install Bitwarden CLI binary
+      become: true
+      ansible.builtin.copy:
+        src: /tmp/bw
+        dest: /usr/local/bin/bw
+        mode: '0755'
+        remote_src: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ apps ]
+
+- name: Install Bitwarden desktop app via Snap (Ubuntu)
+  become: true
+  community.general.snap:
+    name: bitwarden
+    state: present
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ apps ]

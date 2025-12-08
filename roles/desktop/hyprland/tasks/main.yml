@@ -1,12 +1,15 @@
 ---
-# Desktop Hyprland role - core Hyprland WM only
-# This role manages only the essential Hyprland components
+# Desktop Hyprland role - core Hyprland window manager
+# This role manages the essential Hyprland components
 
-- include_tasks: hyprland.yml
-  tags: [ desktop, hyprland, core ]
+- name: Install and configure Hyprland window manager
+  ansible.builtin.include_tasks: hyprland.yml
+  tags: [ desktop ]
 
-- include_tasks: hyprland-plugins.yml
-  tags: [ desktop, hyprland, plugins ]
+- name: Install Hyprland plugins
+  ansible.builtin.include_tasks: hyprland-plugins.yml
+  tags: [ desktop ]
 
-- include_tasks: hyprland-tools.yml
-  tags: [ desktop, hyprland, tools ]
+- name: Install Hyprland tools and utilities
+  ansible.builtin.include_tasks: hyprland-tools.yml
+  tags: [ desktop ]

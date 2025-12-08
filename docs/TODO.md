@@ -16,15 +16,24 @@
 - Add a molecule configuration to test through a VM.
 - Add power-profiles-daemon or similar solution for power management.
 
+- Document variables directly inside the yaml file.
+- Document tags inside the README.
+- Change Yazi theme to Dracula for better readability.
+- Change the Rofi launcher to Vicinae, for example; use it as a clipboard manager too.
+- In Waybar:
+  - Implement scroll action for workspaces,
+  - Try to allow seconds in the Time / Date module (currently refreshing only every minute).
+- brightnessctl is missing, require sudo (so we need to configure password less if possible)
+- Looks like bluetuith is not installed (it should be via AUR)
+- amixer is missing (install alsa-utils)
+- bluez-utils is missing
+- Font are missing (jetbrains mono nerd variant, apple emoji)
+
 Looks interesting:
 - [Atuin - Shell History & Executable Runbooks](https://atuin.sh/#cli-section)
 - [zed-industries/zed: Code at the speed of thought – Zed is a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter.](https://github.com/zed-industries/zed)
 - [Setup Instructions - Markdown-Oxide Wiki](https://oxide.md/Setup+Instructions)
-
-## Bug
-
-- lf previewer doesn't work for archives.
-- It could be great if handlr opens a rofi program selector when nothing is configured.
+- [Vicinae Documentation](https://docs.vicinae.com/)
 
 ## Done
 

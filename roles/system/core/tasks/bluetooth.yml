@@ -1,9 +1,9 @@
 ---
-- name: Install necessary packages with pacman
-  pacman:
-    name:
-      - bluez
-      - bluez-obex
+- name: Install necessary packages
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ bluetooth_packages }}"
+    state: present
   become: yes
 
 - name: Set Bluetooth auto-enable

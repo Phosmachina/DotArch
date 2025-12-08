@@ -1,47 +1,33 @@
 ---
--   name: Install necessary packages with pacman
-    pacman:
-        name:
-            - zsh
-            - curl
-            - git
-            - zoxide
-            - fzf
-            - bat
-            - eza
-            - fd
-            - ripgrep
-            - micro
-            - kakoune
-            - progress
-        state: present
-    become: yes
-    tags: [ system, zsh, core ]
+- name: Install necessary packages
+  action:
+    module: "{{ package_manager_module }}"
+    name: "{{ shell_packages }}"
+    state: present
+  become: yes
+  tags: [ system, zsh, core ]
 
--   name: Create user environment directory
-    file:
-        path: "{{ ansible_env.HOME }}/.config/environment.d"
-        state: directory
-        mode: '0755'
-    tags: [ system, zsh, core ]
+- name: Create user environment directory
+  file:
+    path: "{{ ansible_env.HOME }}/.config/environment.d"
+    state: directory
+    mode: '0755'
+  tags: [ system, zsh, core ]
 
--   name: Configure shell environment variables
-    template:
-        src: home/.config/environment.d/shell.conf.j2
-        dest: "{{ ansible_env.HOME }}/.config/environment.d/shell.conf"
-        mode: '0644'
-    tags: [ system, zsh, core ]
+- name: Configure shell environment variables
+  template:
+    src: home/.config/environment.d/shell.conf.j2
+    dest: "{{ ansible_env.HOME }}/.config/environment.d/shell.conf"
+    mode: '0644'
+  tags: [ system, zsh, core ]
 
--   name: Install necessary packages with yay
-    shell: >
-        yay -Sy --noconfirm 
-        zsh-autopair-git
-        zsh-autosuggestions 
-        zsh-completions 
-        zsh-syntax-highlighting
-    become: yes
-    become_user: '{{ username }}'
-    tags: [ system, zsh, plugins ]
+- name: Install necessary packages with yay (Arch)
+  shell: 'yay -Sy --noconfirm {{ item }}'
+  become: yes
+  become_user: '{{ username }}'
+  loop: "{{ shell_aur_packages }}"
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system, zsh, plugins ]
 
 #-   name: Update .zprofile for SSH sessions
 #    template:
@@ -50,41 +36,49 @@
 #        mode: '0644'
 #    tags: [ system, zsh, environment ]
 
--   name: Ensure .config/zsh directory exists
-    file:
-        path: '/home/{{ username }}/.config/zsh'
-        state: directory
-    tags: [ system, zsh, directory ]
+- name: Ensure .config/zsh directory exists
+  file:
+    path: '/home/{{ username }}/.config/zsh'
+    state: directory
+  tags: [ system, zsh, directory ]
 
--   name: Copy aliasrc
-    copy:
-        src: 'home/.config/zsh/aliasrc'
-        dest: '/home/{{ username }}/.config/zsh/aliasrc'
-        mode: '0644'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-    tags: [ system, zsh, config ]
+- name: Deploy system-wide shell configuration
+  become: true
+  template:
+    src: etc/profile.d/dotarch.sh.j2
+    dest: /etc/profile.d/dotarch.sh
+    mode: '0644'
+  tags: [ system, zsh, config ]
 
--   name: Copy functionrc
-    copy:
-        src: 'home/.config/zsh/functionrc'
-        dest: '/home/{{ username }}/.config/zsh/functionrc'
-        mode: '0644'
-        owner: '{{ username }}'
-        group: '{{ username }}'
-    tags: [ system, zsh, config ]
+- name: Ensure dotarch.sh is sourced in zshrc
+  become: true
+  lineinfile:
+    path: /etc/zsh/zshrc
+    line: 'source /etc/profile.d/dotarch.sh'
+    create: yes
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ system, zsh, config ]
 
--   name: Copy zsh config
-    copy:
-        src: 'home/.config/zsh/.zshrc'
-        dest: '/home/{{ username }}/.config/zsh/.zshrc'
-    tags: [ system, zsh, config ]
+- name: Ensure dotarch.sh is sourced in zshrc (Arch)
+  become: true
+  lineinfile:
+    path: /etc/zsh/zshrc
+    line: 'source /etc/profile.d/dotarch.sh'
+    create: yes
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system, zsh, config ]
 
--   name: Ensure .cache/zsh directory exists
-    file:
-        path: '/home/{{ username }}/.cache/zsh'
-        state: directory
-    tags: [ system, zsh, directory ]
+- name: Copy zsh config
+  copy:
+    src: 'home/.config/zsh/.zshrc'
+    dest: '/home/{{ username }}/.config/zsh/.zshrc'
+  tags: [ system, zsh, config ]
+
+- name: Ensure .cache/zsh directory exists
+  file:
+    path: '/home/{{ username }}/.cache/zsh'
+    state: directory
+  tags: [ system, zsh, directory ]
 
 #TODO find a way to clean and merge between saved and deployed one
 #-  name: Copy zsh history
@@ -92,26 +86,26 @@
 #      src: 'home/.cache/zsh/history'
 #      dest: '/home/{{ username }}/.cache/zsh/history'
 
--   name: Clone oh-my-zsh
-    git:
-        repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
-        dest: '/home/{{ username }}/.config/zsh/ohmyzsh'
-        clone: yes
-        update: yes
-    tags: [ system, zsh, plugins, ohmyzsh ]
+- name: Clone oh-my-zsh
+  git:
+    repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
+    dest: '/home/{{ username }}/.config/zsh/ohmyzsh'
+    clone: yes
+    update: yes
+  tags: [ system, zsh, plugins, ohmyzsh ]
 
--   name: Check if oh-my-zsh is installed
-    stat:
-        path: '/home/{{ username }}/.oh-my-zsh'
-    register: ohmyzsh_stat
-    tags: [ system, zsh, plugins, ohmyzsh ]
+- name: Check if oh-my-zsh is installed
+  stat:
+    path: '/home/{{ username }}/.oh-my-zsh'
+  register: ohmyzsh_stat
+  tags: [ system, zsh, plugins, ohmyzsh ]
 
--   name: Install Oh-my-zsh
-    shell: >-
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" ""
-        --unattended
-        --keep-zshrc
-    args:
-        chdir: "/home/{{ username }}/.config/zsh"
-    when: not ohmyzsh_stat.stat.exists
-    tags: [ system, zsh, plugins, ohmyzsh ]
+- name: Install Oh-my-zsh
+  shell: >-
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" ""
+    --unattended
+    --keep-zshrc
+  args:
+    chdir: "/home/{{ username }}/.config/zsh"
+  when: not ohmyzsh_stat.stat.exists
+  tags: [ system, zsh, plugins, ohmyzsh ]

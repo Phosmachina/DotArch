@@ -1,7 +1,7 @@
 ---
-
 # Base system packages - core system components
-- name: Install base system packages
+
+- name: Install base system packages (Arch)
   become: true
   community.general.pacman:
     name:
@@ -18,10 +18,42 @@
       - progress
       - reflector
     state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system ]
 
-- name: Install system tools with yay
-  shell: 'yay -Sy --noconfirm {{ item }}'
+- name: Install system tools with yay (Arch)
+  ansible.builtin.shell: 'yay -Sy --noconfirm {{ item }}'
   become: yes
   become_user: '{{ username }}'
-  with_items:
+  loop:
     - dasel-bin
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system ]
+
+- name: Install base system packages (Ubuntu)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - btop
+      - cifs-utils
+      - ldnsutils # Provide drill command
+      - man-db
+      - resolvconf # Required for WireGuard DNS management
+      - rsync
+      - socat
+      - usbutils
+      - wget
+      - progress
+    state: present
+    update_cache: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ system ]
+
+- name: Install dasel (Ubuntu)
+  ansible.builtin.get_url:
+    url: https://github.com/TomWright/dasel/releases/latest/download/dasel_linux_amd64
+    dest: /usr/local/bin/dasel
+    mode: '0755'
+  become: true
+  when: ansible_facts.distribution == 'Ubuntu'
+  tags: [ system ]
