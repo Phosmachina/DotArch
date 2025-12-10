@@ -44,12 +44,21 @@ packages:
   syncthing: syncthing
   wev: wev
   zed: zed
+  atool: atool
+  zip: zip
+  unzip: unzip
+  p7zip: 7zip
+  unrar: unrar
+  brightnessctl: brightnessctl
+  jetbrains_font: ttf-jetbrains-mono-nerd
 # Role-specific package lists
 bluetooth_packages:
+  - bluez-utils
   - bluez
   - bluez-obex
 
 audio_packages:
+  - alsa-utils
   - pipewire
   - pipewire-pulse
   - pipewire-alsa

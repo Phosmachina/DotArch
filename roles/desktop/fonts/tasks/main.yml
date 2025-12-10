@@ -20,3 +20,16 @@
   ansible.builtin.command: fc-cache -f
   become: false
   tags: [ desktop, fonts ]
+
+- name: Install JetBrains Mono Nerd Font
+  community.general.pacman:
+    name: ttf-jetbrains-mono-nerd
+    state: present
+  become: yes
+  tags: [ desktop, fonts ]
+
+- name: Install Apple Emoji Font (AUR)
+  ansible.builtin.shell: 'yay -Sy --noconfirm ttf-apple-emoji'
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ desktop, fonts ]

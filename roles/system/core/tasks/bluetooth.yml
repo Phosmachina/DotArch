@@ -21,3 +21,9 @@
     enabled: yes
     state: started
   become: yes
+
+- name: Install bluetuith (AUR)
+  ansible.builtin.shell: 'yay -Sy --noconfirm bluetuith'
+  become: yes
+  become_user: '{{ username }}'
+  tags: [ system, bluetooth ]
