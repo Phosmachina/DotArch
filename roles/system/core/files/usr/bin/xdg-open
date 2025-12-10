@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # xdg-open replacement: try handlr first, else
-# rofi -show-icons -matching glob -show drun
+# vicinae dmenu
 
 file="$1"
 
@@ -15,9 +15,10 @@ if handlr open "$file" 2>/dev/null; then
   exit 0
 fi
 
-# 3) Fallback: invoke rofi drun and hand the chosen entry + file to gtk-launch
-exec rofi \
-     -show-icons \
-     -matching glob \
-     -show drun \
-     -drun-command "gtk-launch {cmd} '$file'"
+# 3) Fallback: invoke vicinae dmenu and hand the chosen entry + file to gtk-launch
+apps=$(find /usr/share/applications ~/.local/share/applications -name "*.desktop" 2>/dev/null | sed 's/.*\///;s/\.desktop$//' | sort -u)
+selected=$(echo "$apps" | vicinae dmenu -p "Open with...")
+
+if [ -n "$selected" ]; then
+     exec gtk-launch "$selected" "$file"
+fi

@@ -34,9 +34,9 @@
     name: desktop/terminal
   tags: [ desktop ]
 
-- name: Include application launcher
+- name: Include application launcher and clipboard (Vicinae)
   ansible.builtin.include_role:
-    name: desktop/rofi
+    name: desktop/vicinae
   tags: [ desktop ]
 
 - name: Include status bar
@@ -52,11 +52,6 @@
 - name: Include file manager
   ansible.builtin.include_role:
     name: desktop/filemanager
-  tags: [ desktop ]
-
-- name: Include clipboard management
-  ansible.builtin.include_role:
-    name: desktop/clipboard
   tags: [ desktop ]
 
 - name: Include screenshot tools

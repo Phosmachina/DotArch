@@ -1,0 +1,20 @@
+---
+# Desktop Vicinae role - application launcher and clipboard manager configuration
+# This role manages Vicinae setup
+
+- name: Install Vicinae (Arch)
+  shell: 'yay -S --noconfirm vicinae'
+  become: yes
+  become_user: '{{ username }}'
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop, vicinae, package ]
+
+- name: Create Vicinae config directory
+  ansible.builtin.file:
+    path: "/home/{{ username }}/.config/vicinae"
+    state: directory
+    mode: '0755'
+    owner: "{{ username }}"
+    group: "{{ username }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, vicinae, config ]

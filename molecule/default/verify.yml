@@ -17,7 +17,7 @@
       failed_when: component_check.rc != 0
       loop:
         - wezterm
-        - rofi
+        - vicinae
         - yazi
         - waybar
         - grim
@@ -31,7 +31,7 @@
       loop:
         - hyprland
         - waybar
-        - rofi
+        - vicinae
         - yazi
         - wezterm
       failed_when: not config_check.stat.exists
