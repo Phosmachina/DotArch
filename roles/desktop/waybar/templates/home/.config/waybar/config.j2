@@ -15,7 +15,7 @@
         "memory",
         "hyprland/window",
     ],
-    "modules-center": ["clock"],
+    "modules-center": ["custom/clock"],
     "modules-right": [
         "network",
         {% if target == 'laptop' %}
@@ -30,6 +30,8 @@
     "hyprland/workspaces": {
         "format": "{icon}",
         "on-click": "activate",
+        "on-scroll-up": "~/.config/hypr/scripts/workspace-cycler.sh prev",
+        "on-scroll-down": "~/.config/hypr/scripts/workspace-cycler.sh next",
         "format-icons": {
             "1": "1",
             "2": "2",
@@ -58,11 +60,12 @@
         "spacing": 10
     },
 
-    "clock": {
-        "format": " {:%a, %b %d %H:%M}",
-        "format-alt": " {:%a, %b %d :%H:%M:%S}",
-        "format-alt-click": true,
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    "custom/clock": {
+        "exec": "~/.config/waybar/scripts/waybar-clock.sh",
+        "return-type": "json",
+        "format": "{}",
+        "on-click": "pkill -SIGUSR1 -f waybar-clock.sh",
+        "tooltip": true
     },
 
     "cpu": {

@@ -48,6 +48,7 @@ packages:
   zip: zip
   unzip: unzip
   p7zip: 7zip
+  jq: jq
   unrar: unrar
   brightnessctl: brightnessctl
   jetbrains_font: ttf-jetbrains-mono-nerd
