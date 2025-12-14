@@ -31,5 +31,5 @@
 - name: Install Apple Emoji Font (AUR)
   ansible.builtin.shell: 'yay -Sy --noconfirm ttf-apple-emoji'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   tags: [ desktop, fonts ]

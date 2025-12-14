@@ -23,15 +23,15 @@
 - name: Sync local scripts
   synchronize:
     src: 'home/.local/bin/'
-    dest: '/home/{{ username }}/.local/bin/'
+    dest: '{{ ansible_user_dir }}/.local/bin/'
     recursive: yes
   become: yes
 
 - name: Set script files permissions
   file:
-    path: '/home/{{ username }}/.local/bin/'
-    owner: '{{ username }}'
-    group: '{{ username }}'
+    path: '{{ ansible_user_dir }}/.local/bin/'
+    owner: '{{ ansible_user }}'
+    group: '{{ ansible_user }}'
     mode: '0755'
     recurse: yes
   become: yes

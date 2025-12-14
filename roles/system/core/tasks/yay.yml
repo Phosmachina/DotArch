@@ -18,7 +18,7 @@
 - name: Clone yay from AUR
   git:
     repo: 'https://aur.archlinux.org/yay.git'
-    dest: '/home/{{ username }}/yay'
+    dest: '{{ ansible_user_dir }}/yay'
     clone: yes
     update: yes
   when: yay_check.rc != 0
@@ -26,12 +26,12 @@
 - name: Install yay
   command:
     cmd: makepkg -si --noconfirm
-    chdir: '/home/{{ username }}/yay'
+    chdir: '{{ ansible_user_dir }}/yay'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   when: yay_check.rc != 0
 
 - name: Remove cloned directory
   file:
-    path: "/home/{{ username }}/yay"
+    path: "{{ ansible_user_dir }}/yay"
     state: absent

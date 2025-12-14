@@ -5,16 +5,16 @@
 - name: Install Vicinae (Arch)
   shell: 'yay -S --noconfirm vicinae'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ desktop, vicinae, package ]
 
 - name: Create Vicinae config directory
   ansible.builtin.file:
-    path: "/home/{{ username }}/.config/vicinae"
+    path: "{{ ansible_user_dir }}/.config/vicinae"
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, vicinae, config ]

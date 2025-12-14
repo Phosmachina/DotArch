@@ -21,21 +21,21 @@
 
 - name: Create Firefox config directory
   ansible.builtin.file:
-    path: "/home/{{ username }}/.mozilla/firefox/default-release"
+    path: "{{ ansible_user_dir }}/.mozilla/firefox/default-release"
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ apps, config ]
 
 - name: Copy Firefox user configuration
   ansible.builtin.copy:
     src: files/home/.config/.mozilla/firefox/default-release/user.js
-    dest: "/home/{{ username }}/.mozilla/firefox/default-release/user.js"
+    dest: "{{ ansible_user_dir }}/.mozilla/firefox/default-release/user.js"
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ apps, config ]
   failed_when: false

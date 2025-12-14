@@ -9,7 +9,7 @@
     slurp
     satty
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ desktop, screenshot, package ]
 
@@ -38,7 +38,7 @@
     - name: Install satty via cargo
       shell: cargo install satty
       become: yes
-      become_user: '{{ username }}'
+      become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Ubuntu'
   tags: [ desktop, screenshot, package ]
 

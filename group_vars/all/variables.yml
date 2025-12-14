@@ -2,9 +2,6 @@
 # Authentication - skip vault if deploy_without_passwords is true
 ansible_become_pass: "{{ vault_ansible_become_pass if not (deploy_without_passwords | default(false)) else (plain_ansible_become_pass | default('')) }}"
 
-# Username will be set by environment-specific vars
-username: 'michel_paronnaud'
-
 # Hostname logic with override support
 hostname: >-
   {% if target | default('desktop') == 'laptop' and laptop_hostname %}

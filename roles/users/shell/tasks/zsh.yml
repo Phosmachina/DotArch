@@ -24,7 +24,7 @@
 - name: Install necessary packages with yay (Arch)
   shell: 'yay -Sy --noconfirm {{ item }}'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   loop: "{{ shell_aur_packages }}"
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system, zsh, plugins ]
@@ -38,7 +38,7 @@
 
 - name: Ensure .config/zsh directory exists
   file:
-    path: '/home/{{ username }}/.config/zsh'
+    path: '{{ ansible_user_dir }}/.config/zsh'
     state: directory
   tags: [ system, zsh, directory ]
 
@@ -71,12 +71,12 @@
 - name: Copy zsh config
   copy:
     src: 'home/.config/zsh/.zshrc'
-    dest: '/home/{{ username }}/.config/zsh/.zshrc'
+    dest: '{{ ansible_user_dir }}/.config/zsh/.zshrc'
   tags: [ system, zsh, config ]
 
 - name: Ensure .cache/zsh directory exists
   file:
-    path: '/home/{{ username }}/.cache/zsh'
+    path: '{{ ansible_user_dir }}/.cache/zsh'
     state: directory
   tags: [ system, zsh, directory ]
 
@@ -84,19 +84,19 @@
 #-  name: Copy zsh history
 #   copy:
 #      src: 'home/.cache/zsh/history'
-#      dest: '/home/{{ username }}/.cache/zsh/history'
+#      dest: '{{ ansible_user_dir }}/.cache/zsh/history'
 
 - name: Clone oh-my-zsh
   git:
     repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
-    dest: '/home/{{ username }}/.config/zsh/ohmyzsh'
+    dest: '{{ ansible_user_dir }}/.config/zsh/ohmyzsh'
     clone: yes
     update: yes
   tags: [ system, zsh, plugins, ohmyzsh ]
 
 - name: Check if oh-my-zsh is installed
   stat:
-    path: '/home/{{ username }}/.oh-my-zsh'
+    path: '{{ ansible_user_dir }}/.oh-my-zsh'
   register: ohmyzsh_stat
   tags: [ system, zsh, plugins, ohmyzsh ]
 
@@ -106,6 +106,6 @@
     --unattended
     --keep-zshrc
   args:
-    chdir: "/home/{{ username }}/.config/zsh"
+    chdir: "{{ ansible_user_dir }}/.config/zsh"
   when: not ohmyzsh_stat.stat.exists
   tags: [ system, zsh, plugins, ohmyzsh ]

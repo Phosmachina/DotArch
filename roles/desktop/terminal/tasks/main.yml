@@ -21,21 +21,21 @@
 
 - name: Create Kitty config directory
   ansible.builtin.file:
-    path: "/home/{{ username }}/.config/kitty"
+    path: "{{ ansible_user_dir }}/.config/kitty"
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 
 - name: Copy Kitty configurations
   ansible.builtin.copy:
     src: "files/home/.config/kitty/{{ item }}"
-    dest: "/home/{{ username }}/.config/kitty/{{ item }}"
+    dest: "{{ ansible_user_dir }}/.config/kitty/{{ item }}"
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - kitty.conf
     - Dark_Pastel.conf

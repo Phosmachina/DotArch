@@ -54,10 +54,10 @@
 # Add current user to libvirt group
 - name: Add user to libvirt group
   user:
-    name: '{{ username }}'
+    name: '{{ ansible_user }}'
     groups: libvirt
     append: yes
-  when: username != "root"
+  when: ansible_user != "root"
   become: yes
 
 # Ensure polkit rules for libvirt are set up

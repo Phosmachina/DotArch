@@ -159,11 +159,11 @@
 
 - name: Create base configuration directories
   ansible.builtin.file:
-    path: '/home/{{ username }}/{{ item }}'
+    path: '{{ ansible_user_dir }}/{{ item }}'
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - '.config/hypr'
     - '.config/hypr/plugins'
@@ -175,10 +175,10 @@
 - name: Copy hyprland scripts
   ansible.builtin.copy:
     src: 'home/.config/hypr/scripts/{{ item }}'
-    dest: '/home/{{ username }}/.config/hypr/scripts/{{ item }}'
+    dest: '{{ ansible_user_dir }}/.config/hypr/scripts/{{ item }}'
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - 'power-monitor.sh'
     - 'hyprpaper-hourly.sh'
@@ -188,10 +188,10 @@
 - name: Copy hypridle configurations
   ansible.builtin.template:
     src: 'home/.config/hypr/{{ item }}'
-    dest: '/home/{{ username }}/.config/hypr/{{ item | splitext | first }}'
+    dest: '{{ ansible_user_dir }}/.config/hypr/{{ item | splitext | first }}'
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - 'hypridle_ac.conf.j2'
     - 'hypridle_bat.conf.j2'
@@ -201,10 +201,10 @@
 - name: Copy hyprland configuration files
   ansible.builtin.copy:
     src: 'home/.config/hypr/{{ item }}'
-    dest: '/home/{{ username }}/.config/hypr/{{ item }}'
+    dest: '{{ ansible_user_dir }}/.config/hypr/{{ item }}'
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   loop:
     - 'hyprland.conf'
     - 'keybindings.conf'
@@ -214,30 +214,30 @@
 
 - name: Create kanshi config directory
   ansible.builtin.file:
-    path: '/home/{{ username }}/.config/kanshi'
+    path: '{{ ansible_user_dir }}/.config/kanshi'
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 
 - name: Copy kanshi configuration
   ansible.builtin.template:
     src: 'home/.config/kanshi/config.j2'
-    dest: '/home/{{ username }}/.config/kanshi/config'
+    dest: '{{ ansible_user_dir }}/.config/kanshi/config'
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 
 - name: Copy Hyprland environment config
   ansible.builtin.template:
     src: 'home/.config/hypr/env.conf.j2'
-    dest: '/home/{{ username }}/.config/hypr/env.conf'
+    dest: '{{ ansible_user_dir }}/.config/hypr/env.conf'
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]

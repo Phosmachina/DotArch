@@ -25,5 +25,5 @@
 - name: Install bluetuith (AUR)
   ansible.builtin.shell: 'yay -Sy --noconfirm bluetuith'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   tags: [ system, bluetooth ]

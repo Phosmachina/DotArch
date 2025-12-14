@@ -4,7 +4,7 @@
     yay -Sy --noconfirm 
     qimgv
   become: true
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps, qimgv ]
 

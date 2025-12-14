@@ -23,7 +23,7 @@
           - "Target host: {{ ansible_host | default(inventory_hostname) }}"
           - "Distribution: {{ ansible_facts.distribution }}"
           - "Target type: {{ target }}"
-          - "Username: {{ username }}"
+          - "Username: {{ ansible_user }}"
           - "Hostname: {{ hostname }}"
       tags: [system]
 

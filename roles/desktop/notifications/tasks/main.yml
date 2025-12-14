@@ -53,21 +53,21 @@
 
 - name: Create SwayNC config directory
   ansible.builtin.file:
-    path: "/home/{{ username }}/.config/swaync"
+    path: "{{ ansible_user_dir }}/.config/swaync"
     state: directory
     mode: '0755'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 
 - name: Copy SwayNC configuration
   ansible.builtin.copy:
     src: files/home/.config/swaync/config.json
-    dest: "/home/{{ username }}/.config/swaync/config.json"
+    dest: "{{ ansible_user_dir }}/.config/swaync/config.json"
     mode: '0644'
-    owner: "{{ username }}"
-    group: "{{ username }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
   failed_when: false

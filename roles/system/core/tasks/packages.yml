@@ -23,6 +23,7 @@
       - unrar
       - brightnessctl
       - reflector
+      - jq
     state: present
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system ]
@@ -30,7 +31,7 @@
 - name: Install system tools with yay (Arch)
   ansible.builtin.shell: 'yay -Sy --noconfirm {{ item }}'
   become: yes
-  become_user: '{{ username }}'
+  become_user: '{{ ansible_user }}'
   loop:
     - dasel-bin
   when: ansible_facts.distribution == 'Archlinux'
