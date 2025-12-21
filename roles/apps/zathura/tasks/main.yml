@@ -9,17 +9,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps, zathura ]
 
-- name: Install zathura (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name:
-      - zathura
-      - zathura-pdf-poppler
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ apps, zathura ]
-
 - name: Create zathura config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/zathura"

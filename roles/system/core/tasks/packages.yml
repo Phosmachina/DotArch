@@ -37,36 +37,3 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system ]
 
-- name: Install base system packages (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name:
-      - btop
-      - cifs-utils
-      - ldnsutils # Provide drill command
-      - man-db
-      - resolvconf # Required for WireGuard DNS management
-      - rsync
-      - socat
-      - usbutils
-      - wget
-      - progress
-      - atool
-      - zip
-      - unzip
-      - 7zip
-      - unrar
-      - brightnessctl
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ system ]
-
-- name: Install dasel (Ubuntu)
-  ansible.builtin.get_url:
-    url: https://github.com/TomWright/dasel/releases/latest/download/dasel_linux_amd64
-    dest: /usr/local/bin/dasel
-    mode: '0755'
-  become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ system ]

@@ -10,47 +10,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ desktop ]
 
-- name: Install SwayNC from source (Ubuntu)
-  block:
-    - name: Install SwayNC dependencies (Ubuntu)
-      become: true
-      ansible.builtin.apt:
-        name:
-          - meson
-          - ninja-build
-          - libgtk-3-dev
-          - libglib2.0-dev
-          - libgtk-layer-shell-dev
-          - libjson-glib-dev
-          - libpulse-dev
-          - libgdk-pixbuf2.0-dev
-          - sassc
-          - scdoc
-        state: present
-        update_cache: true
-
-    - name: Clone SwayNC repository
-      ansible.builtin.git:
-        repo: https://github.com/ErikReider/SwayNotificationCenter.git
-        dest: /tmp/swaync
-        version: main
-
-    - name: Build SwayNC
-      ansible.builtin.shell: |
-        cd /tmp/swaync
-        meson setup build
-        ninja -C build
-      args:
-        creates: /tmp/swaync/build/src/swaync
-
-    - name: Install SwayNC
-      ansible.builtin.shell: |
-        cd /tmp/swaync
-        ninja -C build install
-      become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ desktop ]
-
 - name: Create SwayNC config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/swaync"

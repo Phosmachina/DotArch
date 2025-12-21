@@ -1,24 +1,6 @@
 ---
 # Tasks for setting up Hyprland environment variables
 
-- name: Create system-wide environment directory
-  become: true
-  file:
-    path: /etc/environment.d
-    state: directory
-    mode: '0755'
-  tags: [ wm, hyprland, environment ]
-
-- name: Install system-wide Hyprland environment variables
-  become: true
-  template:
-    src: etc/environment.d/hyprland.conf.j2
-    dest: /etc/environment.d/hyprland.conf
-    owner: root
-    group: root
-    mode: '0644'
-  tags: [ wm, hyprland, environment ]
-
 - name: Create user environment directory
   file:
     path: "{{ ansible_env.HOME }}/.config/environment.d"

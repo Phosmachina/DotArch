@@ -10,15 +10,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps ]
 
-- name: Install Firefox (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name: firefox
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ apps ]
-
 - name: Create Firefox config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.mozilla/firefox/default-release"

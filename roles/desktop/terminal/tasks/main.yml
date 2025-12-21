@@ -10,15 +10,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ desktop ]
 
-- name: Install Kitty terminal emulator (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name: kitty
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ desktop ]
-
 - name: Create Kitty config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/kitty"

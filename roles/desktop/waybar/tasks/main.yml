@@ -10,15 +10,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ desktop, waybar, package ]
 
-- name: Install Waybar (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name: waybar
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ desktop, waybar, package ]
-
 - name: Create Waybar config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/waybar"

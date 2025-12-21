@@ -8,44 +8,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps, qimgv ]
 
-- name: Install qimgv from source (Ubuntu)
-  block:
-    - name: Install qimgv dependencies
-      become: true
-      ansible.builtin.apt:
-        name:
-          - cmake
-          - qt5-qmake
-          - qtbase5-dev
-          - libexiv2-dev
-          - libmpv-dev
-          - qtmultimedia5-dev
-        state: present
-
-    - name: Clone qimgv repository
-      git:
-        repo: https://github.com/easymodo/qimgv.git
-        dest: /tmp/qimgv
-        version: master
-
-    - name: Build qimgv
-      shell: |
-        cd /tmp/qimgv
-        mkdir -p build
-        cd build
-        cmake ..
-        make
-      args:
-        creates: /tmp/qimgv/build/qimgv
-
-    - name: Install qimgv
-      shell: |
-        cd /tmp/qimgv/build
-        make install
-      become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ apps, qimgv ]
-
 - name: Create qimgv config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/qimgv"

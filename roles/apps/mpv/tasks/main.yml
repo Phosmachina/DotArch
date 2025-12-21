@@ -7,15 +7,6 @@
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps, mpv ]
 
-- name: Install mpv (Ubuntu)
-  become: true
-  ansible.builtin.apt:
-    name: mpv
-    state: present
-    update_cache: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ apps, mpv ]
-
 - name: Create mpv config directory
   ansible.builtin.file:
     path: "{{ ansible_user_dir }}/.config/mpv"

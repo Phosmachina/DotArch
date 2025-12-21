@@ -21,20 +21,6 @@
       - "Package Manager: {{ package_manager }}"
       - "AUR Helper: {{ aur_helper }}"
 
-- name: Enable universe repository (Ubuntu)
-  ansible.builtin.apt_repository:
-    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
-    state: present
-  become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-
-- name: Enable multiverse repository (Ubuntu)
-  ansible.builtin.apt_repository:
-    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse"
-    state: present
-  become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-
 - name: Update package cache
   action:
     module: "{{ package_manager_module }}"

@@ -18,18 +18,6 @@ platforms:
       - "volume_cache = 'writeback'"
     groups:
       - arch
-  - name: ubuntu2204
-    box: bento/ubuntu-22.04
-    memory: 4096
-    cpus: 2
-    provider_options:
-      driver: kvm
-    provider_raw_config_args:
-      - "cpu_mode = 'host-passthrough'"
-      - "machine_virtual_size = 40"
-      - "volume_cache = 'writeback'"
-    groups:
-      - ubuntu
 provisioner:
   env:
     ANSIBLE_ROLES_PATH: ../../roles/
