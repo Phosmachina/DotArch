@@ -3,7 +3,7 @@
 
 - name: Create user environment directory
   file:
-    path: "{{ ansible_env.HOME }}/.config/environment.d"
+    path: "{{ ansible_facts['env'].HOME }}/.config/environment.d"
     state: directory
     mode: '0755'
   tags: [ wm, hyprland, environment ]
@@ -11,6 +11,6 @@
 - name: Install user-specific environment variables
   template:
     src: home/.config/environment.d/user-env.conf.j2
-    dest: "{{ ansible_env.HOME }}/.config/environment.d/user-env.conf"
+    dest: "{{ ansible_facts['env'].HOME }}/.config/environment.d/user-env.conf"
     mode: '0644'
   tags: [ wm, hyprland, environment ]

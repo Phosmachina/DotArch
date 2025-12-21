@@ -48,35 +48,9 @@
     - enable_nvidia | default(false)
   tags: [ desktop, nvidia ]
 
-- name: Install wev from source (Ubuntu)
-  block:
-    - name: Clone wev repository
-      ansible.builtin.git:
-        repo: https://git.sr.ht/~sircmpwn/wev
-        dest: /tmp/wev
-        version: master
-
-    - name: Build wev
-      ansible.builtin.shell: |
-        cd /tmp/wev
-        meson build
-        ninja -C build
-      args:
-        creates: /tmp/wev/build/wev
-
-    - name: Install wev
-      ansible.builtin.copy:
-        src: /tmp/wev/build/wev
-        dest: /usr/local/bin/wev
-        mode: '0755'
-        remote_src: true
-      become: true
-  when: ansible_facts.distribution == 'Ubuntu'
-  tags: [ desktop ]
-
 - name: Create base configuration directories
   ansible.builtin.file:
-    path: '{{ ansible_user_dir }}/{{ item }}'
+    path: '{{ ansible_facts["user_dir"] }}/{{ item }}'
     state: directory
     mode: '0755'
     owner: "{{ ansible_user }}"
@@ -92,20 +66,21 @@
 - name: Copy hyprland scripts
   ansible.builtin.copy:
     src: 'home/.config/hypr/scripts/{{ item }}'
-    dest: '{{ ansible_user_dir }}/.config/hypr/scripts/{{ item }}'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/scripts/{{ item }}'
     mode: '0755'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   loop:
     - 'power-monitor.sh'
     - 'hyprpaper-hourly.sh'
+    - 'swap-workspaces.sh'
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 
 - name: Copy hypridle configurations
   ansible.builtin.template:
     src: 'home/.config/hypr/{{ item }}'
-    dest: '{{ ansible_user_dir }}/.config/hypr/{{ item | splitext | first }}'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/{{ item | splitext | first }}'
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -118,7 +93,7 @@
 - name: Copy hyprland configuration files
   ansible.builtin.copy:
     src: 'home/.config/hypr/{{ item }}'
-    dest: '{{ ansible_user_dir }}/.config/hypr/{{ item }}'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/{{ item }}'
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -131,7 +106,7 @@
 
 - name: Create kanshi config directory
   ansible.builtin.file:
-    path: '{{ ansible_user_dir }}/.config/kanshi'
+    path: '{{ ansible_facts["user_dir"] }}/.config/kanshi'
     state: directory
     mode: '0755'
     owner: "{{ ansible_user }}"
@@ -142,7 +117,7 @@
 - name: Copy kanshi configuration
   ansible.builtin.template:
     src: 'home/.config/kanshi/config.j2'
-    dest: '{{ ansible_user_dir }}/.config/kanshi/config'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/kanshi/config'
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
@@ -152,7 +127,7 @@
 - name: Copy Hyprland environment config
   ansible.builtin.template:
     src: 'home/.config/hypr/env.conf.j2'
-    dest: '{{ ansible_user_dir }}/.config/hypr/env.conf'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/env.conf'
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"

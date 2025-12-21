@@ -12,7 +12,7 @@
 
 - name: Create Kitty config directory
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/kitty"
+    path: "{{ ansible_facts['user_dir'] }}/.config/kitty"
     state: directory
     mode: '0755'
     owner: "{{ ansible_user }}"
@@ -23,7 +23,7 @@
 - name: Copy Kitty configurations
   ansible.builtin.copy:
     src: "files/home/.config/kitty/{{ item }}"
-    dest: "{{ ansible_user_dir }}/.config/kitty/{{ item }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/{{ item }}"
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"

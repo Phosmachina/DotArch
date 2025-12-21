@@ -9,7 +9,7 @@
 
 - name: Create user environment directory
   file:
-    path: "{{ ansible_env.HOME }}/.config/environment.d"
+    path: "{{ ansible_facts['env'].HOME }}/.config/environment.d"
     state: directory
     mode: '0755'
   tags: [ system, zsh, core ]
@@ -17,7 +17,7 @@
 - name: Configure shell environment variables
   template:
     src: home/.config/environment.d/shell.conf.j2
-    dest: "{{ ansible_env.HOME }}/.config/environment.d/shell.conf"
+    dest: "{{ ansible_facts['env'].HOME }}/.config/environment.d/shell.conf"
     mode: '0644'
   tags: [ system, zsh, core ]
 
@@ -32,13 +32,13 @@
 #-   name: Update .zprofile for SSH sessions
 #    template:
 #        src: home/.zprofile.j2
-#        dest: "{{ ansible_env.HOME }}/.zprofile"
+#        dest: "{{ ansible_facts['env'].HOME }}/.zprofile"
 #        mode: '0644'
 #    tags: [ system, zsh, environment ]
 
 - name: Ensure .config/zsh directory exists
   file:
-    path: '{{ ansible_user_dir }}/.config/zsh'
+    path: '{{ ansible_facts["user_dir"] }}/.config/zsh'
     state: directory
   tags: [ system, zsh, directory ]
 
@@ -48,15 +48,6 @@
     src: etc/profile.d/dotarch.sh.j2
     dest: /etc/profile.d/dotarch.sh
     mode: '0644'
-  tags: [ system, zsh, config ]
-
-- name: Ensure dotarch.sh is sourced in zshrc
-  become: true
-  lineinfile:
-    path: /etc/zsh/zshrc
-    line: 'source /etc/profile.d/dotarch.sh'
-    create: yes
-  when: ansible_facts.distribution == 'Ubuntu'
   tags: [ system, zsh, config ]
 
 - name: Ensure dotarch.sh is sourced in zshrc (Arch)
@@ -71,12 +62,12 @@
 - name: Copy zsh config
   copy:
     src: 'home/.config/zsh/.zshrc'
-    dest: '{{ ansible_user_dir }}/.config/zsh/.zshrc'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/zsh/.zshrc'
   tags: [ system, zsh, config ]
 
 - name: Ensure .cache/zsh directory exists
   file:
-    path: '{{ ansible_user_dir }}/.cache/zsh'
+    path: '{{ ansible_facts["user_dir"] }}/.cache/zsh'
     state: directory
   tags: [ system, zsh, directory ]
 
@@ -84,19 +75,19 @@
 #-  name: Copy zsh history
 #   copy:
 #      src: 'home/.cache/zsh/history'
-#      dest: '{{ ansible_user_dir }}/.cache/zsh/history'
+#      dest: '{{ ansible_facts["user_dir"] }}/.cache/zsh/history'
 
 - name: Clone oh-my-zsh
   git:
     repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
-    dest: '{{ ansible_user_dir }}/.config/zsh/ohmyzsh'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/zsh/ohmyzsh'
     clone: yes
     update: yes
   tags: [ system, zsh, plugins, ohmyzsh ]
 
 - name: Check if oh-my-zsh is installed
   stat:
-    path: '{{ ansible_user_dir }}/.oh-my-zsh'
+    path: '{{ ansible_facts["user_dir"] }}/.oh-my-zsh'
   register: ohmyzsh_stat
   tags: [ system, zsh, plugins, ohmyzsh ]
 
@@ -106,6 +97,6 @@
     --unattended
     --keep-zshrc
   args:
-    chdir: "{{ ansible_user_dir }}/.config/zsh"
+    chdir: '{{ ansible_facts["user_dir"] }}/.config/zsh'
   when: not ohmyzsh_stat.stat.exists
   tags: [ system, zsh, plugins, ohmyzsh ]

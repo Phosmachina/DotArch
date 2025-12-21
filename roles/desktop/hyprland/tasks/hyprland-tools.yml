@@ -16,7 +16,7 @@
 - name: Configure Hyprland tools
   copy:
     src: 'home/.config/hypr/{{ item }}.conf'
-    dest: '{{ ansible_user_dir }}/.config/hypr/{{ item }}.conf'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/{{ item }}.conf'
     mode: '0644'
   with_items:
     - hyprsunset
@@ -27,7 +27,7 @@
 
 - name: Ensure required directories exist
   file:
-    path: '{{ ansible_user_dir }}/{{ item }}'
+    path: '{{ ansible_facts["user_dir"] }}/{{ item }}'
     state: directory
     mode: '0755'
   with_items:
@@ -37,12 +37,12 @@
 - name: Copy wallpaper
   copy:
     src: 'home/Images/Wallpapers/1.jpg'
-    dest: '{{ ansible_user_dir }}/Images/Wallpapers/1.jpg'
+    dest: '{{ ansible_facts["user_dir"] }}/Images/Wallpapers/1.jpg'
   tags: [ wm, hyprland, tools, hyprpaper ]
 
 - name: Create hypr scripts directory
   file:
-    path: '{{ ansible_user_dir }}/.config/hypr/scripts'
+    path: '{{ ansible_facts["user_dir"] }}/.config/hypr/scripts'
     state: directory
     mode: '0755'
     owner: '{{ ansible_user }}'
@@ -52,7 +52,7 @@
 - name: Copy the hyprpaper rotation script
   copy:
     src: 'home/.config/hypr/scripts/hyprpaper-hourly.sh'
-    dest: '{{ ansible_user_dir }}/.config/hypr/scripts/hyprpaper-hourly.sh'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/scripts/hyprpaper-hourly.sh'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0755'
@@ -60,7 +60,7 @@
 
 - name: Create systemd user directory
   file:
-    path: '{{ ansible_user_dir }}/.config/systemd/user'
+    path: '{{ ansible_facts["user_dir"] }}/.config/systemd/user'
     state: directory
     mode: '0755'
     owner: '{{ ansible_user }}'
@@ -70,7 +70,7 @@
 - name: Copy hyprpaper systemd service file
   copy:
     src: 'home/.config/systemd/user/hyprpaper.service'
-    dest: '{{ ansible_user_dir }}/.config/systemd/user/hyprpaper.service'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/systemd/user/hyprpaper.service'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0644'
@@ -79,7 +79,7 @@
 - name: Copy hyprpaper systemd timer file
   copy:
     src: 'home/.config/systemd/user/hyprpaper.timer'
-    dest: '{{ ansible_user_dir }}/.config/systemd/user/hyprpaper.timer'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/systemd/user/hyprpaper.timer'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0644'
@@ -110,7 +110,7 @@
 - name: Copy workspace cycler script
   copy:
     src: 'home/.config/hypr/scripts/workspace-cycler.sh'
-    dest: '{{ ansible_user_dir }}/.config/hypr/scripts/workspace-cycler.sh'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/scripts/workspace-cycler.sh'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0755'

@@ -3,7 +3,7 @@
 
 - name: Override us with us_custom keymap for Wayland
   copy:
-    src: '{{ ansible_env.HOME }}/.config/keymap/us_custom'
+    src: '{{ ansible_facts["env"].HOME }}/.config/keymap/us_custom'
     dest: '/usr/share/xkb/symbols/us'
     remote_src: yes
   become: yes

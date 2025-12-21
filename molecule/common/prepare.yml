@@ -34,14 +34,14 @@
     - name: Perform a full upgrade
       community.general.pacman:
         upgrade: true
-      when: ansible_distribution == "Archlinux"
+      when: ansible_facts['distribution'] == "Archlinux"
 
     - name: Install base-devel and git for building packages
       community.general.pacman:
         name:
           - base-devel
         state: present
-      when: ansible_distribution == "Archlinux"
+      when: ansible_facts['distribution'] == "Archlinux"
 
     - name: Create test user
       ansible.builtin.user:

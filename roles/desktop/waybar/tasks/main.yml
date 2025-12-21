@@ -12,7 +12,7 @@
 
 - name: Create Waybar config directory
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/waybar"
+    path: "{{ ansible_facts['user_dir'] }}/.config/waybar"
     state: directory
     mode: '0755'
   tags: [ desktop, waybar, config ]
@@ -20,20 +20,20 @@
 - name: Copy Waybar configuration
   ansible.builtin.copy:
     src: files/home/.config/waybar/style.css
-    dest: "{{ ansible_user_dir }}/.config/waybar/style.css"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/style.css"
     mode: '0644'
   tags: [ desktop, waybar, config ]
 
 - name: Template Waybar config
   ansible.builtin.template:
     src: home/.config/waybar/config.j2
-    dest: "{{ ansible_user_dir }}/.config/waybar/config"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/config"
     mode: '0644'
   tags: [ desktop, waybar, config ]
 
 - name: Create Waybar scripts directory
   ansible.builtin.file:
-    path: "{{ ansible_user_dir }}/.config/waybar/scripts"
+    path: "{{ ansible_facts['user_dir'] }}/.config/waybar/scripts"
     state: directory
     mode: '0755'
   tags: [ desktop, waybar, config ]
@@ -41,6 +41,6 @@
 - name: Copy Waybar clock script
   ansible.builtin.copy:
     src: files/home/.config/waybar/scripts/waybar-clock.sh
-    dest: "{{ ansible_user_dir }}/.config/waybar/scripts/waybar-clock.sh"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/scripts/waybar-clock.sh"
     mode: '0755'
   tags: [ desktop, waybar, config ]

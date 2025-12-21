@@ -9,8 +9,8 @@
 
 - name: Verify distribution is supported
   ansible.builtin.fail:
-    msg: "Unsupported distribution: {{ ansible_facts.distribution }}. Only Archlinux and Ubuntu are supported."
-  when: ansible_facts.distribution not in ['Archlinux', 'Ubuntu']
+    msg: "Unsupported distribution: {{ ansible_facts.distribution }}. Only Archlinux is supported."
+  when: ansible_facts.distribution != 'Archlinux'
 
 - name: Display detected distribution
   ansible.builtin.debug:
