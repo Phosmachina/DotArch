@@ -1,0 +1,7 @@
+---
+- name: Install Zed Editor (Arch)
+  shell: yay -Sy --noconfirm zed
+  become: yes
+  become_user: '{{ ansible_user }}'
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ apps, zeditor ]

@@ -89,10 +89,20 @@
   tags: [ apps, qimgv ]
   when: enable_qimgv | default(true)
 
-- name: Include company compliance apps
+- name: Include Zed Editor
   ansible.builtin.include_role:
-    name: apps/company
-  tags: [ apps, company ]
-  when:
-    - company_compliance | default(false)
-    - ansible_facts.distribution == 'Ubuntu'
+    name: apps/zeditor
+  tags: [ apps, zeditor ]
+  when: enable_zeditor | default(false)
+
+- name: Include JetBrains Toolbox
+  ansible.builtin.include_role:
+    name: apps/jetbrains
+  tags: [ apps, jetbrains ]
+  when: enable_jetbrains | default(false)
+
+- name: Include Docker
+  ansible.builtin.include_role:
+    name: system/docker
+  tags: [ system, docker ]
+  when: enable_docker | default(false)
