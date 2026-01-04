@@ -1,0 +1,16 @@
+#!/bin/sh
+# Wrapper to launch yazi in a terminal for file selection
+# This script is used by xdg-desktop-portal-termfilechooser
+
+# Create a temporary file to store the result
+OUT="/tmp/yazi-chooser-$$"
+
+# Launch kitty with yazi in chooser mode
+# --class=yazi-chooser allows window managers to apply specific rules (floating, size, etc.)
+kitty --class=yazi-chooser --title="File Chooser" -e yazi --chooser-file="$OUT" "$@"
+
+# If yazi wrote a selection to the file, output it
+if [ -f "$OUT" ]; then
+    cat "$OUT"
+    rm "$OUT"
+fi
