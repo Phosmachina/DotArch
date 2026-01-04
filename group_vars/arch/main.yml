@@ -13,7 +13,7 @@ packages:
   ldns: ldns
   man-db: man-db
   pacman-contrib: pacman-contrib
-  resolvconf: resolvconf
+  resolvconf: systemd-resolvconf
   rsync: rsync
   socat: socat
   usbutils: usbutils
@@ -67,6 +67,7 @@ audio_packages:
   - gst-plugin-pipewire
   - libpulse
   - wireplumber
+  - pulsemixer
 
 trash_packages:
   - trash-cli

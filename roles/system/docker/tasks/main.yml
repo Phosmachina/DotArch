@@ -1,0 +1,27 @@
+---
+- name: Install Docker and tools (Arch)
+  community.general.pacman:
+    name:
+      - docker
+      - docker-compose
+      - docker-buildx
+    state: present
+  become: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ system, docker ]
+
+- name: Start and Enable Docker Service
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: yes
+  become: true
+  tags: [ system, docker ]
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+  become: true
+  tags: [ system, docker ]

@@ -2,30 +2,30 @@
 # Global deployment configuration variables
 
 # Feature toggles - enable/disable optional components
-enable_bitwarden: true
+enable_bitwarden: false
 enable_firefox: true
-enable_syncthing: false
-enable_nvidia: false
+enable_syncthing: true
+enable_nvidia: true
+enable_zeditor: true
+enable_jetbrains: true
+enable_docker: true
+enable_vpn: true
 
 # Media Apps
 enable_mpv: true
 enable_zathura: true
 enable_qimgv: true
 
-# Corporate / Compliance
-company_compliance: false
-
 # Deployment options
-deploy_without_passwords: true   # Skip password-protected vault tasks
+deploy_without_passwords: false   # Skip password-protected vault tasks
 skip_greetd: false               # Use existing display manager
 development_mode: false          # Enable development tools and settings
 
 # Hostname overrides (laptop if a battery is detected)
-laptop_hostname: "TLN-GG97Z64"     # Override for laptop systems
+laptop_hostname: ""     # Override for laptop systems
 desktop_hostname: ""    # Override for desktop systems
 
 # User configuration
-create_user_dirs: true         # Create standard user directories
 configure_shell: true          # Set up shell configuration
 install_dotfiles: true         # Install configuration files
 
@@ -33,9 +33,4 @@ install_dotfiles: true         # Install configuration files
 enable_numlock: true           # Enable numlock on boot
 configure_bluetooth: true      # Set up bluetooth
 configure_audio: true          # Set up audio system
-mount_network_shares: false    # Configure fstab network mounts
-
-# Performance settings
-parallel_builds: true          # Enable parallel compilation on Ubuntu
-use_ccache: true               # Use ccache for faster rebuilds (Ubuntu)
-build_jobs: "{{ ansible_processor_vcpus | default(2) }}"
+mount_network_shares: true     # Configure fstab network mounts

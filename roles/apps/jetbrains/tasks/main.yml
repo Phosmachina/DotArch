@@ -1,0 +1,7 @@
+---
+- name: Install JetBrains Toolbox (Arch)
+  shell: yay -Sy --noconfirm jetbrains-toolbox
+  become: yes
+  become_user: '{{ ansible_user }}'
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ apps, jetbrains ]
