@@ -1,0 +1,17 @@
+---
+- name: Enable and start systemd-resolved
+  systemd:
+    name: systemd-resolved
+    enabled: yes
+    state: started
+  become: true
+  tags: [ system, dns ]
+
+- name: Link resolv.conf to systemd-resolved stub
+  file:
+    src: /run/systemd/resolve/stub-resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+    force: yes
+  become: true
+  tags: [ system, dns ]

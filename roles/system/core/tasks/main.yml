@@ -43,6 +43,20 @@
   when: mount_network_shares | default(false)
   tags: [ system ]
 
+- name: Configure NetworkManager (Laptop)
+  ansible.builtin.include_tasks: network.yml
+  when: target == 'laptop'
+  tags: [ system, network ]
+
+- name: Configure DNS (systemd-resolved)
+  ansible.builtin.include_tasks: dns.yml
+  tags: [ system, dns ]
+
+- name: Configure VPN (WireGuard)
+  ansible.builtin.include_tasks: vpn.yml
+  when: enable_vpn | default(false)
+  tags: [ system, vpn ]
+
 - name: Configure virtualization
   ansible.builtin.include_tasks: virtualization.yml
   tags: [ system ]

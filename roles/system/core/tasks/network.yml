@@ -1,0 +1,17 @@
+---
+- name: Install NetworkManager (Laptop)
+  community.general.pacman:
+    name: networkmanager
+    state: present
+  become: true
+  when: target == 'laptop'
+  tags: [ system, network ]
+
+- name: Enable and Start NetworkManager
+  systemd:
+    name: NetworkManager
+    enabled: yes
+    state: started
+  become: true
+  when: target == 'laptop'
+  tags: [ system, network ]
