@@ -71,6 +71,8 @@ keymap = [
     { on = "<C-s>", run = "escape --search", desc = "Cancel the ongoing search" },
     { on = "z", run = "plugin fzf", desc = "Jump to a file/directory via fzf" },
     { on = "Z", run = "plugin zoxide", desc = "Jump to a directory via zoxide" },
+    # Drag and Drop
+    { on = "<C-n>", run = 'shell "dragon-drop -x -i -T \"$@\"" --confirm', desc = "Drag and drop" },
     # Linemode
     { on = ["m", "s"], run = "linemode size", desc = "Linemode: size" },
     { on = ["m", "p"], run = "linemode permissions", desc = "Linemode: permissions" },
@@ -127,6 +129,8 @@ keymap = [
     { on = "}", run = "tab_swap 1", desc = "Swap current tab with next tab" },
     # Tasks
     { on = "w", run = "tasks:show", desc = "Show task manager" },
+    # Archive
+    { on = "E", run = 'shell "aunpack \"$@\"" --block --confirm', desc = "Extract archive here" },
     # Help
     { on = "~", run = "help", desc = "Open help" },
     { on = "<F1>", run = "help", desc = "Open help" },

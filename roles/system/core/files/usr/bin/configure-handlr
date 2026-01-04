@@ -26,3 +26,5 @@ handlr add x-scheme-handler/http firefox.desktop
 handlr add x-scheme-handler/https firefox.desktop
 handlr add .htm firefox.desktop
 handlr add .html firefox.desktop
+
+handlr set inode/directory yazi.desktop

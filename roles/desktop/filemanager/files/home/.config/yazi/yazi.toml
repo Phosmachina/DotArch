@@ -31,7 +31,10 @@ play = [
     { run = 'mpv "$@"', orphan = true, for = "unix" },
 ]
 edit = [
-    { run = '$EDITOR "$@"', block = true, for = "unix" },
+    { run = 'micro "$@"', block = true, for = "unix" },
+]
+image = [
+    { run = 'qimgv "$@"', orphan = true, for = "unix" },
 ]
 open = [
     { run = 'xdg-open "$@"', desc = "Open" },
@@ -40,6 +43,7 @@ open = [
 [open]
 rules = [
     { mime = "text/*", use = "edit" },
+    { mime = "image/*", use = "image" },
     { mime = "video/*", use = "play" },
 
     # { mime = "application/json", use = "edit" },
@@ -47,6 +51,9 @@ rules = [
 
     # Multiple openers for a single rule
     { name = "*.html", use = ["open", "edit"] },
+    
+    # Fallback
+    { name = "*", use = "open" },
 ]
 
 [tasks]
@@ -55,3 +62,18 @@ micro_workers = 5
 
 # Macro-mode settings
 macro_workers = 10
+
+# Allow larger image allocation (e.g., for >10MB files that decompress to large bitmaps)
+# 100MB = 104857600
+image_alloc = 104857600
+image_bound = [0, 0]
+
+[plugin]
+prepend_previewers = [
+    { mime = "application/*zip", run = "archive" },
+    { mime = "application/x-tar", run = "archive" },
+    { mime = "application/x-bzip2", run = "archive" },
+    { mime = "application/x-7z-compressed", run = "archive" },
+    { mime = "application/x-rar", run = "archive" },
+    { mime = "application/x-xz", run = "archive" },
+]
