@@ -8,6 +8,7 @@
     grim
     slurp
     satty
+    hyprshot
   become: yes
   become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Archlinux'
