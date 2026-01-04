@@ -98,9 +98,17 @@ A complete, minimalist, and visually appealing desktop experience:
     * Secrets: `group_vars/all/vault.yml`
 
 3. **Setup Vault** (optional):
-   If needed, encrypt your secrets:
+   To secure your secrets, use the provided encryption script. It automatically detects unencrypted files and encrypts them using `password.sh` (or interactive password).
+
+   **Encrypt files:**
    ```bash
-   ansible-vault encrypt group_vars/all/vault.yml
+   ./encrypt.sh
+   ```
+
+   **Install Git Safety Hook:** (Recommended)
+   Prevents accidental commits of unencrypted secrets.
+   ```bash
+   ./encrypt.sh --install-hook
    ```
 
 ### Deploy
