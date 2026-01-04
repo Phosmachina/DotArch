@@ -1,22 +1,31 @@
 # Kanshi configuration
 
+output "Samsung Display Corp. 0x414D Unknown" {
+  mode 3456x2160@60.00100
+  position 0,0
+  scale 1.6
+  alias $INTERNAL
+}
+
+output "LG Electronics LG HDR WQHD 007NTNH70479" {
+  mode 3440x1440@99.98Hz
+  position 0,0
+  scale 1
+  alias $HOME
+}
+
 # Laptop only
-profile {
-    output eDP-1 enable
+profile standalone {
+  output $INTERNAL enable
 }
 
 # Laptop + 1 External (Docked) - Laptop off
-profile {
-    output eDP-1 disable
-    output "DP-1" enable preferred
-    output "HDMI-A-1" enable preferred
+profile home_docked {
+  output $INTERNAL disable
+  output $HOME enable
 }
 
 # Laptop + 2 External (Work) - Laptop off
-profile {
-    output eDP-1 disable
-    output "DP-1" enable preferred
-    output "DP-2" enable preferred
-    output "HDMI-A-1" enable preferred
-    output "HDMI-A-2" enable preferred
+profile work_docked {
+
 }
