@@ -4,7 +4,7 @@
     module: "{{ package_manager_module }}"
     name: "{{ shell_packages }}"
     state: present
-  become: yes
+  become: true
   tags: [ system, zsh, core ]
 
 - name: Create user environment directory
@@ -23,18 +23,19 @@
 
 - name: Install necessary packages with yay (Arch)
   shell: 'yay -Sy --noconfirm {{ item }}'
-  become: yes
+  become: true
   become_user: '{{ ansible_user }}'
   loop: "{{ shell_aur_packages }}"
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system, zsh, plugins ]
 
-#-   name: Update .zprofile for SSH sessions
-#    template:
-#        src: home/.zprofile.j2
-#        dest: "{{ ansible_facts['env'].HOME }}/.zprofile"
-#        mode: '0644'
-#    tags: [ system, zsh, environment ]
+- name: Configure global ZDOTDIR in /etc/zsh/zshenv
+  become: true
+  template:
+    src: etc/zsh/zshenv.j2
+    dest: /etc/zsh/zshenv
+    mode: '0644'
+  tags: [ system, zsh, config ]
 
 - name: Ensure .config/zsh directory exists
   file:
@@ -55,7 +56,7 @@
   lineinfile:
     path: /etc/zsh/zshrc
     line: 'source /etc/profile.d/dotarch.sh'
-    create: yes
+    create: true
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system, zsh, config ]
 
@@ -81,8 +82,8 @@
   git:
     repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
     dest: '{{ ansible_facts["user_dir"] }}/.config/zsh/ohmyzsh'
-    clone: yes
-    update: yes
+    clone: true
+    update: true
   tags: [ system, zsh, plugins, ohmyzsh ]
 
 - name: Check if oh-my-zsh is installed
