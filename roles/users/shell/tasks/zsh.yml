@@ -1,8 +1,19 @@
 ---
 - name: Install necessary packages
-  action:
-    module: "{{ package_manager_module }}"
-    name: "{{ shell_packages }}"
+  community.general.pacman:
+    name:
+      - zsh
+      - curl
+      - git
+      - zoxide
+      - fzf
+      - bat
+      - eza
+      - fd
+      - ripgrep
+      - micro
+      - kakoune
+      - progress
     state: present
   become: true
   tags: [ system, zsh, core ]
@@ -25,7 +36,11 @@
   shell: 'yay -Sy --noconfirm {{ item }}'
   become: true
   become_user: '{{ ansible_user }}'
-  loop: "{{ shell_aur_packages }}"
+  loop:
+    - zsh-autopair-git
+    - zsh-autosuggestions
+    - zsh-completions
+    - zsh-syntax-highlighting
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ system, zsh, plugins ]
 

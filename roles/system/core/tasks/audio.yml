@@ -1,10 +1,18 @@
 ---
 - name: Install pipewire and related packages
-  action:
-    module: "{{ package_manager_module }}"
-    name: "{{ audio_packages }}"
+  community.general.pacman:
+    name:
+      - alsa-utils
+      - pipewire
+      - pipewire-pulse
+      - pipewire-alsa
+      - pipewire-jack
+      - gst-plugin-pipewire
+      - libpulse
+      - wireplumber
+      - pulsemixer
     state: present
-  become: yes
+  become: true
 
 - name: Start Pipewire services
   systemd:

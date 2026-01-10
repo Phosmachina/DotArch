@@ -2,11 +2,11 @@
 # VPN configuration with WireGuard
 
 - name: Install WireGuard packages
-  action:
-    module: "{{ package_manager_module }}"
-    name: "{{ vpn_packages }}"
+  community.general.pacman:
+    name:
+      - wireguard-tools
     state: present
-  become: yes
+  become: true
   tags: [ system, vpn ]
 
 - name: Ensure WireGuard config directory exists
@@ -14,7 +14,7 @@
     path: /etc/wireguard
     state: directory
     mode: '0700'
-  become: yes
+  become: true
   tags: [ system, vpn ]
 
 - name: Copy WireGuard configuration file based on hostname
@@ -24,7 +24,7 @@
     mode: '0600'
     owner: root
     group: root
-  become: yes
+  become: true
   notify: Restart WireGuard
   tags: [ system, vpn ]
   when: not deploy_without_passwords | default(false)
@@ -34,5 +34,5 @@
     name: "wg-quick@wg0"
     enabled: yes
     state: started
-  become: yes
+  become: true
   tags: [ system, vpn ]

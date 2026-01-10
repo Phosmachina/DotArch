@@ -18,11 +18,10 @@
       - "OS Family: {{ ansible_facts.os_family }}"
       - "Distribution: {{ ansible_facts.distribution }}"
       - "Version: {{ ansible_facts.distribution_version }}"
-      - "Package Manager: {{ package_manager }}"
-      - "AUR Helper: {{ aur_helper }}"
+      - "Package Manager: pacman"
+      - "AUR Helper: yay"
 
 - name: Update package cache
-  action:
-    module: "{{ package_manager_module }}"
+  community.general.pacman:
     update_cache: true
   become: true

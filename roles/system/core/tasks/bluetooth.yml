@@ -1,10 +1,12 @@
 ---
 - name: Install necessary packages
-  action:
-    module: "{{ package_manager_module }}"
-    name: "{{ bluetooth_packages }}"
+  community.general.pacman:
+    name:
+      - bluez-utils
+      - bluez
+      - bluez-obex
     state: present
-  become: yes
+  become: true
 
 - name: Set Bluetooth auto-enable
   lineinfile:
@@ -13,17 +15,17 @@
     line: 'AutoEnable=true'
     backrefs: yes
     state: present
-  become: yes
+  become: true
 
 - name: Enable bluetooth service to activate bluetooth on boot
   systemd:
     name: bluetooth.service
     enabled: yes
     state: started
-  become: yes
+  become: true
 
 - name: Install bluetuith (AUR)
   ansible.builtin.shell: 'yay -Sy --noconfirm bluetuith'
-  become: yes
+  become: true
   become_user: '{{ ansible_user }}'
   tags: [ system, bluetooth ]

@@ -32,16 +32,22 @@
     name: iptables
     state: absent
     force: yes
-  become: yes
+  become: true
   failed_when: false
   when: ansible_facts.distribution == 'Archlinux'
 
 - name: Install QEMU and libvirt packages
-  action:
-    module: "{{ package_manager_module }}"
-    name: "{{ virtualization_packages }}"
+  community.general.pacman:
+    name:
+      - qemu-full
+      - libvirt
+      - virt-manager
+      - dnsmasq
+      - bridge-utils
+      - ebtables
+      - iptables-nft
     state: present
-  become: yes
+  become: true
 
 # Enable and start libvirtd service
 - name: Enable and start libvirtd service
@@ -49,7 +55,7 @@
     name: libvirtd
     enabled: yes
     state: started
-  become: yes
+  become: true
 
 # Add current user to libvirt group
 - name: Add user to libvirt group
@@ -58,7 +64,7 @@
     groups: libvirt
     append: yes
   when: ansible_user != "root"
-  become: yes
+  become: true
 
 # Ensure polkit rules for libvirt are set up
 - name: Create polkit rules directory if it doesn't exist
@@ -66,16 +72,16 @@
     path: /etc/polkit-1/rules.d
     state: directory
     mode: '0755'
-  become: yes
+  become: true
 
 - name: Configure polkit rules for libvirt
   copy:
     src: 'etc/polkit-1/rules.d/50-libvirt.rules'
     dest: '/etc/polkit-1/rules.d/50-libvirt.rules'
-  become: yes
+  become: true
 
 - name: Configure libvirt network
   copy:
     src: 'etc/libvirt/network.conf'
     dest: '/etc/libvirt/network.conf'
-  become: yes
+  become: true
