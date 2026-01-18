@@ -1,0 +1,11 @@
+---
+- name: Configure NumLock on TTY
+  lineinfile:
+    path: /etc/vconsole.conf
+    regexp: '^LEDS='
+    line: 'LEDS=+num'
+    state: "{{ 'present' if enable_numlock | default(true) else 'absent' }}"
+    create: true
+  become: true
+  notify: Restart systemd-vconsole-setup
+  tags: [ system, console ]

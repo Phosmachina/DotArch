@@ -18,3 +18,9 @@
     state: restarted
   become: true
   when: target == 'laptop'
+
+- name: Restart systemd-vconsole-setup
+  service:
+    name: systemd-vconsole-setup
+    state: restarted
+  become: true

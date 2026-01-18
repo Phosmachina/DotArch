@@ -25,7 +25,6 @@
 
 - name: Configure numlock
   ansible.builtin.include_tasks: numlock.yml
-  when: enable_numlock | default(true)
   tags: [ system ]
 
 - name: Configure bluetooth
