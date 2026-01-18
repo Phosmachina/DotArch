@@ -2,7 +2,7 @@
 
 # Wallpaper logic
 WALLPAPER_DIR="$HOME/Images/Wallpapers/"
-CURRENT_WALL=$(hyprctl hyprpaper listloaded | xargs basename)
+CURRENT_WALL=$(hyprctl hyprpaper listloaded | xargs -0 basename)
 
 # Pick a random file that's not the current one
 WALLPAPER=$(find "$WALLPAPER_DIR" -type f ! -name "$CURRENT_WALL" | shuf -n1)
