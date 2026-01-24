@@ -7,7 +7,7 @@
     name: openresolv
     state: absent
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ system ]
+  tags: [system]
 
 - name: Install base system packages (Arch)
   become: true
@@ -15,6 +15,7 @@
     name:
       - btop
       - cifs-utils
+      - nfs-utils
       - ldns # Provide drill command
       - man-db
       - pacman-contrib
@@ -34,14 +35,13 @@
       - jq
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ system ]
+  tags: [system]
 
-#- name: Install system tools with yay (Arch)
+# - name: Install system tools with yay (Arch)
 #  ansible.builtin.shell: 'yay -Sy --noconfirm {{ item }}'
 #  become: yes
 #  become_user: '{{ ansible_user }}'
 #  loop:
 #    - dasel-bin
 #  when: ansible_facts.distribution == 'Archlinux'
-#  tags: [ system ]
-
+#  tags: [system]
