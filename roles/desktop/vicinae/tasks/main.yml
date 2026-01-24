@@ -3,7 +3,7 @@
 # This role manages Vicinae setup
 
 - name: Install Vicinae (Arch)
-  shell: 'yay -S --noconfirm vicinae'
+  shell: 'yay -S --noconfirm vicinae-bin'
   become: yes
   become_user: '{{ ansible_user }}'
   when: ansible_facts.distribution == 'Archlinux'
