@@ -2,21 +2,23 @@
 - name: Install mpv (Arch)
   become: true
   community.general.pacman:
-    name: mpv
+    name:
+      - mpv
+      - mpv-mpris
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ apps, mpv ]
+  tags: [apps, mpv]
 
 - name: Create mpv config directory
   ansible.builtin.file:
     path: "{{ ansible_facts['user_dir'] }}/.config/mpv"
     state: directory
     mode: '0755'
-  tags: [ apps, mpv, config ]
+  tags: [apps, mpv, config]
 
 - name: Copy MPV configuration
   ansible.builtin.copy:
     src: files/home/.config/mpv/mpv.conf
     dest: "{{ ansible_facts['user_dir'] }}/.config/mpv/mpv.conf"
     mode: '0644'
-  tags: [ apps, mpv, config ]
+  tags: [apps, mpv, config]
