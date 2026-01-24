@@ -1,6 +1,6 @@
 #!/bin/sh
 
-handlr set x-scheme-handler/terminal kitty.desktop
+handlr set x-scheme-handler/terminal rio.desktop
 
 handlr add application/x-shellscript micro.desktop
 handlr add application/x-shellscript code.desktop

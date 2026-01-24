@@ -1,0 +1,44 @@
+---
+# Desktop Rio role - terminal emulator configuration
+# This role manages Rio terminal emulator setup
+
+- name: Install Rio terminal emulator (Arch)
+  become: true
+  community.general.pacman:
+    name: rio
+    state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ desktop, rioterm ]
+
+- name: Create Rio config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  loop:
+    - "{{ ansible_facts['user_dir'] }}/.config/rio"
+    - "{{ ansible_facts['user_dir'] }}/.config/rio/themes"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, rioterm, config ]
+
+- name: Copy Rio main configuration
+  ansible.builtin.copy:
+    src: "files/home/.config/rio/config.toml"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/rio/config.toml"
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, rioterm, config ]
+
+- name: Copy Rio themes
+  ansible.builtin.copy:
+    src: "files/home/.config/rio/themes/Dark Pastel.toml"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/rio/themes/Dark Pastel.toml"
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_dotfiles | default(true)
+  tags: [ desktop, rioterm, config ]

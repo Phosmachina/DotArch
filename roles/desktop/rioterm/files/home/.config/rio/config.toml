@@ -1,0 +1,52 @@
+# Rio configuration file
+
+theme = "Dark Pastel"
+
+line-height = 1.0
+
+confirm-before-quit = false
+
+[window]
+opacity = 0.7
+
+[fonts]
+size = 15
+extras = [{ family = "FreeSerif" }]
+
+[fonts.regular]
+family = "JetBrainsMono Nerd Font"
+style = "Normal"
+width = "Normal"
+weight = 500
+
+[fonts.bold]
+family = "JetBrainsMono Nerd Font"
+style = "Normal"
+width = "Normal"
+weight = 800
+
+[fonts.italic]
+family = "JetBrainsMono Nerd Font"
+style = "Italic"
+width = "Normal"
+weight = 400
+
+[fonts.bold-italic]
+family = "JetBrainsMono Nerd Font"
+style = "Italic"
+width = "Normal"
+weight = 800
+
+[fonts.emoji]
+family = "Apple Color Emoji"
+
+[navigation]
+mode = "Plain"
+
+[cursor]
+blinking = true
+shape = "beam"
+
+[bell]
+visual = false
+audio = false
