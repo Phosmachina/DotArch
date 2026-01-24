@@ -22,10 +22,24 @@
         "battery",
         "backlight",
         {% endif %}
+        "custom/voxtype",
         "pulseaudio",
         "disk",
         "tray"
     ],
+
+    "custom/voxtype": {
+        "exec": "voxtype status --follow --format json",
+        "return-type": "json",
+        "format": "{icon}",
+        "format-icons": {
+            "idle": "🎙️️",
+            "recording": "🎤",
+            "transcribing": "⏳",
+            "stopped": ""
+        },
+        "tooltip": true
+    },
 
     "hyprland/workspaces": {
         "format": "{icon}",

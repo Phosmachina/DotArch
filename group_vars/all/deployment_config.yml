@@ -19,7 +19,6 @@ enable_qimgv: true
 # Deployment options
 deploy_without_passwords: false   # Skip password-protected vault tasks
 skip_greetd: false               # Use existing display manager
-development_mode: false          # Enable development tools and settings
 
 # Hostname overrides (laptop if a battery is detected)
 laptop_hostname: ""     # Override for laptop systems

@@ -1,0 +1,8 @@
+---
+# Defaults for voxtype role
+voxtype_backend: "remote"
+voxtype_remote_endpoint: "https://api.deepinfra.com/v1/openai"
+voxtype_remote_model: "openai/whisper-large-v3-turbo"
+voxtype_api_key: ""
+voxtype_hotkey_enabled: false
+voxtype_state_file: "auto"

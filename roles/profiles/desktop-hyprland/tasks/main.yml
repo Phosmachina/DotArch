@@ -31,7 +31,7 @@
 
 - name: Include terminal emulator
   ansible.builtin.include_role:
-    name: desktop/terminal
+    name: desktop/rioterm
   tags: [ desktop ]
 
 - name: Include application launcher and clipboard (Vicinae)
@@ -106,3 +106,9 @@
     name: system/docker
   tags: [ system, docker ]
   when: enable_docker | default(false)
+
+- name: Include Voxtype
+  ansible.builtin.include_role:
+    name: apps/voxtype
+  tags: [ apps, voxtype ]
+  when: enable_voxtype | default(true)

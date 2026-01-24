@@ -1,0 +1,6 @@
+---
+- name: Restart voxtype service
+  ansible.builtin.systemd:
+    name: voxtype
+    scope: user
+    state: restarted

@@ -218,3 +218,22 @@ window#waybar.hidden {
 #clock:hover {
     background: linear-gradient(45deg, rgba(50, 60, 85, 0.9), rgba(70, 80, 100, 0.9));
 }
+
+#custom-voxtype {
+    padding: 0 8px;
+    font-size: 14px;
+}
+
+#custom-voxtype.recording {
+    color: #ff5555;
+    animation: pulse 1s infinite;
+}
+
+#custom-voxtype.transcribing {
+    color: #f1fa8c;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

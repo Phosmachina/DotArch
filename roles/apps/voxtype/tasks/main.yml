@@ -1,0 +1,46 @@
+---
+# Install and configure Voxtype
+
+- name: Install Voxtype dependencies (Arch)
+  become: true
+  community.general.pacman:
+    name:
+      - wtype
+      - wl-clipboard
+    state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [ apps, voxtype ]
+
+- name: Install Voxtype (AUR)
+  ansible.builtin.shell: 'yay -Sy --noconfirm voxtype-bin'
+  args:
+    creates: /usr/bin/voxtype
+  tags: [ apps, voxtype ]
+
+- name: Create Voxtype configuration directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['user_dir'] }}/.config/voxtype"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  tags: [ apps, voxtype, config ]
+
+- name: Deploy Voxtype configuration
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: "{{ ansible_facts['user_dir'] }}/.config/voxtype/config.toml"
+    mode: '0600' # Contains API key potentially
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  notify: Restart voxtype service
+  tags: [ apps, voxtype, config ]
+
+- name: Enable and start Voxtype service
+  ansible.builtin.systemd:
+    name: voxtype
+    scope: user
+    state: started
+    enabled: true
+    daemon_reload: true
+  tags: [ apps, voxtype ]
