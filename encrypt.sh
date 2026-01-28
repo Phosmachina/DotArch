@@ -8,12 +8,10 @@ set -euo pipefail
 # List of files that MUST be encrypted.
 # Add new sensitive files here.
 FILES_TO_ENCRYPT=(
-    "group_vars/all/vault.yml"
-    "roles/system/files/etc/wireguard/Peer_FC_L-ANTLIA.conf"
-    "roles/system/files/etc/wireguard/Peer_LP_L-CENTAURUS.conf"
-    # "roles/common/files/etc/.cifscredentials"
-    # "roles/common/files/home/.cache/zsh/history"
-    # "roles/common/files/home/.config/Bitwarden CLI/.pass"
+    'group_vars/all/vault.yml'
+    'roles/apps/voxtype/defaults/secret.yml'
+    'roles/system/files/etc/wireguard/Peer_FC_L-ANTLIA.conf'
+    'roles/system/files/etc/wireguard/Peer_LP_L-CENTAURUS.conf'
 )
 
 PASSWORD_SCRIPT="./password.sh"

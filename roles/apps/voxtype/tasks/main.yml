@@ -33,14 +33,4 @@
     mode: '0600' # Contains API key potentially
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-  notify: Restart voxtype service
   tags: [ apps, voxtype, config ]
-
-- name: Enable and start Voxtype service
-  ansible.builtin.systemd:
-    name: voxtype
-    scope: user
-    state: started
-    enabled: true
-    daemon_reload: true
-  tags: [ apps, voxtype ]
