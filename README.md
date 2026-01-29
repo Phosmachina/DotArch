@@ -1,32 +1,9 @@
-# 🚀 DotArch - Multi-Distribution Desktop Environment
+# DotArch
 
-> Personal Ansible project for automated Hyprland desktop deployment on Arch Linux and Ubuntu Server
+> Personal Ansible project for automated Hyprland desktop deployment on Arch Linux
 
 This project automates the complete setup of a modern desktop environment using Hyprland window
-manager, supporting both Arch Linux and Ubuntu distributions through a unified codebase with
-distribution-specific optimizations.
-
-## 🎯 Project Overview
-
-```mermaid
-graph TD
-    A[DotArch Project] --> B[System Layer]
-    A --> C[Desktop Layer]
-    A --> D[Apps Layer]
-    B --> B1[Package Management]
-    B --> B2[Audio/Bluetooth]
-    B --> B3[User Configuration]
-    C --> C1[Hyprland WM]
-    C --> C2[Display Manager]
-    C --> C3[Terminal & Tools]
-    D --> D1[Browser]
-    D --> D2[Password Manager]
-    D --> D3[Media Applications]
-    style A fill: #e1f5fe
-    style B fill: #f3e5f5
-    style C fill: #e8f5e8
-    style D fill: #fff3e0
-```
+manager on Arch Linux.
 
 ## ✨ Features
 
@@ -34,8 +11,7 @@ A complete, minimalist, and visually appealing desktop experience:
 
 * **Desktop Environment**: Full [Hyprland](https://github.com/hyprwm/Hyprland) experience with a
   focus on aesthetics and performance.
-* **Tiling Experience**: i3-like manual tiling layout via [hy3](https://github.com/outfoxxed/hy3)
-  plugin.
+* **Tiling Experience**: Native Hyprland Dwindle layout (BSP-style auto-tiling) with native groups.
 * **Wallpaper**: Automated wallpaper management
   with [Hyprpaper](https://github.com/hyprwm/hyprpaper).
 * **Screen Management**: Automatic multi-monitor profiling
@@ -49,7 +25,7 @@ A complete, minimalist, and visually appealing desktop experience:
   and [Tuigreet](https://github.com/apognu/tuigreet).
 * **Launcher & Clipboard**: [Vicinae](https://github.com/apps-helper/vicinae) for application
   launching and clipboard history management.
-* **Terminal**: [Kitty](https://github.com/kovidgoyal/kitty) terminal emulator
+* **Terminal**: [Rio](https://github.com/raphamorim/rio) terminal emulator
   with [Zsh](https://www.zsh.org/).
 * **Shell Toolset**: Complete modern toolset including `rg` (ripgrep), `fd`, `bat`, `eza`, and
   completion plugins.
@@ -60,7 +36,51 @@ A complete, minimalist, and visually appealing desktop experience:
   using [Grim](https://github.com/emersion/grim), [Slurp](https://github.com/emersion/slurp),
   and [Satty](https://github.com/gabm/Satty).
 * **Screen Recording**: Simple recording with `wl-screenrec`.
+* **Voice Typing**: AI-powered voice-to-text with [Voxtype](https://voxtype.io), supporting local or
+  remote (DeepInfra) inference.
 * **Maintenance**: Automated trash cleanup and system maintenance timers.
+
+## 🏗️ Project Structure
+
+```
+DotArch/
+├── playbook.yml                 # Main playbook
+├── inventory.ini                # Host definitions
+├── group_vars/
+│   ├── all/
+│   │   ├── variables.yml        # Global variables
+│   │   ├── deployment_config.yml # Feature configuration
+│   │   └── vault.yml           # Encrypted secrets
+│   └── arch/main.yml           # Arch-specific settings
+└── roles/
+    ├── apps/
+    │   ├── bitwarden/           # Password manager
+    │   ├── firefox/             # Web browser
+    │   ├── jetbrains/           # JetBrains Toolbox (AUR)
+    │   ├── mpv/                 # Media player
+    │   ├── qimgv/               # Image viewer
+    │   ├── zathura/             # Document viewer
+    │   ├── zeditor/             # Zed code editor
+    │   └── voxtype/             # Voice-to-text (AUR)
+    ├── desktop/
+    │   ├── filemanager/         # Yazi configuration
+    │   ├── fonts/               # Font management
+    │   ├── greetd/              # Display manager (Login)
+    │   ├── hyprland/            # Window manager core
+    │   ├── notifications/       # SwayNC configuration
+    │   ├── screenshot/          # Grim/Slurp/Satty tools
+    │   ├── rioterm/             # Rio configuration
+    │   ├── vicinae/             # Launcher & Clipboard
+    │   └── waybar/              # Status bar
+    ├── profiles/
+    │   └── desktop-hyprland/    # Complete desktop meta-role
+    ├── system/
+    │   ├── core/                # Base system configuration
+    │   └── docker/              # Container runtime
+    └── users/
+        └── shell/               # User shell environment
+
+```
 
 ## 🛠️ Quick Start
 
@@ -68,11 +88,13 @@ A complete, minimalist, and visually appealing desktop experience:
 
 **On the Control Machine:**
 
-* **uv**: Modern Python package manager (required to run the project).
+* **uv**: Modern Python package manager (recommended).
+* **OR Ansible**: System-wide installation via package manager (e.g., `pacman -S ansible`).
 
 **On the Target Machine(s):**
 
-* **User**: A user with `sudo` access (NOPASSWD recommended for automation).
+* **User**: A user with `sudo` access (NOPASSWD recommended for automation). The remote user must be
+  defined in your inventory (e.g., `ansible_user=your_user`).
 * **SSH Access**: SSH key deployed (`ssh-copy-id user@host`).
 * **Python**: Python installed on the target system.
 
@@ -80,10 +102,24 @@ A complete, minimalist, and visually appealing desktop experience:
 
 1. **Clone the project**
 2. **Install Dependencies**:
+
+   **Option A: Using uv (Recommended)**
+
+   This automatically installs Ansible and all required collections in a virtual environment.
    ```bash
-   uv venv
    uv sync
    ```
+
+   **Option B: System Package Manager**
+
+   If you do not use `uv`, install the full Ansible package (which includes `ansible-core` and
+   community collections):
+   ```bash
+   # Arch Linux
+   sudo pacman -S ansible
+   ```
+   *Note: Ensure you install `ansible`, not just `ansible-core`, to get the required collections
+   automatically.*
 
 ### Configuration
 
@@ -98,7 +134,8 @@ A complete, minimalist, and visually appealing desktop experience:
     * Secrets: `group_vars/all/vault.yml`
 
 3. **Setup Vault** (optional):
-   To secure your secrets, use the provided encryption script. It automatically detects unencrypted files and encrypts them using `password.sh` (or interactive password).
+   To secure your secrets, use the provided encryption script. It automatically detects unencrypted
+   files and encrypts them using `password.sh` (or interactive password).
 
    **Encrypt files:**
    ```bash
@@ -113,7 +150,12 @@ A complete, minimalist, and visually appealing desktop experience:
 
 ### Deploy
 
-Run the playbook using `uv run`:
+Run the playbook.
+
+> **Note:** If you are using the system Ansible (Option B), run commands without `uv run` (e.g.,
+`ansible-playbook playbook.yml`).
+
+If you are using `uv`, it will automatically use the virtual environment:
 
 ```bash
 # Test connectivity
@@ -122,61 +164,13 @@ uv run ansible all -m ping
 # Deploy everything
 uv run ansible-playbook playbook.yml
 
-# Deploy specific components
+# Deploy specific components using tags
 uv run ansible-playbook playbook.yml --tags "system"
 uv run ansible-playbook playbook.yml --tags "desktop"
 uv run ansible-playbook playbook.yml --tags "apps"
 ```
 
-## 🏷️ Tag Strategy
-
-| Tag       | Scope               | Usage              |
-|-----------|---------------------|--------------------|
-| `system`  | Base system setup   | `--tags "system"`  |
-| `desktop` | Desktop environment | `--tags "desktop"` |
-| `apps`    | User applications   | `--tags "apps"`    |
-| `config`  | Configuration only  | `--tags "config"`  |
-
-## 🏗️ Project Structure
-
-```
-DotArch/
-├── playbook.yml                 # Main playbook
-├── inventory.ini                # Host definitions
-├── group_vars/
-│   ├── all/
-│   │   ├── variables.yml        # Global variables
-│   │   ├── deployment_config.yml # Feature configuration
-│   │   └── vault.yml           # Encrypted secrets
-│   ├── arch/main.yml           # Arch-specific settings
-│   └── ubuntu/main.yml         # Ubuntu-specific settings
-├── roles/
-│   ├── system/core/            # Base system configuration
-│   ├── users/shell/            # User environment
-│   ├── desktop/                # Desktop components
-│   │   ├── hyprland/          # Window manager
-│   │   ├── greetd/            # Display manager
-│   │   ├── terminal/          # Terminal emulator
-│   │   ├── vicinae/           # Launcher & Clipboard
-│   │   ├── waybar/            # Status bar
-│   │   ├── notifications/     # Notification center
-│   │   ├── fonts/             # Font management
-│   │   └── ...
-│   ├── apps/                  # User applications
-│   └── profiles/
-│       └── desktop-hyprland/  # Complete desktop profile
-└── docs/
-    └── TAGS.md                # Tag documentation
-```
-
-## 🚀 Development & Testing
-
-### Development Mode
-
-Enable development tools by setting `development_mode: true` in
-`group_vars/all/deployment_config.yml`.
-
-### Molecule Testing
+## Molecule Testing
 
 Run tests using `molecule`:
 
