@@ -31,12 +31,17 @@
 
 - name: Include terminal emulator
   ansible.builtin.include_role:
-    name: desktop/rioterm
+    name: desktop/terminal
   tags: [ desktop ]
 
 - name: Include application launcher and clipboard (Vicinae)
   ansible.builtin.include_role:
     name: desktop/vicinae
+  tags: [ desktop ]
+
+- name: Include handlr configuration
+  ansible.builtin.include_role:
+    name: desktop/handlr
   tags: [ desktop ]
 
 - name: Include status bar

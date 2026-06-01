@@ -1,0 +1,26 @@
+#!/bin/sh
+
+handlr set x-scheme-handler/terminal kitty.desktop
+
+handlr add application/x-shellscript micro.desktop
+handlr add application/x-shellscript dev.zed.Zed.desktop
+handlr add 'text/*' micro.desktop
+handlr add 'text/*' dev.zed.Zed.desktop
+handlr add application/xml micro.desktop
+handlr add application/xml dev.zed.Zed.desktop
+handlr add application/yaml micro.desktop
+handlr add application/yaml dev.zed.Zed.desktop
+
+handlr add 'image/*' qimgv.desktop
+handlr add 'video/*' mpv.desktop
+
+handlr add application/postscript org.pwmt.zathura.desktop
+handlr add application/pdf org.pwmt.zathura.desktop
+handlr add application/epub+zip org.pwmt.zathura.desktop
+
+handlr add x-scheme-handler/http firefox.desktop
+handlr add x-scheme-handler/https firefox.desktop
+handlr add .htm firefox.desktop
+handlr add .html firefox.desktop
+
+handlr set inode/directory yazi.desktop

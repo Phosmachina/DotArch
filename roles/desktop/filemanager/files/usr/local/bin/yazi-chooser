@@ -1,16 +1,44 @@
-#!/bin/sh
-# Wrapper to launch yazi in a terminal for file selection
-# This script is used by xdg-desktop-portal-termfilechooser
+#!/usr/bin/env sh
+set -e
 
-# Create a temporary file to store the result
-OUT="/tmp/yazi-chooser-$$"
+# Log for debugging
+LOG="/tmp/yazi-chooser.log"
+# echo "$(date) - Args: $@" >> "$LOG"
 
-# Launch kitty with yazi in chooser mode
-# --class=yazi-chooser allows window managers to apply specific rules (floating, size, etc.)
-kitty --class=yazi-chooser --title="File Chooser" -e yazi --chooser-file="$OUT" "$@"
+# Parse arguments from xdg-desktop-portal-termfilechooser
+multiple="$1"
+directory="$2"
+save="$3"
+path="$4"
+out="$5"
 
-# If yazi wrote a selection to the file, output it
-if [ -f "$OUT" ]; then
-    cat "$OUT"
-    rm "$OUT"
+# Default command
+cmd="yazi"
+
+# Construct arguments for Yazi
+if [ "$save" = "1" ]; then
+    set -- --chooser-file="$out" "$path"
+elif [ "$directory" = "1" ]; then
+    # Capture CWD for directory selection
+    set -- --chooser-file="$out" --cwd-file="$out.cwd" "$path"
+elif [ "$multiple" = "1" ]; then
+    set -- --chooser-file="$out" "$path"
+else
+    set -- --chooser-file="$out" "$path"
 fi
+
+# Launch Kitty with the constructed command
+# We use sh -c to handle the logic after Yazi exits
+# We assume 'kitty' is in the path.
+kitty --class=yazi-chooser --title="File Chooser" sh -c "
+    $cmd \"\$@\"
+    ret=\$?
+    if [ \"$directory\" = \"1\" ]; then
+        # If no selection was made but we have a CWD, use that
+        if [ ! -s \"$out\" ] && [ -s \"$out.cwd\" ]; then
+            cat \"$out.cwd\" > \"$out\"
+        fi
+        rm -f \"$out.cwd\"
+    fi
+    exit \$ret
+" -- "$@"

@@ -25,7 +25,7 @@ A complete, minimalist, and visually appealing desktop experience:
   and [Tuigreet](https://github.com/apognu/tuigreet).
 * **Launcher & Clipboard**: [Vicinae](https://github.com/apps-helper/vicinae) for application
   launching and clipboard history management.
-* **Terminal**: [Rio](https://github.com/raphamorim/rio) terminal emulator
+* **Terminal**: [Kitty](https://sw.kovidgoyal.net/kitty/) terminal emulator
   with [Zsh](https://www.zsh.org/).
 * **Shell Toolset**: Complete modern toolset including `rg` (ripgrep), `fd`, `bat`, `eza`, and
   completion plugins.
@@ -69,7 +69,7 @@ DotArch/
     │   ├── hyprland/            # Window manager core
     │   ├── notifications/       # SwayNC configuration
     │   ├── screenshot/          # Grim/Slurp/Satty tools
-    │   ├── rioterm/             # Rio configuration
+    │   ├── terminal/            # Kitty configuration
     │   ├── vicinae/             # Launcher & Clipboard
     │   └── waybar/              # Status bar
     ├── profiles/
