@@ -1,2 +1,5 @@
-[config]
+[filechooser]
 cmd=/usr/local/bin/yazi-chooser
+default_dir = $HOME
+open_mode = suggested
+save_mode = last

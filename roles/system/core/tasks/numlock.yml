@@ -1,11 +1,47 @@
 ---
-- name: Configure NumLock on TTY
+- name: Remove NumLock config from vconsole.conf
   lineinfile:
     path: /etc/vconsole.conf
     regexp: '^LEDS='
-    line: 'LEDS=+num'
-    state: "{{ 'present' if enable_numlock | default(true) else 'absent' }}"
-    create: true
+    state: absent
   become: true
   notify: Restart systemd-vconsole-setup
+  tags: [ system, console ]
+
+- name: Install kbd package (for setleds)
+  package:
+    name: kbd
+    state: present
+  become: true
+  when: enable_numlock | default(true)
+  tags: [ system, console ]
+
+- name: Create NumLock systemd service
+  copy:
+    dest: /etc/systemd/system/numlock.service
+    content: |
+      [Unit]
+      Description=Enable NumLock on TTYs
+      After=systemd-vconsole-setup.service
+      Before=greetd.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/bash -c 'for tty in /dev/tty{1..6}; do [ -c "$tty" ] && /usr/bin/setleds -D +num < "$tty"; done'
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  become: true
+  when: enable_numlock | default(true)
+  notify: Enable NumLock service
+  tags: [ system, console ]
+
+- name: Remove NumLock systemd service
+  file:
+    path: /etc/systemd/system/numlock.service
+    state: absent
+  become: true
+  when: not (enable_numlock | default(true))
+  notify: Disable NumLock service
   tags: [ system, console ]

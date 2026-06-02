@@ -24,3 +24,19 @@
     name: systemd-vconsole-setup
     state: restarted
   become: true
+
+- name: Enable NumLock service
+  systemd:
+    name: numlock.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true
+
+- name: Disable NumLock service
+  systemd:
+    name: numlock.service
+    enabled: false
+    state: stopped
+    daemon_reload: true
+  become: true

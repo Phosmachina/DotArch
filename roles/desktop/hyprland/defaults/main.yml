@@ -1,0 +1,7 @@
+---
+# Default variables for desktop/hyprland role
+
+# Toggles for Hyprland layout and behavior
+enable_numlock: true
+enable_focus_on_activate: true
+enable_groupbar: true

@@ -1,15 +1,18 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+# Global Zsh Configuration for DotArch
 
 # Path to your oh-my-zsh installation.
-export ZSH="$ZDOTDIR/ohmyzsh"
+export ZSH=/usr/share/oh-my-zsh
 
+# Theme
 ZSH_THEME="arrow"
+
+# Options
 DISABLE_AUTO_TITLE="false"
 ENABLE_CORRECTION="true"
 CORRECT_IGNORE="[_|.]*"
 COMPLETION_WAITING_DOTS="true"
 
+# Plugins
 plugins=(
     git
     fzf
@@ -25,12 +28,8 @@ plugins=(
     zsh-interactive-cd
 )
 
+# Load Oh My Zsh
 source $ZSH/oh-my-zsh.sh
-
-# User configuration
-# Aliases and functions are now loaded from /etc/profile.d/dotarch.sh
-# f="$HOME/.config/zsh/aliasrc" && test -f "$f" && source "$f"
-# f="$HOME/.config/zsh/functionrc" && test -f "$f" && source "$f"
 
 # Load zsh-autosuggestions.
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null
@@ -39,19 +38,19 @@ source /usr/share/zsh/plugins/zsh-autopair/autopair.zsh 2>/dev/null
 # Load zsh-syntax-highlighting; should be last.
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
 
+# Word characters
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>'
 MOTION_WORDCHARS='~!#$%^&*(){}[]<>?.+;-/'
 autoload -U select-word-style
 select-word-style normal
 
-# History in cache directory:
+# History in cache directory
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/history
-
 setopt histsavenodups histignorespace appendhistory autocd beep notify promptsubst completealiases
 
-# Keybinding for zle.
+# Keybindings
 bindkey '^H' backward-delete-word       # ctrl + backspace
 bindkey '^[[3;5~' delete-word           # ctrl + del
 bindkey '^[[1;5D' backward-word         # ctrl + left
@@ -71,3 +70,9 @@ newterm() {
 	setsid -f wezterm start --always-new-process
 }
 
+# ==============================================================================
+# Custom Aliases & Functions (Overrides)
+# ==============================================================================
+
+# Load DotArch global configuration last to ensure it overrides plugins
+[ -f /etc/profile.d/dotarch.sh ] && source /etc/profile.d/dotarch.sh

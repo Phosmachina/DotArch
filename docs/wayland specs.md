@@ -6,10 +6,7 @@ We need to disable current x11 based environment:
 
 There are my specs for hyprland:
 - plugins:
-    - hyprfocus
-    - Hyprspace
     - Hyprpaper
-    - hy3
 - tools:
     - Hyprpicker
     - Hyprsunset
@@ -23,6 +20,6 @@ There are my specs for hyprland:
 - greetd/tuigreet
 - replace rofi by rofi-wayland
 - replace lf by yazi
-- ~~replace kitty by WezTerm~~
+- ~~replace kitty by Alacritty~~
 
 For each programs, try to port current configuration like keybindings, fonts, themes...

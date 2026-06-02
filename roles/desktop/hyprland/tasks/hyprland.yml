@@ -73,7 +73,7 @@
   loop:
     - 'power-monitor.sh'
     - 'random-wallpaper.sh'
-    - 'swap-workspaces.sh'
+    - 'workspace-cycler.sh'
   when: install_dotfiles | default(true)
   tags: [ desktop, config ]
 

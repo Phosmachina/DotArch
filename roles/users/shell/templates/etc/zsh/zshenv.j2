@@ -1,1 +1,6 @@
 export ZDOTDIR="$HOME/.config/zsh"
+
+# Global PATH settings
+typeset -U path PATH
+path=("$HOME/.local/bin" "$HOME/go/bin" $path)
+export PATH

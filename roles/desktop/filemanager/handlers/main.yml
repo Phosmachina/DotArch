@@ -1,0 +1,6 @@
+---
+- name: Restart xdg-desktop-portal-termfilechooser
+  ansible.builtin.command: pkill -f xdg-desktop-portal-termfilechooser
+  register: desktop_filemanager_restart_result
+  failed_when: desktop_filemanager_restart_result.rc != 0 and desktop_filemanager_restart_result.rc != 1
+  changed_when: desktop_filemanager_restart_result.rc == 0

@@ -18,20 +18,6 @@
   become: true
   tags: [ system, zsh, core ]
 
-- name: Create user environment directory
-  file:
-    path: "{{ ansible_facts['env'].HOME }}/.config/environment.d"
-    state: directory
-    mode: '0755'
-  tags: [ system, zsh, core ]
-
-- name: Configure shell environment variables
-  template:
-    src: home/.config/environment.d/shell.conf.j2
-    dest: "{{ ansible_facts['env'].HOME }}/.config/environment.d/shell.conf"
-    mode: '0644'
-  tags: [ system, zsh, core ]
-
 - name: Install necessary packages with yay (Arch)
   shell: 'yay -Sy --noconfirm {{ item }}'
   become: true
@@ -52,13 +38,7 @@
     mode: '0644'
   tags: [ system, zsh, config ]
 
-- name: Ensure .config/zsh directory exists
-  file:
-    path: '{{ ansible_facts["user_dir"] }}/.config/zsh'
-    state: directory
-  tags: [ system, zsh, directory ]
-
-- name: Deploy system-wide shell configuration
+- name: Deploy system-wide shell configuration (dotarch.sh)
   become: true
   template:
     src: etc/profile.d/dotarch.sh.j2
@@ -66,20 +46,19 @@
     mode: '0644'
   tags: [ system, zsh, config ]
 
-- name: Ensure dotarch.sh is sourced in zshrc (Arch)
+- name: Configure global Zsh settings (zshrc)
   become: true
-  lineinfile:
-    path: /etc/zsh/zshrc
-    line: 'source /etc/profile.d/dotarch.sh'
-    create: true
-  when: ansible_facts.distribution == 'Archlinux'
+  template:
+    src: etc/zsh/zshrc.j2
+    dest: /etc/zsh/zshrc
+    mode: '0644'
   tags: [ system, zsh, config ]
 
-- name: Copy zsh config
-  copy:
-    src: 'home/.config/zsh/.zshrc'
-    dest: '{{ ansible_facts["user_dir"] }}/.config/zsh/.zshrc'
-  tags: [ system, zsh, config ]
+- name: Ensure .config/zsh directory exists
+  file:
+    path: '{{ ansible_facts["user_dir"] }}/.config/zsh'
+    state: directory
+  tags: [ system, zsh, directory ]
 
 - name: Ensure .cache/zsh directory exists
   file:
@@ -93,26 +72,11 @@
 #      src: 'home/.cache/zsh/history'
 #      dest: '{{ ansible_facts["user_dir"] }}/.cache/zsh/history'
 
-- name: Clone oh-my-zsh
+- name: Clone oh-my-zsh (Global)
+  become: true
   git:
     repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
-    dest: '{{ ansible_facts["user_dir"] }}/.config/zsh/ohmyzsh'
+    dest: '/usr/share/oh-my-zsh'
     clone: true
     update: true
-  tags: [ system, zsh, plugins, ohmyzsh ]
-
-- name: Check if oh-my-zsh is installed
-  stat:
-    path: '{{ ansible_facts["user_dir"] }}/.oh-my-zsh'
-  register: ohmyzsh_stat
-  tags: [ system, zsh, plugins, ohmyzsh ]
-
-- name: Install Oh-my-zsh
-  shell: >-
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" ""
-    --unattended
-    --keep-zshrc
-  args:
-    chdir: '{{ ansible_facts["user_dir"] }}/.config/zsh'
-  when: not ohmyzsh_stat.stat.exists
   tags: [ system, zsh, plugins, ohmyzsh ]

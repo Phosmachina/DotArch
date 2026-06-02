@@ -13,7 +13,7 @@ mode = "push_to_talk"
 [audio]
 device = "default"
 sample_rate = 16000
-max_duration_secs = 60
+max_duration_secs = 300
 
 [audio.feedback]
 enabled = false
@@ -21,9 +21,8 @@ enabled = false
 [whisper]
 backend = "{{ voxtype_backend }}"
 {% if voxtype_backend == 'remote' %}
-model = ""
+model = "{{ voxtype_remote_model }}"
 remote_endpoint = "{{ voxtype_remote_endpoint }}"
-remote_model = "{{ voxtype_remote_model }}"
 remote_api_key = "{{ voxtype_api_key }}"
 {% else %}
 model = "base.en"

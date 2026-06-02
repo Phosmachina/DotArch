@@ -1,6 +1,8 @@
 ---
-# Install and configure Voxtype
+- name: Load encrypted secrets
+  include_vars: secret.yml
 
+# Install and configure Voxtype
 - name: Install Voxtype dependencies (Arch)
   become: true
   community.general.pacman:

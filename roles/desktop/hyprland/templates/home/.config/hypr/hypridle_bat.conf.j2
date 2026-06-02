@@ -17,7 +17,7 @@ listener {
 
 listener {
     timeout = 300                            # 5 minutes
-    on-timeout = hyprlock; hyprctl dispatch dpms off # Lock and turn off screen
+    on-timeout = hyprlock & hyprctl dispatch dpms off # Lock and turn off screen
     on-resume = hyprctl dispatch dpms on     # Turn on screen on resume
 }
 

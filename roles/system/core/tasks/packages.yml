@@ -33,6 +33,7 @@
       - brightnessctl
       - reflector
       - jq
+      - handlr-regex
     state: present
   when: ansible_facts.distribution == 'Archlinux'
   tags: [system]

@@ -4,7 +4,7 @@
   community.general.pacman:
     name:
       - zathura
-      - zathura-pdf-poppler
+      - zathura-pdf-mupdf
     state: present
   when: ansible_facts.distribution == 'Archlinux'
   tags: [ apps, zathura ]

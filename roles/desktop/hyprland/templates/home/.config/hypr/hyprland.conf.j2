@@ -4,7 +4,7 @@
 ### AUTOSTART ###
 #################
 
-exec-once = hyprpm reload -nn
+#exec-once = hyprpm reload
 exec-once = kanshi
 exec-once = ~/.config/hypr/scripts/power-monitor.sh
 exec-once = hyprsunset
@@ -12,13 +12,14 @@ exec-once = waybar
 exec-once = swaync
 exec-once = vicinae server
 exec-once = /usr/local/bin/xdph-launcher.sh
+exec-once = configure-handlr
 exec-once = syncthing
 exec-once = lxpolkit
 exec-once = voxtype daemon
 
 # Load plugins and keybindings
 source = ~/.config/hypr/env.conf
-source = ~/.config/hypr/plugins/hy3.conf
+#source = ~/.config/hypr/plugins/hy3.conf
 source = ~/.config/hypr/keybindings.conf
 
 ################
@@ -41,7 +42,7 @@ input {
     kb_rules =
     numlock_by_default = {{ enable_numlock | default(true) | string | lower }}
 
-    follow_mouse = 0
+    follow_mouse = 2
     mouse_refocus = false
 
     touchpad {
@@ -66,12 +67,29 @@ general {
     col.active_border = rgba(33ccffee) rgba(00ff99ee) 45deg
     col.inactive_border = rgba(595959aa)
 
-    layout = hy3
+    layout = dwindle
 
     resize_on_border = false
 
     # Please see https://wiki.hyprland.org/Configuring/Tearing/ before you turn this on
     allow_tearing = false
+}
+
+group {
+    col.border_active = rgba(33ccffee) rgba(00ff99ee) 45deg
+    col.border_inactive = rgba(595959aa)
+    {% if enable_groupbar | default(true) %}
+    groupbar {
+        enabled = true
+        font_size = 10
+        gradients = true
+        render_titles = true
+    }
+    {% endif %}
+}
+
+dwindle {
+    smart_split = true
 }
 
 decoration {
@@ -110,6 +128,7 @@ animations {
 misc {
     force_default_wallpaper = 0 # Set to 0 to disable the anime mascot wallpapers
     vfr = on
+    focus_on_activate = {{ enable_focus_on_activate | default(true) | string | lower }}
 }
 
 gesture = 3, horizontal, workspace
@@ -126,7 +145,6 @@ windowrule {
   match:class = .*
 }
 
-
 # Fix some dragging issues with XWayland
 windowrule {
   name = windowrule-2
@@ -138,7 +156,6 @@ windowrule {
   match:fullscreen = 0
   match:pin = 0
 }
-
 
 layerrule {
   name = layerrule-1

@@ -1,0 +1,9 @@
+---
+- name: Copy configure-handlr script
+  ansible.builtin.copy:
+    src: usr/bin/configure-handlr
+    dest: /usr/local/bin/configure-handlr
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
