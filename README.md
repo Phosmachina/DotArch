@@ -162,12 +162,12 @@ If you are using `uv`, it will automatically use the virtual environment:
 uv run ansible all -m ping
 
 # Deploy everything
-uv run ansible-playbook playbook.yml
+uv run ansible-playbook playbook.yml --vault-password-file password.sh
 
 # Deploy specific components using tags
-uv run ansible-playbook playbook.yml --tags "system"
-uv run ansible-playbook playbook.yml --tags "desktop"
-uv run ansible-playbook playbook.yml --tags "apps"
+uv run ansible-playbook playbook.yml --vault-password-file password.sh --tags "system"
+uv run ansible-playbook playbook.yml --vault-password-file password.sh --tags "desktop"
+uv run ansible-playbook playbook.yml --vault-password-file password.sh --tags "apps"
 ```
 
 ## Molecule Testing
