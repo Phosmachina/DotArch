@@ -3,4 +3,4 @@
 - name: Configure user shell environment
   ansible.builtin.include_tasks: zsh.yml
   when: configure_shell | default(true)
-  tags: [ system ]
+  tags: [system]

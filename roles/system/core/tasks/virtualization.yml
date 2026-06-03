@@ -3,26 +3,28 @@
 
 # Check if CPU virtualization is supported
 - name: Check if CPU virtualization is supported
-  shell: grep -E 'vmx|svm' /proc/cpuinfo
+  ansible.builtin.shell:
+    cmd: set -o pipefail && grep -E 'vmx|svm' /proc/cpuinfo
   register: virt_supported
   failed_when: false
   changed_when: false
-  check_mode: no
+  check_mode: false
 
 - name: Verify hardware virtualization support
-  fail:
+  ansible.builtin.fail:
     msg: "Hardware virtualization is not supported on this CPU"
   when: virt_supported.rc != 0
 
 # Check if virtualization is enabled in BIOS/UEFI
 - name: Check if virtualization is enabled in BIOS/UEFI
-  shell: lscpu | grep -i "Virtualization"
+  ansible.builtin.shell:
+    cmd: set -o pipefail && lscpu | grep -i "Virtualization"
   register: virt_enabled
   failed_when: false
   changed_when: false
 
 - name: Verify hardware virtualization is enabled
-  fail:
+  ansible.builtin.fail:
     msg: 'Hardware virtualization is supported but not enabled in BIOS/UEFI. Please enable it and try again.'
   when: virt_supported.rc == 0 and virt_enabled.stdout == ""
 
@@ -31,7 +33,7 @@
   community.general.pacman:
     name: iptables
     state: absent
-    force: yes
+    force: true
   become: true
   failed_when: false
   when: ansible_facts.distribution == 'Archlinux'
@@ -51,37 +53,39 @@
 
 # Enable and start libvirtd service
 - name: Enable and start libvirtd service
-  systemd:
+  ansible.builtin.systemd:
     name: libvirtd
-    enabled: yes
+    enabled: true
     state: started
   become: true
 
 # Add current user to libvirt group
 - name: Add user to libvirt group
-  user:
+  ansible.builtin.user:
     name: '{{ ansible_user }}'
     groups: libvirt
-    append: yes
+    append: true
   when: ansible_user != "root"
   become: true
 
 # Ensure polkit rules for libvirt are set up
 - name: Create polkit rules directory if it doesn't exist
-  file:
+  ansible.builtin.file:
     path: /etc/polkit-1/rules.d
     state: directory
     mode: '0755'
   become: true
 
 - name: Configure polkit rules for libvirt
-  copy:
+  ansible.builtin.copy:
     src: 'etc/polkit-1/rules.d/50-libvirt.rules'
     dest: '/etc/polkit-1/rules.d/50-libvirt.rules'
+    mode: '0644'
   become: true
 
 - name: Configure libvirt network
-  copy:
+  ansible.builtin.copy:
     src: 'etc/libvirt/network.conf'
     dest: '/etc/libvirt/network.conf'
+    mode: '0644'
   become: true

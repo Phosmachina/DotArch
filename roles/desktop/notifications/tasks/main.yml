@@ -8,7 +8,7 @@
     name: swaync
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Create SwayNC config directory
   ansible.builtin.file:
@@ -18,7 +18,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy SwayNC configuration
   ansible.builtin.copy:
@@ -28,5 +28,5 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
   failed_when: false

@@ -3,11 +3,12 @@
 # This role manages Vicinae setup
 
 - name: Install Vicinae (Arch)
-  shell: 'yay -S --noconfirm vicinae-bin'
-  become: yes
+  ansible.builtin.shell: yay -S --noconfirm vicinae-bin  # noqa: command-instead-of-shell
+  become: true
   become_user: '{{ ansible_user }}'
+  changed_when: true
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ desktop, vicinae, package ]
+  tags: [desktop, vicinae, package]
 
 - name: Create Vicinae config directory
   ansible.builtin.file:
@@ -17,4 +18,4 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, vicinae, config ]
+  tags: [desktop, vicinae, config]

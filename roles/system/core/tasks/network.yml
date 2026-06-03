@@ -5,13 +5,13 @@
     state: present
   become: true
   when: target == 'laptop'
-  tags: [ system, network ]
+  tags: [system, network]
 
 - name: Enable and Start NetworkManager
-  systemd:
+  ansible.builtin.systemd:
     name: NetworkManager
-    enabled: yes
+    enabled: true
     state: started
   become: true
   when: target == 'laptop'
-  tags: [ system, network ]
+  tags: [system, network]

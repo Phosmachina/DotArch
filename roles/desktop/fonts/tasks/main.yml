@@ -7,29 +7,31 @@
     path: "{{ ansible_facts['user_dir'] }}/.local/share/fonts"
     state: directory
     mode: '0755'
-  tags: [ desktop, fonts ]
+  tags: [desktop, fonts]
 
 - name: Copy waffle font
   ansible.builtin.copy:
     src: files/home/.local/share/fonts/waffle-10.bdf
     dest: "{{ ansible_facts['user_dir'] }}/.local/share/fonts/waffle-10.bdf"
     mode: '0644'
-  tags: [ desktop, fonts ]
+  tags: [desktop, fonts]
 
 - name: Update font cache
   ansible.builtin.command: fc-cache -f
+  changed_when: true
   become: false
-  tags: [ desktop, fonts ]
+  tags: [desktop, fonts]
 
 - name: Install JetBrains Mono Nerd Font
   community.general.pacman:
     name: ttf-jetbrains-mono-nerd
     state: present
-  become: yes
-  tags: [ desktop, fonts ]
+  become: true
+  tags: [desktop, fonts]
 
 - name: Install Apple Emoji Font (AUR)
-  ansible.builtin.shell: 'yay -Sy --noconfirm ttf-apple-emoji'
-  become: yes
+  ansible.builtin.shell: 'yay -Sy --noconfirm ttf-apple-emoji'  # noqa: command-instead-of-shell
+  become: true
   become_user: '{{ ansible_user }}'
-  tags: [ desktop, fonts ]
+  changed_when: true
+  tags: [desktop, fonts]

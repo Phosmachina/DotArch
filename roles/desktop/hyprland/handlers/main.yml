@@ -1,13 +1,14 @@
 ---
 # Handlers for common role
 
-- name: restart greetd
+- name: Restart greetd
   ansible.builtin.service:
     name: greetd
     state: restarted
   become: true
 
-- name: restart waybar
+- name: Restart waybar
   ansible.builtin.command: pkill -SIGUSR2 waybar
-  ignore_errors: true
+  failed_when: false
+  changed_when: true
   become: true

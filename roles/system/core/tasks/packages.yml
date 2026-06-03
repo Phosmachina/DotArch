@@ -40,7 +40,7 @@
 
 # - name: Install system tools with yay (Arch)
 #  ansible.builtin.shell: 'yay -Sy --noconfirm {{ item }}'
-#  become: yes
+#  become: true
 #  become_user: '{{ ansible_user }}'
 #  loop:
 #    - dasel-bin

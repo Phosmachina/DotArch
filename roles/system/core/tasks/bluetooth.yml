@@ -9,23 +9,24 @@
   become: true
 
 - name: Set Bluetooth auto-enable
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/bluetooth/main.conf
     regexp: '^#?AutoEnable=true'
     line: 'AutoEnable=true'
-    backrefs: yes
+    backrefs: true
     state: present
   become: true
 
 - name: Enable bluetooth service to activate bluetooth on boot
-  systemd:
+  ansible.builtin.systemd:
     name: bluetooth.service
-    enabled: yes
+    enabled: true
     state: started
   become: true
 
 - name: Install bluetuith (AUR)
-  ansible.builtin.shell: 'yay -Sy --noconfirm bluetuith'
+  ansible.builtin.shell: 'yay -Sy --noconfirm bluetuith'  # noqa: command-instead-of-shell
   become: true
   become_user: '{{ ansible_user }}'
-  tags: [ system, bluetooth ]
+  changed_when: true
+  tags: [system, bluetooth]

@@ -1,9 +1,10 @@
 ---
 # Tasks for Hyprland tools configuration
 - name: Install Hyprland tools from AUR (Arch)
-  shell: 'yay -Sy --noconfirm {{ item }}'
-  become: yes
+  ansible.builtin.shell: 'yay -Sy --noconfirm {{ item }}'  # noqa: command-instead-of-shell
+  become: true
   become_user: '{{ ansible_user }}'
+  changed_when: true
   with_items:
     - hyprpaper
     - hyprpicker
@@ -11,7 +12,7 @@
     - hypridle
     - hyprlock
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ wm, hyprland, tools ]
+  tags: [wm, hyprland, tools]
 
 - name: Configure Hyprland tools
   ansible.builtin.copy:
@@ -23,7 +24,7 @@
     - hypridle
     - hyprlock
     - hyprpaper
-  tags: [ wm, hyprland, tools ]
+  tags: [wm, hyprland, tools]
 
 - name: Ensure required directories exist
   ansible.builtin.file:
@@ -32,13 +33,14 @@
     mode: '0755'
   with_items:
     - 'Images/Wallpapers'
-  tags: [ wm, hyprland, tools ]
+  tags: [wm, hyprland, tools]
 
 - name: Copy wallpaper
   ansible.builtin.copy:
     src: 'home/Images/Wallpapers/1.jpg'
     dest: '{{ ansible_facts["user_dir"] }}/Images/Wallpapers/1.jpg'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+    mode: '0644'
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Create hypr scripts directory
   ansible.builtin.file:
@@ -47,7 +49,7 @@
     mode: '0755'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Copy the hyprpaper rotation script
   ansible.builtin.copy:
@@ -56,7 +58,7 @@
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0755'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Create systemd user directory
   ansible.builtin.file:
@@ -65,7 +67,7 @@
     mode: '0755'
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Copy hyprpaper systemd service file
   ansible.builtin.copy:
@@ -74,7 +76,7 @@
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0644'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Copy hyprpaper systemd timer file
   ansible.builtin.copy:
@@ -83,7 +85,7 @@
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0644'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Enable and start hyprpaper timer
   ansible.builtin.systemd:
@@ -91,21 +93,10 @@
     scope: user
     enabled: true
     state: started
-    daemon_reload: yes
-  become: yes
+    daemon_reload: true
+  become: true
   become_user: '{{ ansible_user }}'
-  tags: [ wm, hyprland, tools, hyprpaper ]
-
-- name: Enable and start hyprpaper timer
-  systemd:
-    name: hyprpaper.timer
-    scope: user
-    enabled: yes
-    state: started
-    daemon_reload: yes
-  become: yes
-  become_user: '{{ ansible_user }}'
-  tags: [ wm, hyprland, tools, hyprpaper ]
+  tags: [wm, hyprland, tools, hyprpaper]
 
 - name: Copy workspace cycler script
   ansible.builtin.copy:
@@ -114,4 +105,4 @@
     owner: '{{ ansible_user }}'
     group: '{{ ansible_user }}'
     mode: '0755'
-  tags: [ wm, hyprland, tools ]
+  tags: [wm, hyprland, tools]

@@ -5,13 +5,13 @@
 
   tasks:
     - name: Check if Hyprland is installed
-      command: which hyprland
+      ansible.builtin.command: which hyprland
       register: hyprland_check
       changed_when: false
       failed_when: hyprland_check.rc != 0
 
     - name: Check if essential desktop components are installed
-      command: which {{ item }}
+      ansible.builtin.command: which {{ item }}
       register: component_check
       changed_when: false
       failed_when: component_check.rc != 0
@@ -25,7 +25,7 @@
         - wl-clipboard
 
     - name: Check if user configurations exist
-      stat:
+      ansible.builtin.stat:
         path: "{{ ansible_facts['user_dir'] }}/.config/{{ item }}"
       register: config_check
       loop:
@@ -37,19 +37,19 @@
       failed_when: not config_check.stat.exists
 
     - name: Verify shell configuration
-      stat:
+      ansible.builtin.stat:
         path: "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
       register: shell_config
       failed_when: not shell_config.stat.exists
 
     - name: Test configuration file syntax
-      command: bash -n "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
+      ansible.builtin.command: bash -n "{{ ansible_facts['user_dir'] }}/.config/zsh/.zshrc"
       register: shell_syntax
       changed_when: false
       failed_when: shell_syntax.rc != 0
 
     - name: Display verification results
-      debug:
+      ansible.builtin.debug:
         msg:
           - "✅ Hyprland is correctly installed"
           - "✅ All desktop components are available"

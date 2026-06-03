@@ -4,12 +4,12 @@
 
 - name: Install and configure Hyprland window manager
   ansible.builtin.include_tasks: hyprland.yml
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Install Hyprland plugins
   ansible.builtin.include_tasks: hyprland-plugins.yml
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Install Hyprland tools and utilities
   ansible.builtin.include_tasks: hyprland-tools.yml
-  tags: [ desktop ]
+  tags: [desktop]

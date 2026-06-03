@@ -18,10 +18,10 @@
       raw: |
         # Initialize pacman keyring
         pacman -Sy --noconfirm archlinux-keyring
-        
+
         #pacman-key --refresh-keys
         #pacman-key --populate
-        
+
         # Install Python if not present
         if ! command -v python3 &> /dev/null; then
           pacman -Sy --noconfirm python

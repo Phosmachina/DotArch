@@ -8,7 +8,7 @@
     name: greetd
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ desktop, greetd, package ]
+  tags: [desktop, greetd, package]
 
 - name: Install tuigreet (greeter frontend) (Arch)
   become: true
@@ -16,7 +16,7 @@
     name: greetd-tuigreet
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ desktop, greetd, package ]
+  tags: [desktop, greetd, package]
 
 - name: Create greetd config directory
   become: true
@@ -24,7 +24,7 @@
     path: /etc/greetd
     state: directory
     mode: '0755'
-  tags: [ desktop, greetd, config ]
+  tags: [desktop, greetd, config]
 
 - name: Copy greetd configuration
   become: true
@@ -32,7 +32,7 @@
     src: files/etc/greetd/config.toml
     dest: /etc/greetd/config.toml
     mode: '0644'
-  tags: [ desktop, greetd, config ]
+  tags: [desktop, greetd, config]
 
 - name: Create bin directory for display launcher
   become: true
@@ -40,7 +40,7 @@
     path: /usr/local/bin
     state: directory
     mode: '0755'
-  tags: [ desktop, greetd, config ]
+  tags: [desktop, greetd, config]
 
 - name: Copy display launcher script
   become: true
@@ -48,7 +48,7 @@
     src: usr/local/bin/xdph-launcher.sh
     dest: /usr/local/bin/xdph-launcher.sh
     mode: '0755'
-  tags: [ desktop, greetd, config ]
+  tags: [desktop, greetd, config]
 
 - name: Enable and start greetd service
   become: true
@@ -56,4 +56,4 @@
     name: greetd.service
     enabled: true
     state: started
-  tags: [ desktop, greetd, service ]
+  tags: [desktop, greetd, service]

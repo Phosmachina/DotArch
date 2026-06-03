@@ -7,18 +7,18 @@
       - wireguard-tools
     state: present
   become: true
-  tags: [ system, vpn ]
+  tags: [system, vpn]
 
 - name: Ensure WireGuard config directory exists
-  file:
+  ansible.builtin.file:
     path: /etc/wireguard
     state: directory
     mode: '0700'
   become: true
-  tags: [ system, vpn ]
+  tags: [system, vpn]
 
 - name: Copy WireGuard configuration file based on hostname
-  copy:
+  ansible.builtin.copy:
     src: "etc/wireguard/Peer_{{ hostname }}.conf"
     dest: "/etc/wireguard/wg0.conf"
     mode: '0600'
@@ -26,13 +26,13 @@
     group: root
   become: true
   notify: Restart WireGuard
-  tags: [ system, vpn ]
+  tags: [system, vpn]
   when: not deploy_without_passwords | default(false)
 
 - name: Enable and start WireGuard service
-  systemd:
+  ansible.builtin.systemd:
     name: "wg-quick@wg0"
-    enabled: yes
+    enabled: true
     state: started
   become: true
-  tags: [ system, vpn ]
+  tags: [system, vpn]

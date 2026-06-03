@@ -5,115 +5,115 @@
 - name: Include system core configuration
   ansible.builtin.include_role:
     name: system/core
-  tags: [ system ]
+  tags: [system]
 
 - name: Include user shell configuration
   ansible.builtin.include_role:
     name: users/shell
-  tags: [ system ]
+  tags: [system]
   when: configure_shell | default(true)
 
 - name: Include desktop fonts
   ansible.builtin.include_role:
     name: desktop/fonts
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include core Hyprland window manager
   ansible.builtin.include_role:
     name: desktop/hyprland
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include display manager
   ansible.builtin.include_role:
     name: desktop/greetd
-  tags: [ desktop ]
+  tags: [desktop]
   when: not skip_greetd | default(false)
 
 - name: Include terminal emulator
   ansible.builtin.include_role:
     name: desktop/terminal
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include application launcher and clipboard (Vicinae)
   ansible.builtin.include_role:
     name: desktop/vicinae
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include handlr configuration
   ansible.builtin.include_role:
     name: desktop/handlr
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include status bar
   ansible.builtin.include_role:
     name: desktop/waybar
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include notification center
   ansible.builtin.include_role:
     name: desktop/notifications
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include file manager
   ansible.builtin.include_role:
     name: desktop/filemanager
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include screenshot tools
   ansible.builtin.include_role:
     name: desktop/screenshot
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Include Firefox browser
   ansible.builtin.include_role:
     name: apps/firefox
-  tags: [ apps ]
+  tags: [apps]
   when: enable_firefox | default(true)
 
 - name: Include Bitwarden password manager
   ansible.builtin.include_role:
     name: apps/bitwarden
-  tags: [ apps ]
+  tags: [apps]
   when: enable_bitwarden | default(true)
 
 - name: Include mpv
   ansible.builtin.include_role:
     name: apps/mpv
-  tags: [ apps, mpv ]
+  tags: [apps, mpv]
   when: enable_mpv | default(true)
 
 - name: Include zathura
   ansible.builtin.include_role:
     name: apps/zathura
-  tags: [ apps, zathura ]
+  tags: [apps, zathura]
   when: enable_zathura | default(true)
 
 - name: Include qimgv
   ansible.builtin.include_role:
     name: apps/qimgv
-  tags: [ apps, qimgv ]
+  tags: [apps, qimgv]
   when: enable_qimgv | default(true)
 
 - name: Include Zed Editor
   ansible.builtin.include_role:
     name: apps/zeditor
-  tags: [ apps, zeditor ]
+  tags: [apps, zeditor]
   when: enable_zeditor | default(false)
 
 - name: Include JetBrains Toolbox
   ansible.builtin.include_role:
     name: apps/jetbrains
-  tags: [ apps, jetbrains ]
+  tags: [apps, jetbrains]
   when: enable_jetbrains | default(false)
 
 - name: Include Docker
   ansible.builtin.include_role:
     name: system/docker
-  tags: [ system, docker ]
+  tags: [system, docker]
   when: enable_docker | default(false)
 
 - name: Include Voxtype
   ansible.builtin.include_role:
     name: apps/voxtype
-  tags: [ apps, voxtype ]
+  tags: [apps, voxtype]
   when: enable_voxtype | default(true)

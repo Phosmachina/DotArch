@@ -10,5 +10,4 @@
     group: root
     mode: '0644'
     backup: true
-  become: yes
-
+  become: true

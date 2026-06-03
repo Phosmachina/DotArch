@@ -1,6 +1,6 @@
 ---
 - name: Load encrypted secrets
-  include_vars: secret.yml
+  ansible.builtin.include_vars: secret.yml
 
 # Install and configure Voxtype
 - name: Install Voxtype dependencies (Arch)
@@ -11,13 +11,14 @@
       - wl-clipboard
     state: present
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ apps, voxtype ]
+  tags: [apps, voxtype]
 
 - name: Install Voxtype (AUR)
-  ansible.builtin.shell: 'yay -Sy --noconfirm voxtype-bin'
+  ansible.builtin.shell: 'yay -Sy --noconfirm voxtype-bin'  # noqa: command-instead-of-shell
   args:
     creates: /usr/bin/voxtype
-  tags: [ apps, voxtype ]
+  changed_when: true
+  tags: [apps, voxtype]
 
 - name: Create Voxtype configuration directory
   ansible.builtin.file:
@@ -26,7 +27,7 @@
     mode: '0755'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-  tags: [ apps, voxtype, config ]
+  tags: [apps, voxtype, config]
 
 - name: Deploy Voxtype configuration
   ansible.builtin.template:
@@ -35,4 +36,4 @@
     mode: '0600' # Contains API key potentially
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-  tags: [ apps, voxtype, config ]
+  tags: [apps, voxtype, config]

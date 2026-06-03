@@ -1,37 +1,38 @@
 ---
 - name: Check if yay is installed
-  command: which yay
+  ansible.builtin.command: which yay
   register: yay_check
   ignore_errors: true
   changed_when: false
 
 - name: Ensure base-devel and git are installed
-  pacman:
+  community.general.pacman:
     name:
       - base-devel
       - git
       - go
     state: present
-  become: yes
+  become: true
   when: yay_check.rc != 0
 
 - name: Clone yay from AUR
-  git:
+  ansible.builtin.git:
     repo: 'https://aur.archlinux.org/yay.git'
     dest: '{{ ansible_facts["user_dir"] }}/yay'
-    clone: yes
-    update: yes
+    clone: true
+    update: false
   when: yay_check.rc != 0
 
 - name: Install yay
-  command:
+  ansible.builtin.command:
     cmd: makepkg -si --noconfirm
     chdir: '{{ ansible_facts["user_dir"] }}/yay'
-  become: yes
+  changed_when: true
+  become: true
   become_user: '{{ ansible_user }}'
   when: yay_check.rc != 0
 
 - name: Remove cloned directory
-  file:
+  ansible.builtin.file:
     path: '{{ ansible_facts["user_dir"] }}/yay'
     state: absent

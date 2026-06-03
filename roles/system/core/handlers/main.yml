@@ -6,27 +6,27 @@
   changed_when: true
 
 - name: Restart WireGuard
-  systemd:
+  ansible.builtin.systemd:
     name: "wg-quick@wg0"
     state: restarted
-    daemon_reload: yes
-  become: yes
+    daemon_reload: true
+  become: true
 
 - name: Restart NetworkManager
-  systemd:
+  ansible.builtin.systemd:
     name: NetworkManager
     state: restarted
   become: true
   when: target == 'laptop'
 
 - name: Restart systemd-vconsole-setup
-  service:
+  ansible.builtin.service:
     name: systemd-vconsole-setup
     state: restarted
   become: true
 
 - name: Enable NumLock service
-  systemd:
+  ansible.builtin.systemd:
     name: numlock.service
     enabled: true
     state: started
@@ -34,7 +34,7 @@
   become: true
 
 - name: Disable NumLock service
-  systemd:
+  ansible.builtin.systemd:
     name: numlock.service
     enabled: false
     state: stopped

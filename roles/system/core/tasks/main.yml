@@ -4,66 +4,66 @@
 
 - name: Detect distribution and set facts
   ansible.builtin.include_tasks: detect_distribution.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Install AUR helper (Arch only)
   ansible.builtin.include_tasks: yay.yml
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ system ]
+  tags: [system]
 
 - name: Install base system packages
   ansible.builtin.include_tasks: packages.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure system hostname
   ansible.builtin.include_tasks: hostname.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure system locale
   ansible.builtin.include_tasks: locale.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure numlock
   ansible.builtin.include_tasks: numlock.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure bluetooth
   ansible.builtin.include_tasks: bluetooth.yml
   when: configure_bluetooth | default(true)
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure audio system
   ansible.builtin.include_tasks: audio.yml
   when: configure_audio | default(true)
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure network mounts
   ansible.builtin.include_tasks: fstab.yml
   when: mount_network_shares | default(false)
-  tags: [ system ]
+  tags: [system]
 
 - name: Configure NetworkManager (Laptop)
   ansible.builtin.include_tasks: network.yml
   when: target == 'laptop'
-  tags: [ system, network ]
+  tags: [system, network]
 
 - name: Configure DNS (systemd-resolved)
   ansible.builtin.include_tasks: dns.yml
-  tags: [ system, dns ]
+  tags: [system, dns]
 
 - name: Configure VPN (WireGuard)
   ansible.builtin.include_tasks: vpn.yml
   when: enable_vpn | default(false)
-  tags: [ system, vpn ]
+  tags: [system, vpn]
 
 - name: Configure virtualization
   ansible.builtin.include_tasks: virtualization.yml
-  tags: [ system ]
+  tags: [system]
 
 - name: Install system scripts
   ansible.builtin.include_tasks: scripts.yml
-  tags: [ system, config ]
+  tags: [system, config]
 
 - name: Configure trash management
   ansible.builtin.include_tasks: trash.yml
-  tags: [ system, config ]
+  tags: [system, config]

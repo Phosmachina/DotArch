@@ -23,7 +23,7 @@
     state: present
     extra_args: --overwrite '*'
   when: ansible_facts.distribution == 'Archlinux'
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Install Syncthing (Arch)
   become: true
@@ -33,7 +33,7 @@
   when:
     - ansible_facts.distribution == 'Archlinux'
     - enable_syncthing | default(true)
-  tags: [ desktop ]
+  tags: [desktop]
 
 - name: Install Nvidia drivers (Arch)
   become: true
@@ -46,7 +46,7 @@
   when:
     - ansible_facts.distribution == 'Archlinux'
     - enable_nvidia | default(false)
-  tags: [ desktop, nvidia ]
+  tags: [desktop, nvidia]
 
 - name: Create base configuration directories
   ansible.builtin.file:
@@ -61,7 +61,7 @@
     - '.config/hypr/scripts'
     - '.config/kanshi'
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy hyprland scripts
   ansible.builtin.copy:
@@ -75,7 +75,7 @@
     - 'random-wallpaper.sh'
     - 'workspace-cycler.sh'
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy hypridle configurations
   ansible.builtin.template:
@@ -88,7 +88,7 @@
     - 'hypridle_ac.conf.j2'
     - 'hypridle_bat.conf.j2'
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy hyprland configuration files
   ansible.builtin.copy:
@@ -100,7 +100,7 @@
   loop:
     - 'keybindings.conf'
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
   failed_when: false
 
 - name: Deploy Hyprland configuration
@@ -111,7 +111,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Create kanshi config directory
   ansible.builtin.file:
@@ -121,7 +121,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy kanshi configuration
   ansible.builtin.template:
@@ -131,7 +131,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy Hyprland environment config
   ansible.builtin.template:
@@ -141,7 +141,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Create xdg-desktop-portal config directory
   ansible.builtin.file:
@@ -151,7 +151,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
 
 - name: Copy xdg-desktop-portal configuration
   ansible.builtin.copy:
@@ -161,4 +161,4 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
-  tags: [ desktop, config ]
+  tags: [desktop, config]
