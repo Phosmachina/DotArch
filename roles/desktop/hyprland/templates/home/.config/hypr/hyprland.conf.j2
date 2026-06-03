@@ -76,14 +76,27 @@ general {
 }
 
 group {
-    col.border_active = rgba(33ccffee) rgba(00ff99ee) 45deg
-    col.border_inactive = rgba(595959aa)
+    col.border_active = rgba(4682ffee) rgba(785adcff) 45deg
+    col.border_inactive = rgba(19192388)
+    col.border_locked_active = rgba(ff4646ee) rgba(ff7850ee) 45deg
+    col.border_locked_inactive = rgba(19192388)
+
     {% if enable_groupbar | default(true) %}
     groupbar {
         enabled = true
-        font_size = 10
-        gradients = true
+        font_family = JetBrains Mono Nerd Font
+        font_size = 9
+        gradients = false
+        height = 14
         render_titles = true
+        text_color = 0xffffffff
+        rounding = 6
+        rounding_power = 2.0
+        round_only_edges = true
+        col.active = 0xcc4682ff
+        col.inactive = 0x66191923
+        col.locked_active = 0xccff4646
+        col.locked_inactive = 0x66191923
     }
     {% endif %}
 }
@@ -127,7 +140,6 @@ animations {
 
 misc {
     force_default_wallpaper = 0 # Set to 0 to disable the anime mascot wallpapers
-    vfr = on
     focus_on_activate = {{ enable_focus_on_activate | default(true) | string | lower }}
 }
 
