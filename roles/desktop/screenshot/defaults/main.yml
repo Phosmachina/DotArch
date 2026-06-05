@@ -1,0 +1,3 @@
+---
+# defaults file for screenshot role
+screenshot_save_dir: "/mnt/POOL_1_DATA/DESIGN/IMAGES/%temp%/SCREENSHOTS"

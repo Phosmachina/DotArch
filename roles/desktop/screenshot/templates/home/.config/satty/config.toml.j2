@@ -15,11 +15,12 @@ disable-notifications = true
 
 # Filename to use for saving action. Omit disabling saving to file.
 # Might contain format specifiers: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
-output-filename = "/tmp/test-%Y-%m-%d_%H:%M:%S.png"
+output-filename = "{{ screenshot_save_dir | replace('%', '%%') }}/Screenshot_%Y-%m-%d-%H:%M:%S.png"
+
 
 # Actions to trigger on Enter key (order is important)
 # [possible values: save-to-clipboard, save-to-file, exit]
-actions-on-enter = ["save-to-clipboard"]
+actions-on-enter = ["save-to-file", "save-to-clipboard", "exit"]
 
 # Actions to trigger on Escape key (order is important)
 # [possible values: save-to-clipboard, save-to-file, exit]

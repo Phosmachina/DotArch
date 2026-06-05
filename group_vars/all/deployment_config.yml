@@ -33,3 +33,7 @@ enable_numlock: true           # Enable numlock on boot
 configure_bluetooth: true      # Set up bluetooth
 configure_audio: true          # Set up audio system
 mount_network_shares: true     # Configure fstab network mounts
+
+# Screenshot configuration
+screenshot_save_dir: "/mnt/POOL_1_DATA/DESIGN/IMAGES/%temp%/SCREENSHOTS"
+
