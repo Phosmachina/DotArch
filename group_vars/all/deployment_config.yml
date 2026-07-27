@@ -34,6 +34,13 @@ configure_bluetooth: true      # Set up bluetooth
 configure_audio: true          # Set up audio system
 mount_network_shares: true     # Configure fstab network mounts
 
+# Power management (laptop only)
+configure_power_management: true   # Never sleep when AC power connected
+lid_switch_on_ac: ignore           # logind HandleLidSwitchExternalPower: ignore | lock
+configure_battery_threshold: true  # Cap battery charge (Dell laptops via cctk)
+battery_charge_start: 75           # cctk PrimaryBattChargeCfg lower bound (recharge below)
+battery_charge_end: 80             # cctk PrimaryBattChargeCfg upper bound (stop charging)
+
 # Screenshot configuration
 screenshot_save_dir: "/mnt/POOL_1_DATA/DESIGN/IMAGES/%temp%/SCREENSHOTS"
 

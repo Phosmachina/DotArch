@@ -1,0 +1,104 @@
+---
+# Laptop power policy
+# Block 1: systemd-logind lid-switch policy (any laptop)
+# Block 2: Dell battery charge threshold (Dell laptops only, guarded)
+
+# ---------------------------------------------------------------------------
+# Block 1 - Lid switch on AC power (systemd-logind)
+# HandleLidSwitchExternalPower is the only logind knob keyed specifically to
+# "on external power"; HandleLidSwitch cannot distinguish AC from battery.
+# ---------------------------------------------------------------------------
+
+- name: Ensure logind drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/logind.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: configure_power_management | default(true)
+  tags: [system, power]
+
+- name: Configure logind to not sleep on AC power
+  ansible.builtin.template:
+    src: etc/systemd/logind.conf.d/01-no-suspend-on-ac.conf.j2
+    dest: /etc/systemd/logind.conf.d/01-no-suspend-on-ac.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: configure_power_management | default(true)
+  notify: Restart systemd-logind
+  tags: [system, power]
+
+- name: Remove logind AC power policy
+  ansible.builtin.file:
+    path: /etc/systemd/logind.conf.d/01-no-suspend-on-ac.conf
+    state: absent
+  become: true
+  when: not (configure_power_management | default(true))
+  notify: Restart systemd-logind
+  tags: [system, power]
+
+# ---------------------------------------------------------------------------
+# Block 2 - Dell battery charge threshold (via cctk)
+# Dell does not expose the kernel charge_control_end_threshold sysfs knob, so
+# TLP cannot manage it. Dell Command | Configure (cctk) writes the charge range
+# directly into BIOS firmware and persists across reboots.
+# ---------------------------------------------------------------------------
+
+- name: Detect Dell vendor compliance
+  ansible.builtin.set_fact:
+    dell_compliant: "{{ 'Dell' in (ansible_facts.system_vendor | default('')) }}"
+  tags: [system, power]
+
+- name: Report skipped charge configuration (non-Dell)
+  ansible.builtin.debug:
+    msg: "Battery charge threshold skipped: cctk is Dell-only (vendor='{{ ansible_facts.system_vendor | default('unknown') }}')."
+  when: not dell_compliant
+  tags: [system, power]
+
+- name: Build desired battery charge configuration target
+  ansible.builtin.set_fact:
+    battery_charge_config_target: "Custom:{{ battery_charge_start | default(75) }}-{{ battery_charge_end | default(80) }}"
+  when: dell_compliant and (configure_battery_threshold | default(true))
+  tags: [system, power]
+
+- name: Install Dell Command | Configure (Dell only)
+  ansible.builtin.shell: 'yay -Sy --noconfirm dell-command-configure'  # noqa: command-instead-of-shell
+  become: true
+  become_user: '{{ ansible_user }}'
+  args:
+    creates: /opt/dell/dcc/cctk
+  when: dell_compliant and (configure_battery_threshold | default(true))
+  tags: [system, power]
+
+- name: Read current battery charge configuration
+  ansible.builtin.command: /opt/dell/dcc/cctk --PrimaryBattChargeCfg
+  register: current_charge_cfg
+  become: true
+  changed_when: false
+  failed_when: false
+  when: dell_compliant and (configure_battery_threshold | default(true))
+  tags: [system, power]
+
+- name: Set battery charge threshold (Dell)
+  ansible.builtin.command: '/opt/dell/dcc/cctk --PrimaryBattChargeCfg={{ battery_charge_config_target }}'
+  become: true
+  changed_when: true
+  when:
+    - dell_compliant
+    - configure_battery_threshold | default(true)
+    - current_charge_cfg.rc | default(1) == 0
+    - battery_charge_config_target not in (current_charge_cfg.stdout | default(''))
+  tags: [system, power]
+
+- name: Report unsupported charge configuration (Dell without PrimaryBattChargeCfg)
+  ansible.builtin.debug:
+    msg: "Battery charge threshold unsupported on this Dell model (cctk rc={{ current_charge_cfg.rc | default('n/a') }}). Skipped without error."
+  when:
+    - dell_compliant
+    - configure_battery_threshold | default(true)
+    - current_charge_cfg.rc | default(0) != 0
+  tags: [system, power]

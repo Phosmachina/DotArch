@@ -1,0 +1,6 @@
+# Managed by Ansible (roles/system/core)
+# Never suspend when AC power is connected.
+# HandleLidSwitchExternalPower is the only logind knob keyed specifically to
+# "on external power"; HandleLidSwitch cannot distinguish AC from battery.
+[Login]
+HandleLidSwitchExternalPower={{ lid_switch_on_ac | default('ignore') }}

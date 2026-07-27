@@ -40,3 +40,9 @@
     state: stopped
     daemon_reload: true
   become: true
+
+- name: Restart systemd-logind
+  ansible.builtin.systemd:
+    name: systemd-logind
+    state: restarted
+  become: true

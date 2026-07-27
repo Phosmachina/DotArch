@@ -47,6 +47,11 @@
   when: target == 'laptop'
   tags: [system, network]
 
+- name: Configure power policy (Laptop)
+  ansible.builtin.include_tasks: power.yml
+  when: target == 'laptop'
+  tags: [system, power]
+
 - name: Configure DNS (systemd-resolved)
   ansible.builtin.include_tasks: dns.yml
   tags: [system, dns]
