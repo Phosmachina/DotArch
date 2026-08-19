@@ -22,6 +22,7 @@
         "battery",
         "backlight",
         {% endif %}
+        "custom/transcript",
         "custom/voxtype",
         "pulseaudio",
         "disk",
@@ -39,6 +40,13 @@
             "stopped": ""
         },
         "tooltip": true
+    },
+
+    "custom/transcript": {
+        "exec": "~/.config/waybar/scripts/waybar-transcript.sh",
+        "return-type": "json",
+        "interval": 1,
+        "tooltip": false
     },
 
     "hyprland/workspaces": {
