@@ -112,6 +112,12 @@ else
     echo "FAIL - real text must count as speech"
     failures=$((failures + 1))
 fi
+if has_speech " Bonjour, ça va "; then
+    echo "ok - accented non-ASCII text counts as speech"
+else
+    echo "FAIL - accented non-ASCII text must count as speech"
+    failures=$((failures + 1))
+fi
 
 # --- set_state ---
 state_file="$(mktemp)"

@@ -173,6 +173,7 @@ prepare_audio() {
     # Less than ~1s of audio left (CD wav = 44100 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
         dunstify -u normal "Whisper Transcript" "No speech detected" || true
+        rm -f "$trimmed_audio"
         return 1
     fi
 
@@ -213,6 +214,7 @@ convert_to_aac() {
     register_temp "$tmp_audio"
     ffmpeg -y -i "$1" -vn -c:a aac -ar 44100 -ac 2 "$tmp_audio" >/dev/null 2>&1 || {
         echo "Error: Unable to convert file to AAC format." >&2
+        rm -f "$tmp_audio"
         return 1
     }
     printf '%s\n' "$tmp_audio"
