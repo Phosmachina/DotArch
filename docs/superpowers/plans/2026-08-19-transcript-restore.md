@@ -616,6 +616,7 @@ If unchanged, no commit.
 - Create: `roles/desktop/waybar/files/home/.config/waybar/scripts/waybar-transcript.sh`
 - Modify: `roles/desktop/waybar/templates/home/.config/waybar/config.j2:25` (modules-right) and after line 42 (module definition)
 - Modify: `roles/desktop/waybar/files/home/.config/waybar/style.css` (append after the `#custom-voxtype` block, reuses the existing `pulse` keyframes at line 236)
+- Modify: `roles/desktop/waybar/tasks/main.yml` (append a copy task for the module script after the clock-script task — the role deploys scripts per-file)
 
 **Interfaces:**
 - Consumes: state file `$XDG_RUNTIME_DIR/transcript.state` with values `idle|recording|transcribing|error` (contract from Task 1).
@@ -722,6 +723,23 @@ Append to `roles/desktop/waybar/files/home/.config/waybar/style.css` (after the 
 Run: `uv run ansible-playbook playbook.yml --vault-password-file password.sh --syntax-check`
 Expected: `playbook: playbook.yml` with no errors (confirms the edited `.j2` didn't break anything loadable).
 
+- [ ] **Step 6b: Wire the module script into the role's deploy tasks**
+
+Append to `roles/desktop/waybar/tasks/main.yml`, immediately after the "Copy Waybar clock script" task, mirroring it exactly:
+
+```yaml
+- name: Copy Waybar transcript script
+  ansible.builtin.copy:
+    src: files/home/.config/waybar/scripts/waybar-transcript.sh
+    dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/scripts/waybar-transcript.sh"
+    mode: '0755'
+  tags: [desktop, waybar, config]
+```
+
+Verify: `uv run ansible-lint roles/desktop/waybar/` (clean) and a check-mode run of the role via a scoped /tmp playbook (see Task 4 Step 3) showing the new task as `changed`.
+
+NOTE (discovered during execution): `--tags waybar` from `playbook.yml` does NOT reach the role — the meta-role `include_role` is tagged `[desktop]` only, so the include is skipped for any other tag. Scoped deploys must use a /tmp playbook that imports the role directly.
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -752,10 +770,32 @@ Expected: no output (`wl-copy`/`wtype` come from the voxtype role's pacman packa
 Run: `sudo -n install -m 0755 roles/system/core/files/usr/bin/transcript /usr/bin/transcript 2>/dev/null || sudo install -m 0755 roles/system/core/files/usr/bin/transcript /usr/bin/transcript`
 Expected: no error. If sudo cannot get a password non-interactively in this environment, stop and ask the user to run the `sudo install` command themselves.
 
-- [ ] **Step 3: Deploy the waybar pieces via the playbook**
+- [ ] **Step 3: Deploy the waybar pieces via a scoped playbook**
 
-Run: `uv run ansible-playbook playbook.yml --vault-password-file password.sh --tags waybar`
-Expected: the waybar role tasks (config template, style.css, scripts) report ok/changed; no failures. This deploys to `~/.config/waybar/` for user michel on localhost.
+`--tags waybar` cannot reach the role through the meta-role (its `include_role` is tagged `[desktop]` only — see Task 3 Step 6b note). Use a scoped playbook instead. Create `/tmp/waybar-deploy.yml`:
+
+```yaml
+---
+- name: Scoped deploy of desktop/waybar
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars_files:
+    - /mnt/POOL_1_DATA/CONFIGURATION/DotArch/group_vars/all/variables.yml
+    - /mnt/POOL_1_DATA/CONFIGURATION/DotArch/group_vars/all/deployment_config.yml
+  roles:
+    - role: /mnt/POOL_1_DATA/CONFIGURATION/DotArch/roles/desktop/waybar
+```
+
+Run (battery detection mirrors `playbook.yml`'s pre_task; `--skip-tags package` skips only the become+pacman task, which fails on this host's root-squashed NFS and is unnecessary — waybar is already installed):
+
+```bash
+uv run ansible-playbook /tmp/waybar-deploy.yml --vault-password-file password.sh \
+    --skip-tags package -e deploy_without_passwords=true \
+    -e "target=$(if [ -d /sys/class/power_supply/BAT0 ]; then echo laptop; else echo desktop; fi)"
+```
+
+Expected: the "Template Waybar config", "Copy Waybar configuration" (style.css), and "Copy Waybar transcript script" tasks report `changed`; no failures. This deploys to `~/.config/waybar/` for user michel on localhost. IMPORTANT: `target` must be `laptop` on battery-equipped machines or the rendered config loses the battery/backlight modules.
 
 - [ ] **Step 4: Reload waybar**
 
