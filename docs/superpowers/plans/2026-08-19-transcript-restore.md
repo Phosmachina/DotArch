@@ -275,8 +275,10 @@ start_recording() {
     set_state recording
     local notify_pid tempfile record_pid
     notify_pid=$(dunstify -p -t 0 -u normal "Whisper Transcript" "Recording started..." || true)
+    # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
+    # single-recording lock, so no live recording can match here.
+    rm -f /tmp/recording_*.wav
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
-    register_temp "$tempfile"
     arecord -f cd "$tempfile" >/dev/null 2>&1 &
     record_pid=$!
     echo "$record_pid $notify_pid $tempfile" > "$recording_info"
@@ -285,6 +287,7 @@ start_recording() {
 stop_recording() {
     local record_pid notify_pid tempfile
     read -r record_pid notify_pid tempfile < "$recording_info"
+    register_temp "$tempfile"
 
     kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
     sleep 0.3
