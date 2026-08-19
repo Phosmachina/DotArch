@@ -105,6 +105,25 @@ set_state "recording"
 assert_eq "$(cat "$state_file")" "recording" "set_state writes the state file"
 rm -f "$state_file"
 
+# --- start_recording must NOT register the live recording for trap cleanup ---
+# (the start invocation exits immediately; its EXIT trap must not delete the
+# wav arecord is writing — registration belongs to the stop invocation)
+state_file="$(mktemp)"
+recording_info="$(mktemp)"
+arecord() {
+    sleep 30 &
+}
+dunstify() {
+    return 0
+}
+# Reset in test scope (shellcheck cannot see the sourced script's assignment).
+temp_files=()
+start_recording
+assert_eq "${#temp_files[@]}" "0" "start_recording leaves the live recording out of trap cleanup"
+kill "$(awk '{print $1}' "$recording_info")" 2>/dev/null || true
+rm -f "$recording_info" "$state_file" "$(sed 's/^[0-9]* [0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
+unset -f arecord
+
 # --- load_token: env then file ---
 assert_eq "$(load_token)" "test-token" "load_token prefers the env var"
 unset DEEPINFRA_API_TOKEN
