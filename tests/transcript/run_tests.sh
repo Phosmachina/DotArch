@@ -99,6 +99,20 @@ assert_eq "$out" "" "llm_clean passes empty input through"
 out=$(printf '{"text":"  hello world"}' | format_txt)
 assert_eq "$out" "hello world" "format_txt strips leading spaces"
 
+# --- has_speech: punctuation-only whisper output is not speech ---
+if has_speech "" || has_speech "..." || has_speech " .  "; then
+    echo "FAIL - punctuation-only/empty text must not count as speech"
+    failures=$((failures + 1))
+else
+    echo "ok - punctuation-only/empty text is not speech"
+fi
+if has_speech "hello"; then
+    echo "ok - real text counts as speech"
+else
+    echo "FAIL - real text must count as speech"
+    failures=$((failures + 1))
+fi
+
 # --- set_state ---
 state_file="$(mktemp)"
 set_state "recording"

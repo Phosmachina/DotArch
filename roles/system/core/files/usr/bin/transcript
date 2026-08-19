@@ -137,10 +137,16 @@ stop_recording() {
     # subshell, so register the returned AAC path here for the EXIT trap.
     register_temp "$processed_audio"
 
-    if ! text=$(transcribe_audio "$processed_audio" | format_txt) || [[ -z "$text" ]]; then
+    if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
         notify_error "Transcription failed"
         rm -f "$recording_info"
         return 1
+    fi
+    if ! has_speech "$text"; then
+        dunstify -u normal "Whisper Transcript" "No speech detected" || true
+        rm -f "$recording_info"
+        set_state idle
+        return 0
     fi
 
     if [[ "$clean_level" != "raw" ]]; then
@@ -258,6 +264,12 @@ llm_clean() {
         cleaned="$input"
     fi
     printf '%s' "$cleaned"
+}
+
+# Whisper returns 200 with empty or punctuation-only text when nothing
+# survived silence removal — that is not an error.
+has_speech() {
+    [[ -n "${1//[[:space:][:punct:]]/}" ]]
 }
 
 # Format transcribed text for plain text output
