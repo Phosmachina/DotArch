@@ -1,12 +1,71 @@
 #!/bin/bash
+#
+# transcript - push-to-talk dictation and file transcription via DeepInfra.
+#
+# Usage:
+#   transcript [--clean light|full|raw]        toggle dictation recording
+#   transcript FILE [--srt]                    transcribe an audio/video file
+#
+# Dictation pipeline: arecord -> sox silence removal -> ffmpeg AAC ->
+# whisper (curl) -> optional LLM cleanup -> wl-copy + wtype.
 
-# List of dependencies
-dependencies=("arecord" "deepctl" "jq" "xclip" "xdotool" "dunstify" "sox" "ffmpeg")
+set -uo pipefail
 
-# Global variable for inference model name
+dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "dunstify" "sox" "ffmpeg")
+
 inference_model="openai/whisper-large-v3-turbo"
+llm_model="Qwen/Qwen3.5-9B"
+api_base="https://api.deepinfra.com"
+
+state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
+token_file="$HOME/.config/transcript/token"
+recording_info="/tmp/recording_info"
+
+auth_token=""
+clean_level="light"
+srt_flag=0
+input_file=""
+temp_files=()
+
+usage() {
+    cat <<'EOF'
+transcript - dictation and file transcription via DeepInfra
+
+Usage:
+  transcript [--clean light|full|raw]     toggle push-to-talk dictation
+  transcript FILE [--srt]                 write FILE.txt (and FILE.srt)
+
+Options:
+  --clean light   fix punctuation/misrecognitions, remove artifacts (default)
+  --clean full    light + reformat into paragraphs/lists
+  --clean raw     skip the LLM pass (shorthand: --raw)
+  --srt           with FILE: also write subtitles
+  -h, --help      show this help
+EOF
+}
+
+set_state() {
+    printf '%s' "$1" > "$state_file"
+}
+
+notify_error() {
+    dunstify -u critical "Whisper Transcript" "$1" 2>/dev/null || true
+    set_state error
+}
+
+register_temp() {
+    temp_files+=("$1")
+}
+
+cleanup_temps() {
+    local f
+    for f in "${temp_files[@]}"; do
+        [[ -f "$f" ]] && rm -f "$f"
+    done
+}
 
 check_dependencies() {
+    local dependency
     for dependency in "${dependencies[@]}"; do
         if ! command -v "$dependency" &>/dev/null; then
             echo "Error: '$dependency' command not found. Please install the corresponding package." >&2
@@ -15,74 +74,172 @@ check_dependencies() {
     done
 }
 
-# Start recording: use arecord tool to start an audio record.
-start_recording() {
-    notify_pid=$(dunstify -p -t 0 -u normal "Whisper Transcript" "Recording started...")
-    tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
-    arecord -f cd "$tempfile" >/dev/null &
-    record_pid=$!
-    echo "$record_pid $notify_pid $tempfile" >"/tmp/recording_info"
+load_token() {
+    if [[ -n "${DEEPINFRA_API_TOKEN:-}" ]]; then
+        printf '%s' "$DEEPINFRA_API_TOKEN"
+    elif [[ -r "$token_file" ]]; then
+        head -n 1 "$token_file" | tr -d '[:space:]'
+    else
+        return 1
+    fi
 }
 
-# Function to stop recording, process audio, and display transcript
+api_call() {
+    # api_call DESCRIPTION CURL_ARGS...
+    # Performs the HTTP request; retries on transport failure or HTTP >= 400
+    # (3 attempts, 2s/4s backoff). Prints the response body on 2xx.
+    local description="$1"
+    shift
+    local attempt response http_code
+    for attempt in 1 2 3; do
+        response=$(curl -sS --max-time 120 -w $'\n%{http_code}' "$@" 2>/dev/null) || response=""
+        http_code="${response##*$'\n'}"
+        if [[ "$http_code" =~ ^2 ]]; then
+            printf '%s' "${response%$'\n'*}"
+            return 0
+        fi
+        [[ "$attempt" -lt 3 ]] && sleep $((attempt * 2))
+    done
+    echo "Error: API call failed after 3 attempts ($description, status: ${http_code:-no response})" >&2
+    return 1
+}
+
+start_recording() {
+    set_state recording
+    local notify_pid tempfile record_pid
+    notify_pid=$(dunstify -p -t 0 -u normal "Whisper Transcript" "Recording started..." || true)
+    tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
+    register_temp "$tempfile"
+    arecord -f cd "$tempfile" >/dev/null 2>&1 &
+    record_pid=$!
+    echo "$record_pid $notify_pid $tempfile" > "$recording_info"
+}
+
 stop_recording() {
     local record_pid notify_pid tempfile
-    read record_pid notify_pid tempfile <"/tmp/recording_info"
+    read -r record_pid notify_pid tempfile < "$recording_info"
 
-    kill -INT "$record_pid"
-    dunstify -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcript..."
+    kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
+    sleep 0.3
+    set_state transcribing
+    dunstify -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcribing..." || true
 
-    # Prepare audio file for transcription
-    local processed_audio=$(prepare_audio "$tempfile")
-    transcribe_audio "$processed_audio" | format_txt | xclip -selection clipboard
+    local processed_audio text
+    if ! processed_audio=$(prepare_audio "$tempfile"); then
+        rm -f "$recording_info"
+        set_state idle
+        return 0
+    fi
 
-    xdotool key --clearmodifiers ctrl+shift+v
-    dunstify -r "$notify_pid" "Whisper Transcript" "Transcript complete"
+    if ! text=$(transcribe_audio "$processed_audio" | format_txt) || [[ -z "$text" ]]; then
+        notify_error "Transcription failed"
+        rm -f "$recording_info"
+        return 1
+    fi
 
-    # Clean up temporary files
-    rm "/tmp/recording_info" "$tempfile" "${processed_audio}"
+    if [[ "$clean_level" != "raw" ]]; then
+        text=$(printf '%s' "$text" | llm_clean "$clean_level")
+    fi
+
+    printf '%s' "$text" | wl-copy || true
+    wtype -- "$text" || true
+    dunstify -r "$notify_pid" "Whisper Transcript" "Transcript complete" || true
+
+    rm -f "$recording_info"
+    set_state idle
 }
 
-# Function to prepare an audio file: removes silence and accelerates the audio
+# Silence-removes the recording and returns the AAC path ready for upload.
 prepare_audio() {
     local tempfile="$1"
-    local trimmed_audio=$(mktemp /tmp/trimmed_XXXXXX.wav)
-    local scaled_audio=$(mktemp /tmp/scaled_XXXXXX.wav)
+    local trimmed_audio
+    trimmed_audio=$(mktemp /tmp/trimmed_XXXXXX.wav)
+    register_temp "$trimmed_audio"
 
-    # Remove silence and speed up audio
-    sox "$tempfile" "$trimmed_audio" silence 1 0.1 0.1% -1 0.1 0.1% -t high 2>/dev/null
-    sox "$trimmed_audio" "$scaled_audio" tempo 1.2 2>/dev/null
+    sox "$tempfile" "$trimmed_audio" silence 1 0.1 0.1% -1 0.1 0.1% 2>/dev/null || true
 
-    convert_to_aac "$scaled_audio"
+    # Less than ~1s of audio left (CD wav = 44100 bytes/s) means no speech.
+    if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
+        dunstify -u normal "Whisper Transcript" "No speech detected" || true
+        return 1
+    fi
+
+    convert_to_aac "$trimmed_audio"
 }
 
-# Function to process an audio or video file for transcription
+# Processes an audio/video file: writes <name>.txt (and <name>.srt).
 process_file() {
     local path="${1%.*}"
-    local audio_file=$(convert_to_aac "$1")
-    local json_result=$(transcribe_audio "$audio_file")
-
-    echo "$json_result" | format_txt >"${path}.txt"
-    [ "$2" = "--srt" ] && echo "$json_result" | format_srt >"${path}.srt"
-
-    rm "$audio_file"
+    local audio_file json_result
+    audio_file=$(convert_to_aac "$1") || exit 1
+    if ! json_result=$(transcribe_audio "$audio_file"); then
+        echo "Error: transcription failed for '$1'" >&2
+        exit 1
+    fi
+    printf '%s' "$json_result" | format_txt > "${path}.txt"
+    if [[ "$srt_flag" -eq 1 ]]; then
+        printf '%s' "$json_result" | format_srt > "${path}.srt"
+    fi
+    return 0
 }
 
-# Function to convert an audio file to AAC format
 convert_to_aac() {
-    local tmp_audio=$(mktemp /tmp/"$(basename "$1" .wav)"_XXXXXX.aac)
-
+    local tmp_audio
+    tmp_audio=$(mktemp /tmp/"$(basename "$1" .wav)"_XXXXXX.aac)
+    register_temp "$tmp_audio"
     ffmpeg -y -i "$1" -vn -c:a aac -ar 44100 -ac 2 "$tmp_audio" >/dev/null 2>&1 || {
         echo "Error: Unable to convert file to AAC format." >&2
-        exit 1
+        return 1
     }
-
-    echo "$tmp_audio"
+    printf '%s\n' "$tmp_audio"
 }
 
-# Function to transcribe audio using DeepInfra API
+# Transcribes an AAC file with whisper via the DeepInfra inference API.
 transcribe_audio() {
-    deepctl infer -m "$inference_model" -i "audio=@$1"
+    api_call "whisper inference" \
+        -X POST \
+        -H "Authorization: Bearer ${auth_token}" \
+        -F "audio=@$1" \
+        "${api_base}/v1/inference/${inference_model}"
+}
+
+# llm_clean LEVEL - cleans the transcript from stdin, prints cleaned text.
+# Dictation must never hard-fail on the optional stage: falls back to input.
+llm_clean() {
+    local level="$1"
+    local input prompt response cleaned
+    input=$(cat)
+    [[ -z "${input//[[:space:]]/}" ]] && { printf '%s' "$input"; return 0; }
+
+    case "$level" in
+        light)
+            prompt="You are a post-processor for speech-to-text output. Respond with ONLY the corrected text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation and remove phantom filler artifacts such as stray acknowledgements. Keep the wording and language exactly as spoken. Do not summarize, translate, or reformat."
+            ;;
+        full)
+            prompt="You are a post-processor for speech-to-text output. Respond with ONLY the cleaned text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation, remove phantom filler artifacts, and structure the text with paragraphs and lists where the content calls for it. Keep the language and the spoken meaning. Do not summarize or translate."
+            ;;
+    esac
+
+    # chat_template_kwargs disables Qwen3.5 thinking mode — otherwise the
+    # answer lands in reasoning_content and .content comes back empty.
+    if ! response=$(api_call "llm cleanup" \
+        -X POST \
+        -H "Authorization: Bearer ${auth_token}" \
+        -H "Content-Type: application/json" \
+        -d "$(jq -n --arg model "$llm_model" --arg prompt "$prompt" --arg text "$input" \
+            '{model: $model, temperature: 0, max_tokens: 2048,
+              chat_template_kwargs: {enable_thinking: false},
+              messages: [{role: "system", content: $prompt},
+                         {role: "user", content: $text}]}')" \
+        "${api_base}/v1/openai/chat/completions"); then
+        printf '%s' "$input"
+        return 0
+    fi
+
+    if ! cleaned=$(printf '%s' "$response" | jq -er '.choices[0].message.content // empty' 2>/dev/null) || [[ -z "$cleaned" ]]; then
+        cleaned="$input"
+    fi
+    printf '%s' "$cleaned"
 }
 
 # Format transcribed text for plain text output
@@ -112,26 +269,75 @@ format_srt() {
   '
 }
 
-# Main script logic: starts/stops recording or processes a file
-main() {
-    check_dependencies
-
-    if [ "$#" -eq 1 ]; then
-        process_file "$1"
-    elif [ "$#" -eq 2 ] && [ "$2" = "--srt" ]; then
-        process_file "$1" --srt
-    else
-        if [ -f "/tmp/recording_info" ]; then
-            read record_pid notify_pid tempfile <"/tmp/recording_info"
-            if ps -p "$record_pid" >/dev/null; then
-                stop_recording
-            else
-                start_recording
-            fi
-        else
-            start_recording
-        fi
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --clean)
+                [[ $# -ge 2 ]] || { echo "Error: --clean requires a value (light|full|raw)" >&2; exit 1; }
+                clean_level="$2"
+                shift 2
+                ;;
+            --clean=*)
+                clean_level="${1#*=}"
+                shift
+                ;;
+            --raw)
+                clean_level="raw"
+                shift
+                ;;
+            --srt)
+                srt_flag=1
+                shift
+                ;;
+            -h | --help)
+                usage
+                exit 0
+                ;;
+            *)
+                if [[ -n "$input_file" ]]; then
+                    echo "Error: unexpected argument '$1'" >&2
+                    exit 1
+                fi
+                input_file="$1"
+                shift
+                ;;
+        esac
+    done
+    if [[ ! "$clean_level" =~ ^(light|full|raw)$ ]]; then
+        echo "Error: --clean must be light, full, or raw" >&2
+        exit 1
     fi
 }
 
-main "$@"
+# Main script logic: starts/stops recording or processes a file
+main() {
+    parse_args "$@"
+    check_dependencies
+
+    if ! auth_token=$(load_token); then
+        notify_error "No API token found (set DEEPINFRA_API_TOKEN or create $token_file)"
+        exit 1
+    fi
+
+    if [[ -n "$input_file" ]]; then
+        process_file "$input_file"
+        return
+    fi
+
+    if [[ -f "$recording_info" ]]; then
+        local record_pid notify_pid tempfile
+        read -r record_pid notify_pid tempfile < "$recording_info"
+        if ps -p "$record_pid" >/dev/null; then
+            stop_recording
+        else
+            start_recording
+        fi
+    else
+        start_recording
+    fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    trap cleanup_temps EXIT
+    main "$@"
+fi
