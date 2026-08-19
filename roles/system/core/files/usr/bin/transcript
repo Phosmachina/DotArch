@@ -133,6 +133,9 @@ stop_recording() {
         set_state idle
         return 0
     fi
+    # prepare_audio ran inside $(...): its register_temp calls were lost to a
+    # subshell, so register the returned AAC path here for the EXIT trap.
+    register_temp "$processed_audio"
 
     if ! text=$(transcribe_audio "$processed_audio" | format_txt) || [[ -z "$text" ]]; then
         notify_error "Transcription failed"
@@ -167,7 +170,16 @@ prepare_audio() {
         return 1
     fi
 
-    convert_to_aac "$trimmed_audio"
+    # The trimmed wav is an intermediate: remove it here because this whole
+    # function runs inside a command substitution whose register_temp calls
+    # cannot reach the EXIT trap in the parent shell.
+    local aac_file
+    if ! aac_file=$(convert_to_aac "$trimmed_audio"); then
+        rm -f "$trimmed_audio"
+        return 1
+    fi
+    rm -f "$trimmed_audio"
+    printf '%s\n' "$aac_file"
 }
 
 # Processes an audio/video file: writes <name>.txt (and <name>.srt).
@@ -175,6 +187,9 @@ process_file() {
     local path="${1%.*}"
     local audio_file json_result
     audio_file=$(convert_to_aac "$1") || exit 1
+    # convert_to_aac ran inside $(...): register the path in this shell so
+    # the EXIT trap removes it.
+    register_temp "$audio_file"
     if ! json_result=$(transcribe_audio "$audio_file"); then
         echo "Error: transcription failed for '$1'" >&2
         exit 1
