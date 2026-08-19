@@ -20,6 +20,8 @@
 > and `59fdeb6` (whisper 200 with empty/punctuation-only text is now a benign
 > "No speech detected" via `has_speech()`, not a red error). The Task 1 script
 > block below predates these fixes — the committed script is authoritative.
+> A fourth fix, `462822c`, closes the remaining temp-leak branches (trimmed
+> wav on the sox-gate path, AAC on ffmpeg failure).
 
 - VoxType is untouched this phase: no edits to `roles/apps/voxtype/`, keybindings, `roles/profiles/desktop-hyprland/tasks/main.yml`, or `group_vars/`.
 - File/SRT mode semantics unchanged (backend call only). LLM cleanup applies to dictation mode only.
