@@ -69,6 +69,7 @@ check_dependencies() {
     for dependency in "${dependencies[@]}"; do
         if ! command -v "$dependency" &>/dev/null; then
             echo "Error: '$dependency' command not found. Please install the corresponding package." >&2
+            dunstify -u critical "Whisper Transcript" "Missing dependency: '$dependency'" 2>/dev/null || true
             exit 1
         fi
     done
@@ -170,7 +171,7 @@ prepare_audio() {
 
     sox "$tempfile" "$trimmed_audio" silence 1 0.1 0.1% -1 0.1 0.1% 2>/dev/null || true
 
-    # Less than ~1s of audio left (CD wav = 44100 bytes/s) means no speech.
+    # Less than ~0.25s of audio left (CD wav = 176400 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
         dunstify -u normal "Whisper Transcript" "No speech detected" || true
         rm -f "$trimmed_audio"
@@ -351,6 +352,11 @@ main() {
         exit 1
     fi
 
+    if [[ -z "$auth_token" ]]; then
+        notify_error "API token is empty (check $token_file or \$DEEPINFRA_API_TOKEN)"
+        exit 1
+    fi
+
     if [[ -n "$input_file" ]]; then
         process_file "$input_file"
         return
@@ -371,5 +377,6 @@ main() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     trap cleanup_temps EXIT
+    trap 'cleanup_temps; exit 130' INT TERM
     main "$@"
 fi
