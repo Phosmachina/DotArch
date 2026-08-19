@@ -13,6 +13,14 @@
 ## Global Constraints
 
 - The DeepInfra token is NEVER written to any committed file (script, tests, plan, docs). It lives only in `~/.config/transcript/token` (mode 600) or `$DEEPINFRA_API_TOKEN`.
+
+> **Execution addenda (2026-08-19):** two defects surfaced during Task 4 live
+> smoke tests and were fixed in commits `877a820` (temp files leaked: register
+> returned paths parent-side since `$(...)` subshells lose array mutations)
+> and `59fdeb6` (whisper 200 with empty/punctuation-only text is now a benign
+> "No speech detected" via `has_speech()`, not a red error). The Task 1 script
+> block below predates these fixes — the committed script is authoritative.
+
 - VoxType is untouched this phase: no edits to `roles/apps/voxtype/`, keybindings, `roles/profiles/desktop-hyprland/tasks/main.yml`, or `group_vars/`.
 - File/SRT mode semantics unchanged (backend call only). LLM cleanup applies to dictation mode only.
 - Dependency deltas: drop `deepctl`, `xclip`, `xdotool`; add `wl-clipboard`, `wtype`; keep `arecord`, `sox`, `ffmpeg`, `jq`, `dunstify`.
