@@ -32,7 +32,7 @@
 **Interfaces:**
 - Produces (used by tests in this task): `api_call DESCRIPTION CURL_ARGS...` (prints body, returns non-zero after 3 failed attempts, backoff `sleep 2` then `sleep 4`); `load_token` (prints token from env or file); `llm_clean LEVEL` (stdin→stdout, levels `light|full`, falls back to input on failure); `format_txt`, `format_srt` (unchanged jq filters); `set_state STATE`; `parse_args` (sets globals `clean_level`, `srt_flag`, `input_file`).
 - Produces (used by Task 3): state file `$XDG_RUNTIME_DIR/transcript.state` (fallback `/tmp/transcript.state`) containing `idle|recording|transcribing|error`.
-- Produces (used by Task 2): constant `llm_model="Qwen/Qwen2.5-7B-Instruct"` (line near top of script) and endpoint `${api_base}/v1/openai/chat/completions`.
+- Produces (used by Task 2): constant `llm_model="Qwen/Qwen3.5-9B"` (line near top of script) and endpoint `${api_base}/v1/openai/chat/completions`.
 - Guard: script only runs `main "$@"` when executed directly (`BASH_SOURCE == $0`), so tests can source it.
 
 - [ ] **Step 1: Write the failing test suite**
