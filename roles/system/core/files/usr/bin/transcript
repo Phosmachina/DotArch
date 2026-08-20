@@ -14,10 +14,12 @@ set -uo pipefail
 dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "notify-send" "swaync-client" "sox" "ffmpeg")
 
 inference_model="openai/whisper-large-v3-turbo"
-llm_model="Qwen/Qwen3.5-9B"
+llm_model="Qwen/Qwen3.5-122B-A10B"
 api_base="https://api.deepinfra.com"
 
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
+last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
+last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
 token_file="$HOME/.config/transcript/token"
 recording_info="/tmp/recording_info"
 
@@ -41,6 +43,10 @@ Options:
   --clean raw     skip the LLM pass (shorthand: --raw)
   --srt           with FILE: also write subtitles
   -h, --help      show this help
+
+The last dictation's raw whisper text and final text are kept in
+$XDG_RUNTIME_DIR/transcript-last-raw.txt and transcript-last.txt for
+comparison.
 EOF
 }
 
@@ -156,8 +162,12 @@ stop_recording() {
     fi
 
     if [[ "$clean_level" != "raw" ]]; then
+        printf '%s\n' "$text" > "$last_raw_file"
         text=$(printf '%s' "$text" | llm_clean "$clean_level")
+    else
+        printf '%s\n' "$text" > "$last_raw_file"
     fi
+    printf '%s\n' "$text" > "$last_out_file"
 
     printf '%s' "$text" | wl-copy || true
     wtype -- "$text" || true
@@ -247,10 +257,10 @@ llm_clean() {
 
     case "$level" in
         light)
-            prompt="You are a post-processor for speech-to-text output. Respond with ONLY the corrected text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation and remove phantom filler artifacts such as stray acknowledgements. Keep the wording and language exactly as spoken. Do not summarize, translate, or reformat."
+            prompt='You are a post-processor for speech-to-text output. Respond with ONLY the corrected text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation and remove phantom filler artifacts. Speech recognizers often hallucinate a trailing standalone acknowledgement ("Merci", "Thank you", "Thanks") after the final silence — always remove such trailing acknowledgements, and never add pleasantries of your own. Keep the wording and language exactly as spoken. Do not summarize, translate, or reformat.'
             ;;
         full)
-            prompt="You are a post-processor for speech-to-text output. Respond with ONLY the cleaned text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation, remove phantom filler artifacts, and structure the text with paragraphs and lists where the content calls for it. Keep the language and the spoken meaning. Do not summarize or translate."
+            prompt='You are a post-processor for speech-to-text output. Respond with ONLY the cleaned text itself: no preamble, no quotes, no explanations. Correct misrecognized words and punctuation and remove phantom filler artifacts. Speech recognizers often hallucinate a trailing standalone acknowledgement ("Merci", "Thank you", "Thanks") after the final silence — always remove such trailing acknowledgements, and never add pleasantries of your own. Structure the text with paragraphs and lists where the content calls for it. Keep the language and the spoken meaning. Do not summarize or translate.'
             ;;
     esac
 
