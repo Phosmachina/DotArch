@@ -18,10 +18,11 @@ llm_model="Qwen/Qwen3.5-122B-A10B"
 api_base="https://api.deepinfra.com"
 
 # Silence-removal threshold: must sit ABOVE the mic's noise floor and BELOW
-# speech. Measured on this host's mic 2026-08-20: ambient max 3.9% / RMS 0.9%,
-# quiet speech ~20%. The old 0.1% matched only digital silence — a no-op on
-# real recordings, so pauses reached whisper and triggered hallucinations.
-silence_threshold="5%"
+# speech. Measured on this host's Blue Snowball 2026-08-20 (input at 100%):
+# ambient max 3.9% / RMS 0.9%. 5% proved too high — it cut real speech — so
+# this is an interim 1.5% pending a real-speech measurement. The old 0.1%
+# matched only digital silence (a no-op).
+silence_threshold="1.5%"
 
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
@@ -119,7 +120,7 @@ api_call() {
 
 start_recording() {
     set_state recording
-    notify-send -t 0 -u normal "Whisper Transcript" "Recording started..." || true
+    notify-send -t 1500 -u normal "Whisper Transcript" "Recording started..." || true
     # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
     # single-recording lock, so no live recording can match here.
     rm -f /tmp/recording_*.wav
