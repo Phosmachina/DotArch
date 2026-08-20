@@ -17,6 +17,12 @@ inference_model="openai/whisper-large-v3-turbo"
 llm_model="Qwen/Qwen3.5-122B-A10B"
 api_base="https://api.deepinfra.com"
 
+# Silence-removal threshold: must sit ABOVE the mic's noise floor and BELOW
+# speech. Measured on this host's mic 2026-08-20: ambient max 3.9% / RMS 0.9%,
+# quiet speech ~20%. The old 0.1% matched only digital silence — a no-op on
+# real recordings, so pauses reached whisper and triggered hallucinations.
+silence_threshold="5%"
+
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
 last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
@@ -185,7 +191,7 @@ prepare_audio() {
     trimmed_audio=$(mktemp /tmp/trimmed_XXXXXX.wav)
     register_temp "$trimmed_audio"
 
-    sox "$tempfile" "$trimmed_audio" silence 1 0.1 0.1% -1 0.1 0.1% 2>/dev/null || true
+    sox "$tempfile" "$trimmed_audio" silence 1 0.1 "$silence_threshold" -1 0.1 "$silence_threshold" 2>/dev/null || true
 
     # Less than ~0.25s of audio left (CD wav = 176400 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
