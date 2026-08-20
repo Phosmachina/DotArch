@@ -3,14 +3,14 @@
 # Vérifier que l'argument est bien une URL
 if [[ $1 != http* ]]; then
     echo "Erreur : argument invalide"
-    dunstify "Erreur" "Argument invalide" -u critical
+    notify-send -u critical "Erreur" "Argument invalide"
     exit 1
 fi
 
 title=$(yt-dlp --get-title "$1")
 
 # Télécharger la vidéo
-dunstify "Téléchargement" "Début du téléchargement de la vidéo" -u low
+notify-send -u low "Téléchargement" "Début du téléchargement de la vidéo"
 yt-dlp "$1"
 
 # Créer le fichier de note

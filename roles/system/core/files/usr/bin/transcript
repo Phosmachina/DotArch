@@ -11,7 +11,7 @@
 
 set -uo pipefail
 
-dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "dunstify" "sox" "ffmpeg")
+dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "notify-send" "swaync-client" "sox" "ffmpeg")
 
 inference_model="openai/whisper-large-v3-turbo"
 llm_model="Qwen/Qwen3.5-9B"
@@ -49,7 +49,7 @@ set_state() {
 }
 
 notify_error() {
-    dunstify -u critical "Whisper Transcript" "$1" 2>/dev/null || true
+    notify-send -u critical "Whisper Transcript" "$1" || true
     set_state error
 }
 
@@ -69,7 +69,7 @@ check_dependencies() {
     for dependency in "${dependencies[@]}"; do
         if ! command -v "$dependency" &>/dev/null; then
             echo "Error: '$dependency' command not found. Please install the corresponding package." >&2
-            dunstify -u critical "Whisper Transcript" "Missing dependency: '$dependency'" 2>/dev/null || true
+            notify-send -u critical "Whisper Transcript" "Missing dependency: '$dependency'" || true
             exit 1
         fi
     done
@@ -107,26 +107,29 @@ api_call() {
 
 start_recording() {
     set_state recording
-    local notify_pid tempfile record_pid
-    notify_pid=$(dunstify -p -t 0 -u normal "Whisper Transcript" "Recording started..." || true)
+    notify-send -t 0 -u normal "Whisper Transcript" "Recording started..." || true
     # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
     # single-recording lock, so no live recording can match here.
     rm -f /tmp/recording_*.wav
+    local tempfile record_pid
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
     arecord -f cd "$tempfile" >/dev/null 2>&1 &
     record_pid=$!
-    echo "$record_pid $notify_pid $tempfile" > "$recording_info"
+    echo "$record_pid $tempfile" > "$recording_info"
 }
 
 stop_recording() {
-    local record_pid notify_pid tempfile
-    read -r record_pid notify_pid tempfile < "$recording_info"
+    local record_pid tempfile
+    read -r record_pid tempfile < "$recording_info"
     register_temp "$tempfile"
 
     kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
     sleep 0.3
     set_state transcribing
-    dunstify -t 0 -r "$notify_pid" "Whisper Transcript" "Recording stopped, transcribing..." || true
+    # swaync has no replaces-id: close our "Recording started" toast, then
+    # show the next lifecycle toast.
+    swaync-client --close-latest >/dev/null 2>&1
+    notify-send -t 0 "Whisper Transcript" "Recording stopped, transcribing..." || true
 
     local processed_audio text
     if ! processed_audio=$(prepare_audio "$tempfile"); then
@@ -139,12 +142,14 @@ stop_recording() {
     register_temp "$processed_audio"
 
     if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
+        swaync-client --close-latest >/dev/null 2>&1
         notify_error "Transcription failed"
         rm -f "$recording_info"
         return 1
     fi
     if ! has_speech "$text"; then
-        dunstify -u normal "Whisper Transcript" "No speech detected" || true
+        swaync-client --close-latest >/dev/null 2>&1
+        notify-send -u normal -t 2000 "Whisper Transcript" "No speech detected" || true
         rm -f "$recording_info"
         set_state idle
         return 0
@@ -156,7 +161,8 @@ stop_recording() {
 
     printf '%s' "$text" | wl-copy || true
     wtype -- "$text" || true
-    dunstify -r "$notify_pid" "Whisper Transcript" "Transcript complete" || true
+    swaync-client --close-latest >/dev/null 2>&1
+    notify-send -t 2000 "Whisper Transcript" "Transcript complete" || true
 
     rm -f "$recording_info"
     set_state idle
@@ -173,7 +179,8 @@ prepare_audio() {
 
     # Less than ~0.25s of audio left (CD wav = 176400 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
-        dunstify -u normal "Whisper Transcript" "No speech detected" || true
+        swaync-client --close-latest >/dev/null 2>&1
+        notify-send -u normal -t 2000 "Whisper Transcript" "No speech detected" || true
         rm -f "$trimmed_audio"
         return 1
     fi
@@ -363,8 +370,8 @@ main() {
     fi
 
     if [[ -f "$recording_info" ]]; then
-        local record_pid notify_pid tempfile
-        read -r record_pid notify_pid tempfile < "$recording_info"
+        local record_pid _
+        read -r record_pid _ < "$recording_info"
         if ps -p "$record_pid" >/dev/null; then
             stop_recording
         else
