@@ -21,10 +21,10 @@ usage() {
 #  fi
 
 notify() {
-	# swaync (the notification daemon) ignores dunst's replaces-id, so
+	# swaync (the notification daemon) has no replaces-id support, so
 	# replace manually: close the previous toast, then show a short-lived one.
 	swaync-client --close-latest >/dev/null 2>&1
-	dunstify "volume" "volume: $(volume)" -t 1200
+	notify-send -t 1200 "volume" "volume: $(volume)"
 }
 
 case $1 in
