@@ -19,10 +19,11 @@ api_base="https://api.deepinfra.com"
 
 # Silence-removal threshold: must sit ABOVE the mic's noise floor and BELOW
 # speech. Measured on this host's Blue Snowball 2026-08-20 (input at 100%):
-# ambient max 3.9% / RMS 0.9%. 5% proved too high — it cut real speech — so
-# this is an interim 1.5% pending a real-speech measurement. The old 0.1%
-# matched only digital silence (a no-op).
-silence_threshold="1.5%"
+# ambient max 3.9% / RMS 0.9%, real speech sustained ~1-1.5% (peak 7.9%) —
+# a narrow window. 0.7%/0.1s keeps 93% of a real speech sample while cutting
+# 2s pauses; higher values (1.5%+) cut speech, 0.1% (the old value) matched
+# only digital silence. Re-measure if the mic or room changes.
+silence_threshold="0.7%"
 
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
 notify_id_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-notify-id"
