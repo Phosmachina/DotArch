@@ -32,7 +32,6 @@ fake_dir="$(mktemp -d)"
 sleeps=()
 sleep() { printf '%s\n' "$*" >>"$fake_dir/sleeps"; }
 notify-send() { return 0; }
-swaync-client() { return 0; }
 # Pull the file-based counters back into shell variables for assertions.
 reload_counters() {
     mapfile -t _curl_log <"$fake_dir/curl"
@@ -130,6 +129,7 @@ rm -f "$state_file"
 # (the start invocation exits immediately; its EXIT trap must not delete the
 # wav arecord is writing — registration belongs to the stop invocation)
 state_file="$(mktemp)"
+notify_id_file="$(mktemp)"
 recording_info="$(mktemp)"
 arecord() {
     sleep 30 &
@@ -139,7 +139,7 @@ temp_files=()
 start_recording
 assert_eq "${#temp_files[@]}" "0" "start_recording leaves the live recording out of trap cleanup"
 kill "$(awk '{print $1}' "$recording_info")" 2>/dev/null || true
-rm -f "$recording_info" "$state_file" "$(sed 's/^[0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
+rm -f "$recording_info" "$state_file" "$notify_id_file" "$(sed 's/^[0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
 unset -f arecord
 
 # --- load_token: env then file ---

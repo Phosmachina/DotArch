@@ -11,8 +11,8 @@ usage() {
 }
 
 # if [ -f "$XDG_RUNTIME_DIR/pulse/pid" ]; then
-    up() { pulsemixer --change-volume +$num; }
-    down() { pulsemixer --change-volume -$num; }
+    up() { pulsemixer --change-volume +"$num"; }
+    down() { pulsemixer --change-volume -"$num"; }
     volume() { pulsemixer --get-volume | cut -d' ' -f1; }
 #  else
 #      up() { amixer sset Master $num%+; }
@@ -21,10 +21,17 @@ usage() {
 #  fi
 
 notify() {
-	# swaync (the notification daemon) has no replaces-id support, so
-	# replace manually: close the previous toast, then show a short-lived one.
-	swaync-client --close-latest >/dev/null 2>&1
-	notify-send -t 1200 "volume" "volume: $(volume)"
+	# Replacement per the Notifications spec: -p prints the daemon-assigned
+	# id, -r replaces that notification next call. The id must persist across
+	# keypresses, so keep it in a runtime file. Invented fixed ids (the old
+	# dunstify -r 9991049 pattern) are ignored by swaync and stack instead.
+	id_file="${XDG_RUNTIME_DIR:-/tmp}/sound-notify-id"
+	id=$(cat "$id_file" 2>/dev/null)
+	if [ -n "$id" ]; then
+		notify-send -p -r "$id" -t 1200 "volume" "volume: $(volume)" >"$id_file" 2>/dev/null
+	else
+		notify-send -p -t 1200 "volume" "volume: $(volume)" >"$id_file" 2>/dev/null
+	fi
 }
 
 case $1 in

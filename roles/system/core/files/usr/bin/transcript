@@ -11,7 +11,7 @@
 
 set -uo pipefail
 
-dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "notify-send" "swaync-client" "sox" "ffmpeg")
+dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "notify-send" "sox" "ffmpeg")
 
 inference_model="openai/whisper-large-v3-turbo"
 llm_model="Qwen/Qwen3.5-122B-A10B"
@@ -25,6 +25,7 @@ api_base="https://api.deepinfra.com"
 silence_threshold="1.5%"
 
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
+notify_id_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-notify-id"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
 last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
 token_file="$HOME/.config/transcript/token"
@@ -61,8 +62,22 @@ set_state() {
     printf '%s' "$1" > "$state_file"
 }
 
+# Show a lifecycle toast that replaces the previous one (Notifications spec:
+# -p prints the daemon-assigned id, -r replaces it; the id persists across
+# the separate toggle invocations via notify_id_file). Invented fixed ids
+# are ignored by swaync and stack instead.
+notify_status() {
+    local id
+    id=$(cat "$notify_id_file" 2>/dev/null)
+    if [[ -n "$id" ]]; then
+        notify-send -p -r "$id" "$@" >"$notify_id_file" 2>/dev/null || true
+    else
+        notify-send -p "$@" >"$notify_id_file" 2>/dev/null || true
+    fi
+}
+
 notify_error() {
-    notify-send -u critical "Whisper Transcript" "$1" || true
+    notify_status -u critical "Whisper Transcript" "$1"
     set_state error
 }
 
@@ -82,7 +97,7 @@ check_dependencies() {
     for dependency in "${dependencies[@]}"; do
         if ! command -v "$dependency" &>/dev/null; then
             echo "Error: '$dependency' command not found. Please install the corresponding package." >&2
-            notify-send -u critical "Whisper Transcript" "Missing dependency: '$dependency'" || true
+            notify_status -u critical "Whisper Transcript" "Missing dependency: '$dependency'"
             exit 1
         fi
     done
@@ -120,7 +135,7 @@ api_call() {
 
 start_recording() {
     set_state recording
-    notify-send -t 1500 -u normal "Whisper Transcript" "Recording started..." || true
+    notify_status -t 1500 -u normal "Whisper Transcript" "Recording started..."
     # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
     # single-recording lock, so no live recording can match here.
     rm -f /tmp/recording_*.wav
@@ -139,10 +154,7 @@ stop_recording() {
     kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
     sleep 0.3
     set_state transcribing
-    # swaync has no replaces-id: close our "Recording started" toast, then
-    # show the next lifecycle toast.
-    swaync-client --close-latest >/dev/null 2>&1
-    notify-send -t 0 "Whisper Transcript" "Recording stopped, transcribing..." || true
+    notify_status -t 0 "Whisper Transcript" "Recording stopped, transcribing..."
 
     local processed_audio text
     if ! processed_audio=$(prepare_audio "$tempfile"); then
@@ -155,31 +167,28 @@ stop_recording() {
     register_temp "$processed_audio"
 
     if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
-        swaync-client --close-latest >/dev/null 2>&1
         notify_error "Transcription failed"
         rm -f "$recording_info"
         return 1
     fi
     if ! has_speech "$text"; then
-        swaync-client --close-latest >/dev/null 2>&1
-        notify-send -u normal -t 2000 "Whisper Transcript" "No speech detected" || true
+        notify_status -u normal -t 2000 "Whisper Transcript" "No speech detected"
         rm -f "$recording_info"
         set_state idle
         return 0
     fi
 
     if [[ "$clean_level" != "raw" ]]; then
-        printf '%s\n' "$text" > "$last_raw_file"
+        printf '%s' "$text" > "$last_raw_file"
         text=$(printf '%s' "$text" | llm_clean "$clean_level")
     else
-        printf '%s\n' "$text" > "$last_raw_file"
+        printf '%s' "$text" > "$last_raw_file"
     fi
-    printf '%s\n' "$text" > "$last_out_file"
+    printf '%s' "$text" > "$last_out_file"
 
     printf '%s' "$text" | wl-copy || true
     wtype -- "$text" || true
-    swaync-client --close-latest >/dev/null 2>&1
-    notify-send -t 2000 "Whisper Transcript" "Transcript complete" || true
+    notify_status -t 2000 "Whisper Transcript" "Transcript complete"
 
     rm -f "$recording_info"
     set_state idle
@@ -196,8 +205,7 @@ prepare_audio() {
 
     # Less than ~0.25s of audio left (CD wav = 176400 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
-        swaync-client --close-latest >/dev/null 2>&1
-        notify-send -u normal -t 2000 "Whisper Transcript" "No speech detected" || true
+        notify_status -u normal -t 2000 "Whisper Transcript" "No speech detected"
         rm -f "$trimmed_audio"
         return 1
     fi
