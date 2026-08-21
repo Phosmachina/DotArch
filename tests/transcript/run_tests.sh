@@ -124,6 +124,9 @@ set_state "recording"
 assert_eq "$(cat "$state_file")" "recording" "set_state writes the state file"
 rm -f "$state_file"
 
+# --- default clean level (script init value, before parse_args mutations) ---
+assert_eq "$clean_level" "full" "default clean level is full"
+
 # --- start_recording must NOT register the live recording for trap cleanup ---
 # (the start invocation exits immediately; its EXIT trap must not delete the
 # wav arecord is writing — registration belongs to the stop invocation)

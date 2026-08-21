@@ -32,7 +32,7 @@ token_file="$HOME/.config/transcript/token"
 recording_info="/tmp/recording_info"
 
 auth_token=""
-clean_level="light"
+clean_level="full"
 srt_flag=0
 input_file=""
 temp_files=()
@@ -46,8 +46,8 @@ Usage:
   transcript FILE [--srt]                 write FILE.txt (and FILE.srt)
 
 Options:
-  --clean light   fix punctuation/misrecognitions, remove artifacts (default)
-  --clean full    light + reformat into paragraphs/lists
+  --clean light   fix punctuation/misrecognitions, remove artifacts
+  --clean full    light + reformat into paragraphs/lists (default)
   --clean raw     skip the LLM pass (shorthand: --raw)
   --srt           with FILE: also write subtitles
   -h, --help      show this help
@@ -63,7 +63,7 @@ set_state() {
 }
 
 # No notifications by design: the waybar pill shows the dictation state
-# (recording / transcribing / error) and volume lives in the status bar.
+# (recording / transcribing / cleaning / error) and volume lives in the status bar.
 mark_error() {
     set_state error
 }
@@ -163,6 +163,7 @@ stop_recording() {
 
     if [[ "$clean_level" != "raw" ]]; then
         printf '%s' "$text" > "$last_raw_file"
+        set_state cleaning
         text=$(printf '%s' "$text" | llm_clean "$clean_level")
     else
         printf '%s' "$text" > "$last_raw_file"

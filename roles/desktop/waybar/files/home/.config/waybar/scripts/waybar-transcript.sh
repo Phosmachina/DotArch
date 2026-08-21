@@ -7,10 +7,11 @@ state="idle"
 [[ -r "$state_file" ]] && state=$(<"$state_file")
 
 case "$state" in
-    recording) icon="🎤"; class="recording" ;;
-    transcribing) icon="⏳"; class="transcribing" ;;
-    error) icon="❌"; class="error" ;;
-    *) icon="🎙️"; class="idle" ;;
+    recording) text="🎤"; class="recording" ;;
+    transcribing) text="⏳"; class="transcribing" ;;
+    cleaning) text="✨ clean"; class="cleaning" ;;
+    error) text="❌"; class="error" ;;
+    *) text="🎙️"; class="idle" ;;
 esac
 
-printf '{"text": "%s", "class": "%s"}\n' "$icon" "$class"
+printf '{"text": "%s", "class": "%s"}\n' "$text" "$class"
