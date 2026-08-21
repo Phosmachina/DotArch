@@ -15,7 +15,7 @@
         "memory",
         "hyprland/window",
     ],
-    "modules-center": ["custom/clock"],
+    "modules-center": ["clock"],
     "modules-right": [
         "network",
         {% if target == 'laptop' %}
@@ -68,12 +68,24 @@
         "spacing": 10
     },
 
-    "custom/clock": {
-        "exec": "~/.config/waybar/scripts/waybar-clock.sh",
-        "return-type": "json",
-        "format": "{}",
-        "on-click": "pkill -SIGUSR1 -f waybar-clock.sh",
-        "tooltip": true
+    "clock": {
+        "format": "{:%a, %b %d %H:%M}",
+        "format-alt": "{:%a, %b %d %H:%M:%S}",
+        "format-alt-click": 1,
+        "interval": 1,
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "format": {
+                "months": "<b>{}</b>",
+                "weekdays": "<b>{}</b>",
+                "today": "<b><span color='red'>{}</span></b>"
+            }
+        },
+        "actions": {
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
+        }
     },
 
     "cpu": {
