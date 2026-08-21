@@ -11,10 +11,10 @@
 
 set -uo pipefail
 
-dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "notify-send" "sox" "ffmpeg")
+dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "sox" "ffmpeg")
 
 inference_model="openai/whisper-large-v3-turbo"
-llm_model="Qwen/Qwen3.5-122B-A10B"
+llm_model="deepseek-ai/DeepSeek-V4-Flash-0731"
 api_base="https://api.deepinfra.com"
 
 # Silence-removal threshold: must sit ABOVE the mic's noise floor and BELOW
@@ -23,10 +23,9 @@ api_base="https://api.deepinfra.com"
 # a narrow window. 0.7%/0.1s keeps 93% of a real speech sample while cutting
 # 2s pauses; higher values (1.5%+) cut speech, 0.1% (the old value) matched
 # only digital silence. Re-measure if the mic or room changes.
-silence_threshold="0.7%"
+silence_threshold="0.6%"
 
 state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
-notify_id_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-notify-id"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
 last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
 token_file="$HOME/.config/transcript/token"
@@ -63,22 +62,9 @@ set_state() {
     printf '%s' "$1" > "$state_file"
 }
 
-# Show a lifecycle toast that replaces the previous one (Notifications spec:
-# -p prints the daemon-assigned id, -r replaces it; the id persists across
-# the separate toggle invocations via notify_id_file). Invented fixed ids
-# are ignored by swaync and stack instead.
-notify_status() {
-    local id
-    id=$(cat "$notify_id_file" 2>/dev/null)
-    if [[ -n "$id" ]]; then
-        notify-send -p -r "$id" "$@" >"$notify_id_file" 2>/dev/null || true
-    else
-        notify-send -p "$@" >"$notify_id_file" 2>/dev/null || true
-    fi
-}
-
-notify_error() {
-    notify_status -u critical "Whisper Transcript" "$1"
+# No notifications by design: the waybar pill shows the dictation state
+# (recording / transcribing / error) and volume lives in the status bar.
+mark_error() {
     set_state error
 }
 
@@ -98,7 +84,6 @@ check_dependencies() {
     for dependency in "${dependencies[@]}"; do
         if ! command -v "$dependency" &>/dev/null; then
             echo "Error: '$dependency' command not found. Please install the corresponding package." >&2
-            notify_status -u critical "Whisper Transcript" "Missing dependency: '$dependency'"
             exit 1
         fi
     done
@@ -136,7 +121,6 @@ api_call() {
 
 start_recording() {
     set_state recording
-    notify_status -t 1500 -u normal "Whisper Transcript" "Recording started..."
     # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
     # single-recording lock, so no live recording can match here.
     rm -f /tmp/recording_*.wav
@@ -155,7 +139,6 @@ stop_recording() {
     kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
     sleep 0.3
     set_state transcribing
-    notify_status -t 0 "Whisper Transcript" "Recording stopped, transcribing..."
 
     local processed_audio text
     if ! processed_audio=$(prepare_audio "$tempfile"); then
@@ -168,12 +151,11 @@ stop_recording() {
     register_temp "$processed_audio"
 
     if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
-        notify_error "Transcription failed"
+        mark_error
         rm -f "$recording_info"
         return 1
     fi
     if ! has_speech "$text"; then
-        notify_status -u normal -t 2000 "Whisper Transcript" "No speech detected"
         rm -f "$recording_info"
         set_state idle
         return 0
@@ -189,7 +171,6 @@ stop_recording() {
 
     printf '%s' "$text" | wl-copy || true
     wtype -- "$text" || true
-    notify_status -t 2000 "Whisper Transcript" "Transcript complete"
 
     rm -f "$recording_info"
     set_state idle
@@ -206,7 +187,6 @@ prepare_audio() {
 
     # Less than ~0.25s of audio left (CD wav = 176400 bytes/s) means no speech.
     if [[ ! -s "$trimmed_audio" ]] || [[ "$(stat -c%s "$trimmed_audio")" -lt 44100 ]]; then
-        notify_status -u normal -t 2000 "Whisper Transcript" "No speech detected"
         rm -f "$trimmed_audio"
         return 1
     fi
@@ -381,12 +361,14 @@ main() {
     check_dependencies
 
     if ! auth_token=$(load_token); then
-        notify_error "No API token found (set DEEPINFRA_API_TOKEN or create $token_file)"
+        echo "Error: no API token found (set DEEPINFRA_API_TOKEN or create $token_file)" >&2
+        mark_error
         exit 1
     fi
 
     if [[ -z "$auth_token" ]]; then
-        notify_error "API token is empty (check $token_file or \$DEEPINFRA_API_TOKEN)"
+        echo "Error: API token is empty (check $token_file or \$DEEPINFRA_API_TOKEN)" >&2
+        mark_error
         exit 1
     fi
 

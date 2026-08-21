@@ -6,8 +6,8 @@ case $2 in
 esac
 
 usage() {
-    echo "Usage: ${0##*/} up|down [NUM]"
-    echo "       ${0##*/} notify|volume"
+	echo "Usage: ${0##*/} up|down [NUM]"
+	echo "       ${0##*/} volume"
 }
 
 # if [ -f "$XDG_RUNTIME_DIR/pulse/pid" ]; then
@@ -20,24 +20,9 @@ usage() {
 #      volume() { amixer | grep "Mono: Playback .* \[on\]$" | cut -d' ' -f6; }
 #  fi
 
-notify() {
-	# Replacement per the Notifications spec: -p prints the daemon-assigned
-	# id, -r replaces that notification next call. The id must persist across
-	# keypresses, so keep it in a runtime file. Invented fixed ids (the old
-	# dunstify -r 9991049 pattern) are ignored by swaync and stack instead.
-	id_file="${XDG_RUNTIME_DIR:-/tmp}/sound-notify-id"
-	id=$(cat "$id_file" 2>/dev/null)
-	if [ -n "$id" ]; then
-		notify-send -p -r "$id" -t 1200 "volume" "volume: $(volume)" >"$id_file" 2>/dev/null
-	else
-		notify-send -p -t 1200 "volume" "volume: $(volume)" >"$id_file" 2>/dev/null
-	fi
-}
-
 case $1 in
     up)     up ;;
     down)   down ;;
-    notify) notify ;;
     volume) volume ;;
     *)      usage; exit 1 ;;
 esac
