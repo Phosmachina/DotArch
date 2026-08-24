@@ -24,5 +24,6 @@ elif [ "$direction" == "prev" ]; then
 fi
 
 if [ -n "$target_ws" ]; then
-    hyprctl dispatch workspace "$target_ws"
+    # hyprctl dispatch expects a Lua expression (Hyprland >= 0.55 Lua config)
+    hyprctl dispatch "hl.dsp.focus({workspace=$target_ws})"
 fi
