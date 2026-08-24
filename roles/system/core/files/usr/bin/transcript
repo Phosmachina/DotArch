@@ -7,7 +7,7 @@
 #   transcript FILE [--srt]                    transcribe an audio/video file
 #
 # Dictation pipeline: arecord -> sox silence removal -> ffmpeg AAC ->
-# whisper (curl) -> optional LLM cleanup -> wl-copy + wtype.
+# whisper (curl) -> optional LLM cleanup -> wl-copy + ctrl+shift+v paste.
 
 set -uo pipefail
 
@@ -170,8 +170,12 @@ stop_recording() {
     fi
     printf '%s' "$text" > "$last_out_file"
 
+    # Paste instead of typing: instant regardless of length, and pasted
+    # newlines do not submit chat messages the way typed Returns do.
+    # ctrl+shift+v also pastes in terminals, where ctrl+v is quoted-insert.
     printf '%s' "$text" | wl-copy || true
-    wtype -- "$text" || true
+    sleep 0.2 # wl-copy takes the selection asynchronously; give it a beat
+    wtype -M ctrl -M shift -k v -m shift -m ctrl || true
 
     rm -f "$recording_info"
     set_state idle
