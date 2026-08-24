@@ -1,0 +1,163 @@
+-- Hyprland configuration (Lua format, requires Hyprland >= 0.55)
+
+require("env")
+require("keybindings")
+
+-- AUTOSTART
+
+hl.on("hyprland.start", function()
+    for _, cmd in ipairs({
+        "kanshi",
+        "~/.config/hypr/scripts/power-monitor.sh",
+        "hyprsunset",
+        "waybar",
+        "swaync",
+        "vicinae server",
+        "/usr/local/bin/xdph-launcher.sh",
+        "configure-handlr",
+        "syncthing",
+        "lxpolkit",
+        "voxtype daemon",
+    }) do
+        hl.dispatch(hl.dsp.exec_cmd(cmd))
+    end
+end)
+
+-- MONITORS
+
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+
+-- INPUT / LOOK AND FEEL
+
+hl.config({
+    input = {
+        kb_layout = "us",
+        kb_variant = "",
+        kb_model = "",
+        kb_options = "compose:ralt",
+        kb_rules = "",
+        numlock_by_default = {{ enable_numlock | default(true) | string | lower }},
+        follow_mouse = 2,
+        mouse_refocus = false,
+        sensitivity = 0,
+        touchpad = {
+            natural_scroll = true,
+            tap_to_click = true,
+            disable_while_typing = true,
+            clickfinger_behavior = false,
+            drag_lock = 0,
+        },
+    },
+    general = {
+        gaps_in = 2,
+        gaps_out = 7,
+        border_size = 1,
+        col = {
+            active_border = { colors = { "rgba(33ccffee)", "rgba(00ff99ee)" }, angle = 45 },
+            inactive_border = "rgba(595959aa)",
+        },
+        layout = "dwindle",
+        resize_on_border = false,
+        allow_tearing = false,
+    },
+    group = {
+        col = {
+            border_active = { colors = { "rgba(4682ffee)", "rgba(785adcff)" }, angle = 45 },
+            border_inactive = "rgba(19192388)",
+            border_locked_active = { colors = { "rgba(ff4646ee)", "rgba(ff7850ee)" }, angle = 45 },
+            border_locked_inactive = "rgba(19192388)",
+        },
+{%- if enable_groupbar | default(true) %}
+        groupbar = {
+            enabled = true,
+            font_family = "JetBrains Mono Nerd Font",
+            font_size = 9,
+            gradients = false,
+            height = 14,
+            render_titles = true,
+            text_color = 0xffffffff,
+            rounding = 6,
+            rounding_power = 2.0,
+            round_only_edges = true,
+            col = {
+                active = 0xcc4682ff,
+                inactive = 0x66191923,
+                locked_active = 0xccff4646,
+                locked_inactive = 0x66191923,
+            },
+        },
+{%- endif %}
+    },
+    dwindle = {
+        smart_split = true,
+    },
+    decoration = {
+        rounding = 6,
+        active_opacity = 1.0,
+        inactive_opacity = 1.0,
+        blur = {
+            enabled = true,
+            size = 3,
+            passes = 3,
+        },
+        shadow = {
+            enabled = true,
+            range = 4,
+            render_power = 3,
+            color = "rgba(1a1a1aee)",
+        },
+    },
+    animations = {
+        enabled = true,
+    },
+    misc = {
+        force_default_wallpaper = 0,
+        focus_on_activate = {{ enable_focus_on_activate | default(true) | string | lower }},
+    },
+})
+
+-- Animations
+
+hl.curve("myBezier", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
+
+hl.animation({ leaf = "windows", enabled = true, speed = 7, bezier = "myBezier" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "default", style = "popin 80%" })
+hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "default" })
+hl.animation({ leaf = "borderangle", enabled = true, speed = 8, bezier = "default" })
+hl.animation({ leaf = "fade", enabled = true, speed = 7, bezier = "default" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default" })
+
+-- Gestures
+
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+
+-- WINDOWS AND WORKSPACES
+
+-- Ignore maximize requests from apps. You'll probably like this.
+hl.window_rule({
+    name = "windowrule-1",
+    match = { class = ".*" },
+    suppress_event = "maximize",
+})
+
+-- Fix some dragging issues with XWayland
+hl.window_rule({
+    name = "windowrule-2",
+    no_focus = true,
+    match = {
+        class = "^$",
+        title = "^$",
+        xwayland = true,
+        float = true,
+        fullscreen = false,
+        pin = false,
+    },
+})
+
+hl.layer_rule({
+    name = "layerrule-1",
+    match = { namespace = "vicinae" },
+    blur = true,
+    ignore_alpha = 0,
+    no_anim = true,
+})

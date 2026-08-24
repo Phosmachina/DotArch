@@ -90,6 +90,10 @@
   when: install_dotfiles | default(true)
   tags: [desktop, config]
 
+# Hyprland >= 0.55 prefers hyprland.lua at startup; a session started on the
+# legacy .conf keeps reloading it, so both formats are deployed until the
+# legacy files are removed (set hyprland_remove_legacy_conf: true after the
+# first successful Lua-config login, or once Hyprland 0.57 drops .conf).
 - name: Copy hyprland configuration files
   ansible.builtin.copy:
     src: 'home/.config/hypr/{{ item }}'
@@ -98,12 +102,22 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   loop:
+    - 'keybindings.lua'
     - 'keybindings.conf'
   when: install_dotfiles | default(true)
   tags: [desktop, config]
-  failed_when: false
 
 - name: Deploy Hyprland configuration
+  ansible.builtin.template:
+    src: 'home/.config/hypr/hyprland.lua.j2'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/hyprland.lua'
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_dotfiles | default(true)
+  tags: [desktop, config]
+
+- name: Deploy legacy Hyprland configuration
   ansible.builtin.template:
     src: 'home/.config/hypr/hyprland.conf.j2'
     dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/hyprland.conf'
@@ -135,12 +149,35 @@
 
 - name: Copy Hyprland environment config
   ansible.builtin.template:
+    src: 'home/.config/hypr/env.lua.j2'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/env.lua'
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_dotfiles | default(true)
+  tags: [desktop, config]
+
+- name: Copy legacy Hyprland environment config
+  ansible.builtin.template:
     src: 'home/.config/hypr/env.conf.j2'
     dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/env.conf'
     mode: '0644'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: install_dotfiles | default(true)
+  tags: [desktop, config]
+
+- name: Remove legacy hyprlang configuration files
+  ansible.builtin.file:
+    path: '{{ ansible_facts["user_dir"] }}/.config/hypr/{{ item }}'
+    state: absent
+  loop:
+    - 'hyprland.conf'
+    - 'env.conf'
+    - 'keybindings.conf'
+  when:
+    - install_dotfiles | default(true)
+    - hyprland_remove_legacy_conf | default(false)
   tags: [desktop, config]
 
 - name: Create xdg-desktop-portal config directory
