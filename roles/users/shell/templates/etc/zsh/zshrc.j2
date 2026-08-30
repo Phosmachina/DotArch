@@ -38,6 +38,10 @@ source /usr/share/zsh/plugins/zsh-autopair/autopair.zsh 2>/dev/null
 # Load zsh-syntax-highlighting; should be last.
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null
 
+# Readable shell comments: plugin default is fg=black (color0, invisible on Dark_Pastel);
+# fg=8 is bright black, brightened to #8f8f8f in kitty's Dark_Pastel.conf
+ZSH_HIGHLIGHT_STYLES[comment]='fg=8'
+
 # Word characters
 WORDCHARS='*?_-.[]~=&;!#$%^(){}<>'
 MOTION_WORDCHARS='~!#$%^&*(){}[]<>?.+;-/'
