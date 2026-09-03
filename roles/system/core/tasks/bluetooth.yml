@@ -17,6 +17,15 @@
     state: present
   become: true
 
+- name: Set Bluetooth fast connectable
+  ansible.builtin.lineinfile:
+    path: /etc/bluetooth/main.conf
+    regexp: '^#?FastConnectable\s*=\s*\S+'
+    line: 'FastConnectable=true'
+    backrefs: true
+    state: present
+  become: true
+
 - name: Enable bluetooth service to activate bluetooth on boot
   ansible.builtin.systemd:
     name: bluetooth.service
