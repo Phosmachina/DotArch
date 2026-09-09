@@ -56,10 +56,10 @@
   ansible.builtin.include_tasks: dns.yml
   tags: [system, dns]
 
-- name: Configure VPN (WireGuard)
-  ansible.builtin.include_tasks: vpn.yml
-  when: enable_vpn | default(false)
-  tags: [system, vpn]
+- name: Configure Tailscale
+  ansible.builtin.include_tasks: tailscale.yml
+  when: enable_tailscale | default(false)
+  tags: [system, tailscale]
 
 - name: Configure virtualization
   ansible.builtin.include_tasks: virtualization.yml

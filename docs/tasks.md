@@ -14,7 +14,7 @@
 10. [ ] Ensure idempotency for shell commands (e.g., yay installs in shell-zsh role) using community.general.pacman/yay modules or check/creates patterns.
 11. [ ] Abstract AUR installations behind a reusable role or module to avoid shell invocations and improve idempotency.
 12. [ ] Review and fix become/become_user usage to avoid privilege leaks and ensure user tasks run as the target user.
-13. [ ] Audit file permissions for sensitive files (e.g., NetworkManager .nmconnection, WireGuard keys) and set restrictive modes (0600/0640) where needed.
+13. [ ] Audit file permissions for sensitive files (e.g., NetworkManager .nmconnection) and set restrictive modes (0600/0640) where needed.
 14. [ ] Move plain-text secrets into Ansible Vault (or sops) and document how to decrypt/use in CI and locally.
 15. [ ] Ensure handlers exist and are notified for service-affecting changes (e.g., waybar reloads on config/template changes, greetd on config changes).
 16. [ ] Replace copy of config files with templates where user/system variables should be parameterized.

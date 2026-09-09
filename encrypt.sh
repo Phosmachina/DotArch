@@ -10,8 +10,6 @@ set -euo pipefail
 FILES_TO_ENCRYPT=(
     'group_vars/all/vault.yml'
     'roles/apps/voxtype/defaults/secret.yml'
-    'roles/system/files/etc/wireguard/Peer_FC_L-ANTLIA.conf'
-    'roles/system/files/etc/wireguard/Peer_LP_L-CENTAURUS.conf'
 )
 
 PASSWORD_SCRIPT="./password.sh"

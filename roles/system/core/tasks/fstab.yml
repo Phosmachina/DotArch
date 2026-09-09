@@ -1,30 +1,63 @@
 ---
-# -   name: Ensure POOL_1_DATA mount is present in fstab
-#     lineinfile:
-#         dest: /etc/fstab
-#         line: '//10.0.0.1/pool_1_data /mnt/POOL_1_DATA cifs x-systemd.automount,_netdev,credentials=/etc/.cifscredentials,iocharset=utf8,acl,noperm 0 0'
-#         state: present
-#     become: true
-#
-# -   name: Copy .cifscredentials for fstab cifs mount
-#     copy:
-#         src: 'etc/.cifscredentials'
-#         dest: '/etc/.cifscredentials'
-#        mode: '0600'
-#        owner: root
-#        group: root
-#    become: true
+# NFS over Tailscale: sources are on the edge VM 10.10.10.2, reached through
+# the tailnet subnet route (tailscale.yml must have accept-routes active).
+# Mountpoints MUST stay siblings: automounts nested under an NFS parent
+# (/mnt/POOL_1_DATA/MULTIMEDIA etc.) get Requires=/After= on the parent .mount
+# unit, pulling the parent NFS mount into the boot transaction under
+# local-fs.target with network-online ordering -> an ordering cycle whose
+# systemd cycle-breaker has deleted NetworkManager's boot job (boots with no
+# network, 2026-09-07 + 09-08).
 
-- name: Ensure mount point directory exists for POOL_1_DATA
+- name: Create sibling NFS mountpoint directories
   ansible.builtin.file:
-    path: /mnt/POOL_1_DATA
+    path: "{{ item }}"
     state: directory
     mode: '0755'
   become: true
+  tags: [system]
+  loop:
+    - /mnt/POOL_1
+    - /mnt/POOL_1/DATA
+    - /mnt/POOL_1/MEDIA
+    - /mnt/POOL_1/TORRENT
 
-- name: Ensure NFS mount is present in fstab
+- name: Keep legacy /mnt/POOL_1_DATA path as a symlink (compat for existing sessions - do not remove)
+  ansible.builtin.file:
+    src: /mnt/POOL_1/DATA
+    dest: /mnt/POOL_1_DATA
+    state: link
+    force: true
+  become: true
+  tags: [system]
+
+- name: Remove legacy fstab entry (phosmachina.com NFS source)
   ansible.builtin.lineinfile:
     dest: /etc/fstab
-    line: 'phosmachina.com:/POOL_1/DATA /mnt/POOL_1_DATA nfs x-systemd.automount,_netdev 0 0'
-    state: present
+    regexp: '^phosmachina\.com:'
+    state: absent
   become: true
+  tags: [system]
+  notify: Reload systemd daemon
+
+- name: Remove legacy fstab entries (automounts nested under /mnt/POOL_1_DATA)
+  ansible.builtin.lineinfile:
+    dest: /etc/fstab
+    regexp: '^\S+:\S+\s+/mnt/POOL_1_DATA(/MULTIMEDIA|/TORRENT)?\s+nfs'
+    state: absent
+  become: true
+  tags: [system]
+  notify: Reload systemd daemon
+
+- name: Add NFS mounts over Tailscale to fstab
+  ansible.builtin.blockinfile:
+    path: /etc/fstab
+    marker: '# {mark} ANSIBLE MANAGED - NFS over Tailscale (sibling mountpoints only)'
+    block: |
+      # Sibling mountpoints: nesting automounts under an NFS parent creates a
+      # boot ordering cycle (see task header) - do not nest.
+      10.10.10.2:/POOL_1/NFS     /mnt/POOL_1/DATA       nfs nofail,x-systemd.automount,_netdev 0 0
+      10.10.10.2:/POOL_1/MEDIA   /mnt/POOL_1/MEDIA      nfs nofail,x-systemd.automount,_netdev 0 0
+      10.10.10.2:/POOL_1/TORRENT /mnt/POOL_1/TORRENT    nfs nofail,x-systemd.automount,_netdev 0 0
+  become: true
+  tags: [system]
+  notify: Reload systemd daemon

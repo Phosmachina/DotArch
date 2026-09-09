@@ -14,7 +14,7 @@ Personal Ansible project that automates a full Hyprland desktop deployment on Ar
 - **Entry point:** `playbook.yml` loads `group_vars/all/variables.yml` and `deployment_config.yml`, then runs the single meta-role `profiles/desktop-hyprland`. `vault.yml` is auto-loaded via group_vars.
 - **Meta-role pattern (critical):** `roles/profiles/desktop-hyprland/tasks/main.yml` orchestrates every component via `include_role`. **To add, remove, reorder, or gate a component, edit this file** — do not edit `playbook.yml`.
 - **Role categories under `roles/`:**
-  - `system/` — `core` (base OS: packages, hostname, locale, audio, bluetooth, fstab, DNS, VPN, virtualization), `docker`
+  - `system/` — `core` (base OS: packages, hostname, locale, audio, bluetooth, fstab, DNS, tailscale, virtualization), `docker`
   - `desktop/` — `hyprland`, `waybar`, `terminal`, `greetd`, `fonts`, `vicinae`, `notifications`, `filemanager`, `screenshot`, `handlr`
   - `apps/` — `firefox`, `bitwarden`, `mpv`, `zathura`, `qimgv`, `zeditor`, `jetbrains`, `voxtype`
   - `users/shell/` — shell environment
@@ -33,7 +33,7 @@ Personal Ansible project that automates a full Hyprland desktop deployment on Ar
 
 # Secrets & Vault
 - **Never commit cleartext secrets.** Use `./encrypt.sh` to encrypt plaintext files with `ansible-vault`.
-- **`encrypt.sh`** enumerates `FILES_TO_ENCRYPT` (currently `group_vars/all/vault.yml`, voxtype secret, two wireguard peer configs). When you add a new secret file, **add its path to `FILES_TO_ENCRYPT`** so the check catches it.
+- **`encrypt.sh`** enumerates `FILES_TO_ENCRYPT` (currently `group_vars/all/vault.yml` and the voxtype secret). When you add a new secret file, **add its path to `FILES_TO_ENCRYPT`** so the check catches it.
   - `./encrypt.sh` — encrypt any plaintext files in the list.
   - `./encrypt.sh --install-hook` — install a git pre-commit hook that blocks commits of unencrypted secrets.
   - `./encrypt.sh --check` — pre-commit scan.

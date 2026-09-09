@@ -9,7 +9,7 @@ enable_nvidia: true
 enable_zeditor: true
 enable_jetbrains: true
 enable_docker: true
-enable_vpn: true
+enable_tailscale: true     # NFS mounts ride the tailnet; login = one-time manual bootstrap
 
 # Media Apps
 enable_mpv: true
@@ -43,5 +43,5 @@ battery_charge_start: 75           # cctk PrimaryBattChargeCfg lower bound (rech
 battery_charge_end: 80             # cctk PrimaryBattChargeCfg upper bound (stop charging)
 
 # Screenshot configuration
-screenshot_save_dir: "/mnt/POOL_1_DATA/DESIGN/IMAGES/%temp%/SCREENSHOTS"
+screenshot_save_dir: "/mnt/POOL_1/DATA/DESIGN/IMAGES/%temp%/SCREENSHOTS"
 

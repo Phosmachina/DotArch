@@ -1,0 +1,46 @@
+---
+# Tailscale mesh VPN (replaces the Surfshark WireGuard wg0, retired 2026-09-08).
+# The fstab NFS mounts (fstab.yml) ride the tailnet: 10.10.10.2 is the edge VM,
+# reachable via the advertised 10.10.0.0/16 subnet route -> accept-routes required.
+# Login is deliberately NOT managed: auth state persists in
+# /var/lib/tailscale/tailscaled.state. Fresh-machine bootstrap = one-time
+# `sudo tailscale login`, then re-run the playbook.
+# Exit-node selection (exit-direct / exit-vpn / off) stays manual:
+# `tailscale set --exit-node=<name|off>`.
+
+- name: Install Tailscale
+  community.general.pacman:
+    name: tailscale
+    state: present
+  become: true
+  tags: [system, tailscale]
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+  become: true
+  tags: [system, tailscale]
+
+- name: Read tailscale auth state
+  ansible.builtin.command: tailscale status --json
+  become: true
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [system, tailscale]
+
+- name: Accept advertised subnet routes (required for NFS over tailnet)
+  ansible.builtin.command: tailscale set --accept-routes
+  become: true
+  changed_when: false
+  when: tailscale_status.rc == 0 and (tailscale_status.stdout | from_json).BackendState == 'Running'
+  tags: [system, tailscale]
+
+- name: Remind to authenticate when tailscale is not logged in
+  ansible.builtin.debug:
+    msg: "Tailscale not authenticated - run `sudo tailscale login` once, then re-run the playbook."
+  when: tailscale_status.rc != 0 or (tailscale_status.stdout | from_json).BackendState != 'Running'
+  tags: [system, tailscale]
