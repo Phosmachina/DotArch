@@ -14,9 +14,10 @@ set -uo pipefail
 dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "sox" "ffmpeg")
 
 inference_model="mistralai/Voxtral-Small-24B-2507"
-# Dictations are French; the language hint pins decoding when English tech
-# terms sneak in (auto-detect then tends to translate or drop phrases).
-asr_language="fr"
+# Auto language detection lets English dictations work; set to "fr" if French
+# dictations ever come back translated again (that was a Voxtral-Mini failure
+# — Small passed every French/loanword/English repro cleanly in auto).
+asr_language=""
 # File mode sticks to whisper: Voxtral returns no segment timestamps, which
 # --srt needs.
 file_model="openai/whisper-large-v3-turbo"
@@ -205,8 +206,30 @@ stop_recording() {
         # newlines do not submit chat messages the way typed Returns do.
         # ctrl+shift+v also pastes in terminals, where ctrl+v is quoted-insert.
         printf '%s' "$text" | wl-copy || true
-        sleep 0.2 # wl-copy takes the selection asynchronously; give it a beat
-        wtype -M ctrl -M shift -k v -m shift -m ctrl || true
+        # Never paste while a dictation is being recorded: the synthetic
+        # ctrl+shift racing the physically held Super+A of the bind that
+        # started the recording can desync the compositor's modifier state
+        # (stuck Super key). Wait for idle hands; after 30s of recording,
+        # skip the paste — the clipboard still holds the text.
+        recording_active=0
+        if [[ -f "$recording_info" ]]; then
+            read -r rpid _ < "$recording_info" 2>/dev/null
+            kill -0 "$rpid" 2>/dev/null && recording_active=1
+        fi
+        waited=0
+        while [[ "$recording_active" -eq 1 && "$waited" -lt 150 ]]; do
+            sleep 0.2
+            waited=$((waited + 1))
+            recording_active=0
+            if [[ -f "$recording_info" ]]; then
+                read -r rpid _ < "$recording_info" 2>/dev/null
+                kill -0 "$rpid" 2>/dev/null && recording_active=1
+            fi
+        done
+        if [[ "$recording_active" -eq 0 ]]; then
+            sleep 0.2 # wl-copy takes the selection asynchronously; give it a beat
+            wtype -M ctrl -M shift -k v -m shift -m ctrl || true
+        fi
 
         job_clear
     ) >/dev/null 2>&1 &
@@ -272,23 +295,17 @@ convert_to_flac() {
 
 # Transcribes audio via the DeepInfra inference API. Optional second argument
 # selects the file-mode model (auto language, whisper SRT segments); the
-# dictation default forces $asr_language.
+# dictation default optionally pins $asr_language.
 transcribe_audio() {
     local file="$1" model="${2:-}"
+    local args=(-X POST -H "Authorization: Bearer ${auth_token}" -F "audio=@$file")
     if [[ -n "$model" ]]; then
-        api_call "ASR inference" \
-            -X POST \
-            -H "Authorization: Bearer ${auth_token}" \
-            -F "audio=@$file" \
-            "${api_base}/v1/inference/${model}"
+        args+=("${api_base}/v1/inference/${model}")
     else
-        api_call "ASR inference" \
-            -X POST \
-            -H "Authorization: Bearer ${auth_token}" \
-            -F "audio=@$file" \
-            -F "language=${asr_language}" \
-            "${api_base}/v1/inference/${inference_model}"
+        [[ -n "$asr_language" ]] && args+=(-F "language=${asr_language}")
+        args+=("${api_base}/v1/inference/${inference_model}")
     fi
+    api_call "ASR inference" "${args[@]}"
 }
 
 # llm_clean LEVEL - cleans the transcript from stdin, prints cleaned text.
