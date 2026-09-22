@@ -13,7 +13,10 @@ set -uo pipefail
 
 dependencies=("arecord" "curl" "jq" "wl-copy" "wtype" "sox" "ffmpeg")
 
-inference_model="mistralai/Voxtral-Mini-3B-2507"
+inference_model="mistralai/Voxtral-Small-24B-2507"
+# Dictations are French; the language hint pins decoding when English tech
+# terms sneak in (auto-detect then tends to translate or drop phrases).
+asr_language="fr"
 # File mode sticks to whisper: Voxtral returns no segment timestamps, which
 # --srt needs.
 file_model="openai/whisper-large-v3-turbo"
@@ -268,14 +271,24 @@ convert_to_flac() {
 }
 
 # Transcribes audio via the DeepInfra inference API. Optional second argument
-# overrides the model (file mode passes $file_model for SRT segments).
+# selects the file-mode model (auto language, whisper SRT segments); the
+# dictation default forces $asr_language.
 transcribe_audio() {
-    local model="${2:-$inference_model}"
-    api_call "ASR inference" \
-        -X POST \
-        -H "Authorization: Bearer ${auth_token}" \
-        -F "audio=@$1" \
-        "${api_base}/v1/inference/${model}"
+    local file="$1" model="${2:-}"
+    if [[ -n "$model" ]]; then
+        api_call "ASR inference" \
+            -X POST \
+            -H "Authorization: Bearer ${auth_token}" \
+            -F "audio=@$file" \
+            "${api_base}/v1/inference/${model}"
+    else
+        api_call "ASR inference" \
+            -X POST \
+            -H "Authorization: Bearer ${auth_token}" \
+            -F "audio=@$file" \
+            -F "language=${asr_language}" \
+            "${api_base}/v1/inference/${inference_model}"
+    fi
 }
 
 # llm_clean LEVEL - cleans the transcript from stdin, prints cleaned text.
