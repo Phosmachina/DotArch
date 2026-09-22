@@ -25,7 +25,7 @@ api_base="https://api.deepinfra.com"
 # only digital silence. Re-measure if the mic or room changes.
 silence_threshold="0.6%"
 
-state_file="${XDG_RUNTIME_DIR:-/tmp}/transcript.state"
+jobs_dir="${XDG_RUNTIME_DIR:-/tmp}/transcript-jobs"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
 last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
 token_file="$HOME/.config/transcript/token"
@@ -58,14 +58,35 @@ comparison.
 EOF
 }
 
-set_state() {
-    printf '%s' "$1" > "$state_file"
+# Dictation states live as per-process marker files in $jobs_dir: one
+# "job-<pid>" file per background processing job. The waybar pill
+# aggregates them (recording comes from $recording_info + pid liveness).
+job_state() {
+    mkdir -p "$jobs_dir"
+    printf '%s' "$1" > "$jobs_dir/job-$BASHPID"
+}
+
+job_clear() {
+    rm -f "$jobs_dir/job-$BASHPID"
+}
+
+# Remove markers whose process is gone; called when a new recording starts,
+# which also clears a sticky error display (same UX as the old single state
+# file). Live jobs keep their markers.
+clear_stale_jobs() {
+    local f pid
+    mkdir -p "$jobs_dir"
+    for f in "$jobs_dir"/job-*; do
+        [[ -e "$f" ]] || continue
+        pid="${f##*/job-}"
+        kill -0 "$pid" 2>/dev/null || rm -f "$f"
+    done
 }
 
 # No notifications by design: the waybar pill shows the dictation state
 # (recording / transcribing / cleaning / error) and volume lives in the status bar.
 mark_error() {
-    set_state error
+    job_state error
 }
 
 register_temp() {
@@ -120,10 +141,10 @@ api_call() {
 }
 
 start_recording() {
-    set_state recording
-    # Sweep wavs orphaned by crashed sessions; /tmp/recording_info is the
-    # single-recording lock, so no live recording can match here.
-    rm -f /tmp/recording_*.wav
+    # Sweep wavs orphaned by crashed sessions — old files only, because a
+    # dictation still being processed in the background owns a live wav.
+    find /tmp -maxdepth 1 -name 'recording_*.wav' -mmin +60 -delete 2>/dev/null
+    clear_stale_jobs
     local tempfile record_pid
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
     arecord -f cd "$tempfile" >/dev/null 2>&1 &
@@ -134,51 +155,55 @@ start_recording() {
 stop_recording() {
     local record_pid tempfile
     read -r record_pid tempfile < "$recording_info"
-    register_temp "$tempfile"
 
     kill -INT "$record_pid" 2>/dev/null || kill "$record_pid" 2>/dev/null || true
     sleep 0.3
-    set_state transcribing
-
-    local processed_audio text
-    if ! processed_audio=$(prepare_audio "$tempfile"); then
-        rm -f "$recording_info"
-        set_state idle
-        return 0
-    fi
-    # prepare_audio ran inside $(...): its register_temp calls were lost to a
-    # subshell, so register the returned AAC path here for the EXIT trap.
-    register_temp "$processed_audio"
-
-    if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
-        mark_error
-        rm -f "$recording_info"
-        return 1
-    fi
-    if ! has_speech "$text"; then
-        rm -f "$recording_info"
-        set_state idle
-        return 0
-    fi
-
-    if [[ "$clean_level" != "raw" ]]; then
-        printf '%s' "$text" > "$last_raw_file"
-        set_state cleaning
-        text=$(printf '%s' "$text" | llm_clean "$clean_level")
-    else
-        printf '%s' "$text" > "$last_raw_file"
-    fi
-    printf '%s' "$text" > "$last_out_file"
-
-    # Paste instead of typing: instant regardless of length, and pasted
-    # newlines do not submit chat messages the way typed Returns do.
-    # ctrl+shift+v also pastes in terminals, where ctrl+v is quoted-insert.
-    printf '%s' "$text" | wl-copy || true
-    sleep 0.2 # wl-copy takes the selection asynchronously; give it a beat
-    wtype -M ctrl -M shift -k v -m shift -m ctrl || true
-
+    # Release the toggle immediately: processing runs detached so the next
+    # recording can start while this one is still being transcribed.
     rm -f "$recording_info"
-    set_state idle
+    mkdir -p "$jobs_dir"
+
+    (
+        trap cleanup_temps EXIT
+        trap 'cleanup_temps; exit 130' INT TERM
+        temp_files=("$tempfile")
+        job_state transcribing
+
+        processed_audio=""
+        if ! processed_audio=$(prepare_audio "$tempfile"); then
+            job_clear
+            exit 0
+        fi
+        # prepare_audio ran inside $(...): its register_temp calls were lost
+        # to a subshell, so register the returned AAC path here for the trap.
+        temp_files+=("$processed_audio")
+
+        text=""
+        if ! text=$(transcribe_audio "$processed_audio" | format_txt); then
+            job_state error
+            exit 1
+        fi
+        if ! has_speech "$text"; then
+            job_clear
+            exit 0
+        fi
+
+        printf '%s' "$text" > "${last_raw_file}.$BASHPID.tmp" && mv -f "${last_raw_file}.$BASHPID.tmp" "$last_raw_file"
+        if [[ "$clean_level" != "raw" ]]; then
+            job_state cleaning
+            text=$(printf '%s' "$text" | llm_clean "$clean_level")
+        fi
+        printf '%s' "$text" > "${last_out_file}.$BASHPID.tmp" && mv -f "${last_out_file}.$BASHPID.tmp" "$last_out_file"
+
+        # Paste instead of typing: instant regardless of length, and pasted
+        # newlines do not submit chat messages the way typed Returns do.
+        # ctrl+shift+v also pastes in terminals, where ctrl+v is quoted-insert.
+        printf '%s' "$text" | wl-copy || true
+        sleep 0.2 # wl-copy takes the selection asynchronously; give it a beat
+        wtype -M ctrl -M shift -k v -m shift -m ctrl || true
+
+        job_clear
+    ) >/dev/null 2>&1 &
 }
 
 # Silence-removes the recording and returns the AAC path ready for upload.

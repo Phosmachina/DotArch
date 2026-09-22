@@ -118,19 +118,23 @@ else
     failures=$((failures + 1))
 fi
 
-# --- set_state ---
-state_file="$(mktemp)"
-set_state "recording"
-assert_eq "$(cat "$state_file")" "recording" "set_state writes the state file"
-rm -f "$state_file"
+# --- job markers ---
+jobs_dir="$(mktemp -d)"
+job_state transcribing
+# Expand BASHPID here: inside $(cat ...) it would be the cat subshell's pid.
+marker="$jobs_dir/job-$BASHPID"
+assert_eq "$(cat "$marker")" "transcribing" "job_state writes its marker"
+job_clear
+assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "job_clear removes its marker"
+rm -rf "$jobs_dir"
 
 # --- default clean level (script init value, before parse_args mutations) ---
 assert_eq "$clean_level" "full" "default clean level is full"
 
 # --- start_recording must NOT register the live recording for trap cleanup ---
 # (the start invocation exits immediately; its EXIT trap must not delete the
-# wav arecord is writing — registration belongs to the stop invocation)
-state_file="$(mktemp)"
+# wav arecord is writing — registration belongs to the detached processing job)
+jobs_dir="$(mktemp -d)"
 recording_info="$(mktemp)"
 arecord() {
     sleep 30 &
@@ -140,7 +144,30 @@ temp_files=()
 start_recording
 assert_eq "${#temp_files[@]}" "0" "start_recording leaves the live recording out of trap cleanup"
 kill "$(awk '{print $1}' "$recording_info")" 2>/dev/null || true
-rm -f "$recording_info" "$state_file" "$(sed 's/^[0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
+rm -f "$recording_info" "$(sed 's/^[0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
+rm -rf "$jobs_dir"
+unset -f arecord
+
+# --- stop_recording detaches processing and frees the toggle ---
+# command sleep bypasses the fake sleep above (used by the detached job's
+# real timings and by the waits below).
+jobs_dir="$(mktemp -d)"
+recording_info="$(mktemp)"
+last_raw_file="$(mktemp)"
+last_out_file="$(mktemp)"
+arecord() {
+    command sleep 30
+}
+temp_files=()
+start_recording
+read -r rpid wavpath < "$recording_info"
+stop_recording
+assert_eq "$( [[ -f "$recording_info" ]] && echo present || echo gone )" "gone" "stop_recording frees the toggle immediately"
+command sleep 1.5
+assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "detached job cleans its marker (no-speech path)"
+assert_eq "$( [[ -e "$wavpath" ]] && echo leaked || echo cleaned )" "cleaned" "detached job removes its wav via trap"
+kill "$rpid" 2>/dev/null || true
+rm -rf "$jobs_dir" "$recording_info" "$last_raw_file" "$last_out_file"
 unset -f arecord
 
 # --- load_token: env then file ---
