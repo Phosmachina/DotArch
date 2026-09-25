@@ -29,6 +29,13 @@
   become: true
   tags: [desktop, fonts]
 
+- name: Install Noto CJK fonts
+  community.general.pacman:
+    name: noto-fonts-cjk
+    state: present
+  become: true
+  tags: [desktop, fonts]
+
 - name: Install Apple Emoji Font (AUR)
   ansible.builtin.shell: 'yay -Sy --noconfirm ttf-apple-emoji'  # noqa: command-instead-of-shell
   become: true
