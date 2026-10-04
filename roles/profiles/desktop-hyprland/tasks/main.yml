@@ -94,6 +94,12 @@
   tags: [apps, qimgv]
   when: enable_qimgv | default(true)
 
+- name: Include Betterbird email client
+  ansible.builtin.include_role:
+    name: apps/betterbird
+  tags: [apps, betterbird]
+  when: enable_betterbird | default(false)
+
 - name: Include Zed Editor
   ansible.builtin.include_role:
     name: apps/zeditor

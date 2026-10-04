@@ -1,0 +1,43 @@
+---
+# Apps Betterbird role - Betterbird email client (Thunderbird fork, AUR)
+# Installs betterbird-bin to /opt/betterbird and manages system-wide policies
+# (profile-level prefs are intentionally left to the user)
+
+- name: Install Betterbird (Arch)
+  ansible.builtin.shell: >  # noqa: command-instead-of-shell
+    yay -Sy --noconfirm
+    betterbird-bin
+  become: true
+  become_user: '{{ ansible_user }}'
+  changed_when: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird]
+
+- name: Create Betterbird distribution directory
+  ansible.builtin.file:
+    path: /opt/betterbird/distribution
+    state: directory
+    mode: '0755'
+  become: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird, config]
+
+- name: Copy Betterbird enterprise policies
+  ansible.builtin.copy:
+    src: files/opt/betterbird/distribution/policies.json
+    dest: /opt/betterbird/distribution/policies.json
+    mode: '0644'
+  become: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird, config]
+
+- name: Set Betterbird as default mailto handler
+  ansible.builtin.command:
+    argv:
+      - handlr
+      - set
+      - x-scheme-handler/mailto
+      - eu.betterbird.Betterbird.desktop
+  changed_when: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird, config]
