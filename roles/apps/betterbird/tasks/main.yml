@@ -1,7 +1,10 @@
 ---
 # Apps Betterbird role - Betterbird email client (Thunderbird fork, AUR)
-# Installs betterbird-bin to /opt/betterbird and manages system-wide policies
-# (profile-level prefs are intentionally left to the user)
+# Installs betterbird-bin to /opt/betterbird, manages system-wide policies,
+# and provisions the mail account into any existing profile:
+# - user.js: account skeleton (plaintext, harvest from a configured profile)
+# - logins.json + key4.db: credential store (vault-encrypted in this role,
+#   deployed as a pair; re-harvest both after a password change)
 
 - name: Install Betterbird (Arch)
   ansible.builtin.shell: >  # noqa: command-instead-of-shell
@@ -40,4 +43,38 @@
       - eu.betterbird.Betterbird.desktop
   changed_when: true
   when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird, config]
+
+- name: Resolve active Betterbird profile directory
+  # The [Install*] section's Default= names the profile this install uses;
+  # fall back to every registered Path= when no install default exists.
+  ansible.builtin.shell: |  # noqa: command-instead-of-shell
+    ini="{{ ansible_facts['user_dir'] }}/.config/thunderbird/profiles.ini"
+    sel=$(awk '/^\[Install/{i=1;next} /^\[/{i=0}
+    i&&/^Default=/{sub(/^Default=/,"");print}' "$ini")
+    [ -n "$sel" ] || sel=$(sed -n 's/^Path=//p' "$ini")
+    root=$(dirname "$ini")
+    for p in $sel; do
+      case "$p" in /*) printf '%s\n' "$p" ;;
+      *) printf '%s/%s\n' "$root" "$p" ;; esac
+    done
+  register: betterbird_profiles
+  changed_when: false
+  failed_when: false
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, betterbird, config]
+
+- name: Deploy Betterbird account configuration and credentials
+  ansible.builtin.copy:
+    src: "files/home/.config/thunderbird/{{ item.1 }}"
+    dest: "{{ item.0 }}/{{ item.1 }}"
+    mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  loop: "{{ query('ansible.builtin.nested',
+    betterbird_profiles.stdout_lines | default([]),
+    ['user.js', 'logins.json', 'key4.db']) }}"
+  when:
+    - ansible_facts.distribution == 'Archlinux'
+    - betterbird_profiles.stdout_lines | default([]) | length > 0
   tags: [apps, betterbird, config]

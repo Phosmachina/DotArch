@@ -10,6 +10,8 @@ set -euo pipefail
 FILES_TO_ENCRYPT=(
     'group_vars/all/vault.yml'
     'roles/apps/voxtype/defaults/secret.yml'
+    'roles/apps/betterbird/files/home/.config/thunderbird/logins.json'
+    'roles/apps/betterbird/files/home/.config/thunderbird/key4.db'
 )
 
 PASSWORD_SCRIPT="./password.sh"
