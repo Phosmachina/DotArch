@@ -12,6 +12,7 @@
       - 7zip    # For archive preview
       - jq      # For JSON preview
       - resvg   # For SVG preview
+      - imagemagick # For HEIC/AVIF/JXL preview (yazi magick plugin)
     state: present
   when: ansible_facts.distribution == 'Archlinux'
   tags: [desktop, filemanager, yazi, package]

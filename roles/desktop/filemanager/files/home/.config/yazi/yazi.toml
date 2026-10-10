@@ -61,8 +61,10 @@ micro_workers = 5
 macro_workers = 10
 
 # Allow larger image allocation (e.g., for >10MB files that decompress to large bitmaps)
-# 100MB = 104857600
-image_alloc = 104857600
+# 1GiB = 1073741824
+# Also passed to `magick -limit memory` for HEIC/AVIF/JXL previews: Q16-HDRI
+# ImageMagick needs ~200MB of pixel cache for a single 12MP photo
+image_alloc = 1073741824
 image_bound = [0, 0]
 
 [plugin]
