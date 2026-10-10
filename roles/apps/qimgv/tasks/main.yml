@@ -3,9 +3,20 @@
   ansible.builtin.shell: >  # noqa: command-instead-of-shell
     yay -Sy --noconfirm
     qimgv
+    qtraw
+    qt6-heic-image-plugin
+    qt6-avif-image-plugin
   become: true
   become_user: '{{ ansible_user }}'
   changed_when: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [apps, qimgv]
+
+- name: Remove Qt5-only HEIF plugin (wrong ABI for Qt6 qimgv)
+  become: true
+  community.general.pacman:
+    name: qt-heif-image-plugin
+    state: absent
   when: ansible_facts.distribution == 'Archlinux'
   tags: [apps, qimgv]
 
