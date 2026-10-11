@@ -47,14 +47,18 @@
     mode: '0644'
   tags: [desktop, theme, config]
 
+- name: Check kitty current-theme symlink
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['user_dir'] }}/.config/kitty/current-theme.conf"
+  register: theme_kitty_link
+  tags: [desktop, theme, config]
+
 - name: Bootstrap kitty current-theme symlink (dark default)
   ansible.builtin.file:
     src: Dark_Pastel.conf
     dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/current-theme.conf"
     state: link
-  when: >-
-    not (ansible_facts['user_dir'] +
-    '/.config/kitty/current-theme.conf') is exists
+  when: not theme_kitty_link.stat.exists
   tags: [desktop, theme, config]
 
 - name: Install waybar color layers

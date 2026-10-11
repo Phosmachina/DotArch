@@ -149,19 +149,23 @@ emit the `css` key as `["style.css", "colors.css"]` (no `css` key otherwise).
 - `exec`: `dotarch-theme status --json`, `return-type: json`, `interval: 5`
   (display freshness only — the module is read-only; 5 s keeps click
   feedback snappy since state changes are event-driven).
-- Icon: sun/moon reflecting the *effective* theme in auto; a distinct
-  "pinned" glyph (e.g. 󰁦 / 󰾲 with a small "auto" badge character) when
-  forced, so auto vs pinned is readable at a glance.
+- Icon: sun/moon reflecting the *effective* theme in every mode (no
+  distinct pinned glyph and no "auto" badge). A forced mode is
+  distinguished by the amber `.pinned` CSS class plus a "(pinned)"
+  tooltip suffix, so auto vs pinned stays readable at a glance.
 - Tooltip: mode + today's sunrise/sunset (fixed times when in fallback).
 - Left-click: `cycle`. Scroll up/down: force `dark` / `light` directly.
-- CSS classes `#custom-theme.dark/.light/.auto` in `colors-light.css` (and
-  neutral rules in `style.css` if needed).
+- CSS classes `#custom-theme.dark/.light` plus `.pinned` in the color
+  layers (and neutral rules in `style.css` if needed).
 
 ### Variables (deployment_config.yml)
 
 - `enable_theme_switch: true`
 - `theme_location: auto` (auto | coords)
 - `theme_latitude` / `theme_longitude` — used when `theme_location: coords`.
+  Sunrise/sunset are computed for those coordinates but rendered in the
+  system timezone (host-frame times — meaningful for nearby coordinates
+  only).
 - `theme_day_time: "07:00"` / `theme_night_time: "20:00"` — fallback times.
 
 ### Tags
