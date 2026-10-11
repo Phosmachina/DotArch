@@ -107,7 +107,7 @@ sun_times() { # sets SUNRISE SUNSET SOURCE; cached per date, sun math with fixed
             SUNRISE=$(grep '^sunrise=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
             SUNSET=$(grep '^sunset=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
             SOURCE=$(grep '^source=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
-            if [[ -n "$SUNRISE" && -n "$SUNSET" && -n "$SOURCE" ]]; then
+            if [[ "$SUNRISE" =~ ^[0-9]{1,2}:[0-9]{2}$ && "$SUNSET" =~ ^[0-9]{1,2}:[0-9]{2}$ && "$SOURCE" =~ ^(sun|fixed)$ ]]; then
                 return 0
             fi
         fi

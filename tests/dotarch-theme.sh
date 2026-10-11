@@ -77,5 +77,13 @@ check "empty coords -> fixed source" "fixed" "$(grep '^source=' "$cache" | cut -
 check "DAY_TIME honored"            "09:37" "$(grep '^sunrise=' "$cache" | cut -d= -f2)"
 check "NIGHT_TIME honored"          "18:11" "$(grep '^sunset=' "$cache" | cut -d= -f2)"
 
+echo "T2c: malformed cache values fall through to recomputation"
+new_home
+printf 'date=%s\nsunrise=banana\nsunset=19:11\nsource=sun\n' "$(date +%F)" > "$TEST_HOME/.local/state/dotarch-theme/sun-cache"
+run_script status --json >/dev/null 2>&1
+check "malformed cache survives status"   "0"     "$?"
+check "sunrise rewritten well-formed"     "1"     "$(grep -cE '^sunrise=[0-9]{1,2}:[0-9]{2}$' "$TEST_HOME/.local/state/dotarch-theme/sun-cache")"
+check "source still valid"                "sun"   "$(grep '^source=' "$TEST_HOME/.local/state/dotarch-theme/sun-cache" | cut -d= -f2)"
+
 echo; echo "passed=$PASS failed=$FAIL"
 [[ $FAIL -eq 0 ]]
