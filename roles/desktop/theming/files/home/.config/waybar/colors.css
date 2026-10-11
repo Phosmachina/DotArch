@@ -1,0 +1,5 @@
+/* Dark layer: the dark look comes from style.css alone — this file only
+   styles widgets that did not exist before theming (see spec). */
+#custom-theme.pinned {
+    color: #e6b450;
+}

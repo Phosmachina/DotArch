@@ -1,0 +1,91 @@
+/* Light layer — loaded after style.css; equal-specificity rules win by order. */
+window#waybar {
+    color: #2e2e2e;
+}
+tooltip {
+    background: rgba(250, 250, 252, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+tooltip label {
+    color: #2e2e2e;
+}
+#window {
+    color: #2e2e2e;
+    text-shadow: none;
+}
+#workspaces button {
+    background: rgba(255, 255, 255, 0.65);
+    color: #2e2e2e;
+}
+#workspaces button:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+/* active/urgent gradients from style.css kept: white text stays readable on them */
+#clock,
+#battery,
+#cpu,
+#memory,
+#disk,
+#temperature,
+#backlight,
+#network,
+#custom-theme,
+#custom-transcript,
+#pulseaudio,
+#tray {
+    background-color: rgba(250, 250, 252, 0.85);
+    color: #2e2e2e;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+#clock:hover,
+#battery:hover,
+#cpu:hover,
+#memory:hover,
+#disk:hover,
+#temperature:hover,
+#backlight:hover,
+#network:hover,
+#custom-theme:hover,
+#custom-transcript:hover,
+#pulseaudio:hover,
+#tray:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+#network,
+#network > label,
+#battery,
+#battery > label,
+#battery.charging,
+#battery.plugged,
+#battery.warning:not(.charging),
+#backlight,
+#backlight > label,
+#pulseaudio,
+#pulseaudio > label,
+#temperature,
+#temperature > label,
+#cpu,
+#cpu > label,
+#memory,
+#memory > label,
+#disk,
+#disk > label {
+    color: #2e2e2e;
+}
+#pulseaudio.muted {
+    color: #2e2e2e;
+    background-color: rgba(205, 205, 210, 0.9);
+}
+#battery.critical:not(.charging),
+#temperature.critical {
+    color: #2e2e2e;
+    background-color: rgba(255, 70, 70, 0.18);
+}
+#custom-theme.pinned {
+    color: #8a6d1a;
+}
