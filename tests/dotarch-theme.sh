@@ -94,8 +94,8 @@ check "kitty symlink -> light" "theme-light.conf" "$(readlink "$TEST_HOME/.confi
 check "colors.css = light layer" "/* light layer */" "$(cat "$TEST_HOME/.config/waybar/colors.css")"
 grep -q "gsettings set org.gnome.desktop.interface color-scheme prefer-light" "$TEST_HOME/calls.log" \
     && ok "gsettings prefer-light called" || fail "gsettings call missing"
-grep -q "pkill -USR1 -x kitty" "$TEST_HOME/calls.log"  && ok "kitty signaled"  || fail "kitty signal missing"
-grep -q "pkill -USR2 -x waybar" "$TEST_HOME/calls.log" && ok "waybar signaled" || fail "waybar signal missing"
+grep -q "pkill --signal USR1 -x kitty" "$TEST_HOME/calls.log"  && ok "kitty signaled"  || fail "kitty signal missing"
+grep -q "pkill --signal USR2 -x waybar" "$TEST_HOME/calls.log" && ok "waybar signaled" || fail "waybar signal missing"
 
 sandbox set dark >/dev/null
 check "kitty symlink -> dark" "Dark_Pastel.conf" "$(readlink "$TEST_HOME/.config/kitty/current-theme.conf")"
