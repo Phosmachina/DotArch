@@ -1,0 +1,113 @@
+---
+# Desktop Theming role - day/night theme switching
+# Deploys the dotarch-theme switcher, theme layers and a self-rescheduling
+# systemd user timer.
+# Spec: docs/superpowers/specs/2026-10-11-theme-switching-design.md
+
+- name: Install theming dependencies (Arch)
+  become: true
+  community.general.pacman:
+    name:
+      - dconf
+      - gsettings-desktop-schemas
+    state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [desktop, theme, package]
+
+- name: Create theming directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ ansible_facts['user_dir'] }}/.local/bin"
+    - "{{ ansible_facts['user_dir'] }}/.local/state/dotarch-theme"
+    - >-
+      {{ ansible_facts['user_dir'] }}/.config/systemd/user/dotarch-theme.timer.d
+  tags: [desktop, theme, config]
+
+- name: Install dotarch-theme switcher
+  ansible.builtin.copy:
+    src: files/home/.local/bin/dotarch-theme
+    dest: "{{ ansible_facts['user_dir'] }}/.local/bin/dotarch-theme"
+    mode: '0755'
+  tags: [desktop, theme, config]
+
+- name: Template dotarch-theme runtime config
+  ansible.builtin.template:
+    src: dotarch-theme.conf.j2
+    dest: "{{ ansible_facts['user_dir'] }}/.config/dotarch-theme.conf"
+    mode: '0644'
+  tags: [desktop, theme, config]
+
+- name: Install kitty light theme
+  ansible.builtin.copy:
+    src: files/home/.config/kitty/theme-light.conf
+    dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/theme-light.conf"
+    mode: '0644'
+  tags: [desktop, theme, config]
+
+- name: Bootstrap kitty current-theme symlink (dark default)
+  ansible.builtin.file:
+    src: Dark_Pastel.conf
+    dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/current-theme.conf"
+    state: link
+  when: >-
+    not (ansible_facts['user_dir'] +
+    '/.config/kitty/current-theme.conf') is exists
+  tags: [desktop, theme, config]
+
+- name: Install waybar color layers
+  ansible.builtin.copy:
+    src: "files/home/.config/waybar/{{ item }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/{{ item }}"
+    mode: '0644'
+  loop:
+    - colors-dark.css
+    - colors-light.css
+    - colors.css
+  tags: [desktop, theme, config]
+
+- name: Install systemd user units
+  ansible.builtin.copy:
+    src: "files/home/.config/systemd/user/{{ item }}"
+    dest: "{{ ansible_facts['user_dir'] }}/.config/systemd/user/{{ item }}"
+    mode: '0644'
+  loop:
+    - dotarch-theme.service
+    - dotarch-theme.timer
+  tags: [desktop, theme, config]
+
+- name: Enable linger for the timer (optional)
+  become: true
+  ansible.builtin.command: loginctl enable-linger {{ ansible_user }}
+  changed_when: true
+  when: theme_enable_linger | bool
+  tags: [desktop, theme, config]
+
+- name: Resolve ansible_user uid
+  ansible.builtin.command: id -u {{ ansible_user }}
+  register: theme_uid
+  changed_when: false
+  tags: [desktop, theme, config]
+
+- name: Activate dotarch-theme timer
+  ansible.builtin.shell: |
+    systemctl --user daemon-reload
+    systemctl --user enable --now dotarch-theme.timer
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ theme_uid.stdout }}"
+  register: theme_timer_activate
+  failed_when: false
+  changed_when: true
+  # noqa: command-instead-of-shell command-instead-of-module
+  tags: [desktop, theme, config]
+
+- name: Warn when the user manager was unreachable
+  ansible.builtin.debug:
+    msg: >
+      Could not reach the systemd user manager (deploy from a pure
+      SSH context?). The timer will activate at next graphical login;
+      or re-run this role logged in.
+  when: theme_timer_activate.rc | default(0) != 0
+  tags: [desktop, theme, config]

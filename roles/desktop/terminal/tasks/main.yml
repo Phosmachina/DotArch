@@ -20,7 +20,17 @@
   when: install_dotfiles | default(true)
   tags: [desktop, config]
 
-- name: Copy Kitty configurations
+- name: Template Kitty configuration
+  ansible.builtin.template:
+    src: home/.config/kitty/kitty.conf.j2
+    dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/kitty.conf"
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: install_dotfiles | default(true)
+  tags: [desktop, config]
+
+- name: Copy Kitty theme files
   ansible.builtin.copy:
     src: "files/home/.config/kitty/{{ item }}"
     dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/{{ item }}"
@@ -28,7 +38,6 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   loop:
-    - kitty.conf
     - Dark_Pastel.conf
   when: install_dotfiles | default(true)
   tags: [desktop, config]

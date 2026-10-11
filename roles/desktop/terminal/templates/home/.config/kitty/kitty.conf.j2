@@ -1,4 +1,4 @@
-include Dark_Pastel.conf
+include {% if enable_theme_switch | default(false) %}current-theme.conf{% else %}Dark_Pastel.conf{% endif %}
 
 background_opacity 0.7
 

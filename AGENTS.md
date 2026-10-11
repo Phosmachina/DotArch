@@ -15,7 +15,7 @@ Personal Ansible project that automates a full Hyprland desktop deployment on Ar
 - **Meta-role pattern (critical):** `roles/profiles/desktop-hyprland/tasks/main.yml` orchestrates every component via `include_role`. **To add, remove, reorder, or gate a component, edit this file** — do not edit `playbook.yml`.
 - **Role categories under `roles/`:**
   - `system/` — `core` (base OS: packages, hostname, locale, audio, bluetooth, fstab, DNS, tailscale, virtualization), `docker`
-  - `desktop/` — `hyprland`, `waybar`, `terminal`, `greetd`, `fonts`, `vicinae`, `notifications`, `filemanager`, `screenshot`, `handlr`
+  - `desktop/` — `hyprland`, `waybar`, `terminal`, `greetd`, `fonts`, `vicinae`, `notifications`, `filemanager`, `screenshot`, `handlr`, `theming`
   - `apps/` — `firefox`, `bitwarden`, `mpv`, `zathura`, `qimgv`, `zeditor`, `jetbrains`, `voxtype`
   - `users/shell/` — shell environment
 - **Hardware detection:** `playbook.yml` pre_tasks detect a battery and set fact `target: laptop|desktop`. `variables.yml` derives `hostname` from `target`. Some tasks gate on `target == 'laptop'` (e.g. NetworkManager).

@@ -49,6 +49,12 @@
     name: desktop/waybar
   tags: [desktop]
 
+- name: Include day/night theme switching
+  ansible.builtin.include_role:
+    name: desktop/theming
+  tags: [desktop]
+  when: enable_theme_switch | default(true)
+
 - name: Include notification center
   ansible.builtin.include_role:
     name: desktop/notifications

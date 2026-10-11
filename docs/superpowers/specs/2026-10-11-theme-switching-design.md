@@ -163,7 +163,6 @@ emit the `css` key as `["style.css", "colors.css"]` (no `css` key otherwise).
 - `theme_location: auto` (auto | coords)
 - `theme_latitude` / `theme_longitude` — used when `theme_location: coords`.
 - `theme_day_time: "07:00"` / `theme_night_time: "20:00"` — fallback times.
-- `theme_cycle_order: [auto, dark, light]`
 
 ### Tags
 

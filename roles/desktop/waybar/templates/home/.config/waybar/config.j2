@@ -7,6 +7,9 @@
     "margin-left": 6,
     "margin-right": 6,
     "margin-bottom": 0,
+{% if enable_theme_switch | default(false) %}
+    "css": ["style.css", "colors.css"],
+{% endif %}
 
     "modules-left": [
         "hyprland/workspaces",
@@ -23,6 +26,7 @@
         "backlight",
         {% endif %}
         "custom/transcript",
+        "custom/theme",
         "pulseaudio",
         "disk",
         "tray"
@@ -34,6 +38,17 @@
         "interval": 1,
         "tooltip": false
     },
+{% if enable_theme_switch | default(false) %}
+    "custom/theme": {
+        "exec": "~/.local/bin/dotarch-theme status --json",
+        "return-type": "json",
+        "interval": 5,
+        "on-click": "~/.local/bin/dotarch-theme cycle",
+        "on-scroll-up": "~/.local/bin/dotarch-theme set dark",
+        "on-scroll-down": "~/.local/bin/dotarch-theme set light",
+        "tooltip": true
+    },
+{% endif %}
 
     "hyprland/workspaces": {
         "format": "{icon}",

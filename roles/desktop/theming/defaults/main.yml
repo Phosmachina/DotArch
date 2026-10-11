@@ -1,0 +1,9 @@
+---
+# Desktop Theming role defaults
+
+theme_location: auto        # auto (system timezone -> coords table) | coords
+theme_latitude: ""          # used when theme_location: coords
+theme_longitude: ""
+theme_day_time: "07:00"     # fallback sunrise when location unknown
+theme_night_time: "20:00"   # fallback sunset when location unknown
+theme_enable_linger: false  # keep the user manager running before first login
