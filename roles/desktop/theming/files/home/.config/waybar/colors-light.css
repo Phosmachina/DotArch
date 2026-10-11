@@ -89,3 +89,18 @@ tooltip label {
 #custom-theme.pinned {
     color: #8a6d1a;
 }
+#custom-transcript.recording {
+    color: #b03030;
+    animation: pulse 1s infinite;
+}
+#custom-transcript.transcribing {
+    color: #8a6d1a;
+}
+#custom-transcript.cleaning {
+    color: #6a4fa3;
+    animation: pulse 1s infinite;
+}
+#custom-transcript.error {
+    color: #b03030;
+    background-color: rgba(255, 85, 85, 0.15);
+}
