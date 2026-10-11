@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# dotarch-theme — day/night theme switcher.
+# Spec: docs/superpowers/specs/2026-10-11-theme-switching-design.md
+set -euo pipefail
+
+STATE_DIR="$HOME/.local/state/dotarch-theme"
+STATE_FILE="$STATE_DIR/state"
+SUN_CACHE="$STATE_DIR/sun-cache"
+LOCK_FILE="$STATE_DIR/.lock"
+CONFIG_FILE="$HOME/.config/dotarch-theme.conf"
+
+KITTY_DIR="$HOME/.config/kitty"
+WAYBAR_DIR="$HOME/.config/waybar"
+TIMER_DROPIN_DIR="$HOME/.config/systemd/user/dotarch-theme.timer.d"
+TIMER_DROPIN="$TIMER_DROPIN_DIR/schedule.conf"
+
+MODE="auto"; CURRENT=""; SUNRISE=""; SUNSET=""; SOURCE="fixed"
+
+log() { printf 'dotarch-theme: %s\n' "$*" >&2; }
+
+config_value() { # config_value KEY DEFAULT
+    local value=""
+    if [[ -r "$CONFIG_FILE" ]]; then
+        value=$(grep -E "^$1=" "$CONFIG_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' || true)
+    fi
+    printf '%s' "${value:-$2}"
+}
+
+read_state() {
+    MODE=$(grep '^mode=' "$STATE_FILE" 2>/dev/null | cut -d= -f2 || true); MODE=${MODE:-auto}
+    CURRENT=$(grep '^current=' "$STATE_FILE" 2>/dev/null | cut -d= -f2 || true)
+}
+
+write_state() { # write_state MODE CURRENT
+    printf 'mode=%s\ncurrent=%s\n' "$1" "$2" > "$STATE_FILE"
+}
+
+bootstrap_state() {
+    mkdir -p "$STATE_DIR"
+    [[ -f "$STATE_FILE" ]] || write_state auto ""
+}
+
+minutes_now() { echo $(( $(date +%H) * 60 + $(date +%M) )); }
+minutes_of() { echo $(( ${1%%:*} * 60 + ${1##*:} )); } # minutes_of HH:MM
+
+sun_times() { # sets SUNRISE SUNSET SOURCE; cached per date (upgraded to real sun math in Task 2)
+    local today
+    today=$(date +%F)
+    if [[ -r "$SUN_CACHE" ]]; then
+        if [[ $(grep '^date=' "$SUN_CACHE" | cut -d= -f2) == "$today" ]]; then
+            SUNRISE=$(grep '^sunrise=' "$SUN_CACHE" | cut -d= -f2)
+            SUNSET=$(grep '^sunset=' "$SUN_CACHE" | cut -d= -f2)
+            SOURCE=$(grep '^source=' "$SUN_CACHE" | cut -d= -f2)
+            return 0
+        fi
+    fi
+    SUNRISE=$(config_value DAY_TIME 07:00)
+    SUNSET=$(config_value NIGHT_TIME 20:00)
+    SOURCE=fixed
+    printf 'date=%s\nsunrise=%s\nsunset=%s\nsource=%s\n' "$today" "$SUNRISE" "$SUNSET" "$SOURCE" > "$SUN_CACHE"
+}
+
+effective_theme() { # -> dark|light
+    if [[ "$MODE" != "auto" ]]; then printf '%s' "$MODE"; return 0; fi
+    local now rise set_
+    now=$(minutes_now); rise=$(minutes_of "$SUNRISE"); set_=$(minutes_of "$SUNSET")
+    if (( now < rise || now >= set_ )); then echo dark; else echo light; fi
+}
+
+cmd_status() {
+    bootstrap_state; read_state; sun_times
+    local effective text class tooltip
+    effective=$(effective_theme)
+    if [[ "$effective" == "light" ]]; then text=""; else text=""; fi
+    class="$effective"
+    tooltip="Theme: $effective"
+    if [[ "$MODE" == "auto" ]]; then
+        tooltip="$tooltip (auto · sunrise $SUNRISE / sunset $SUNSET [$SOURCE])"
+    else
+        class="$class pinned"
+        tooltip="$tooltip (pinned)"
+    fi
+    printf '{"text": "%s", "class": "%s", "tooltip": "%s"}\n' "$text" "$class" "$tooltip"
+}
+
+main() {
+    local cmd=${1:-status}
+    case "$cmd" in
+        run|apply|plan)
+            log "$cmd not implemented yet"; exit 0 ;;
+    esac
+    case "$cmd" in
+        set)
+            [[ ${2:-} =~ ^(auto|dark|light)$ ]] || { log "usage: dotarch-theme set auto|dark|light"; exit 2; }
+            bootstrap_state; read_state; sun_times
+            write_state "$2" "$CURRENT"
+            log "mode set to $2 (apply/plan wired in later tasks)" ;;
+        cycle)
+            bootstrap_state; read_state
+            local new_mode
+            case "$MODE" in
+                auto)  new_mode=dark ;;
+                dark)  new_mode=light ;;
+                light) new_mode=auto ;;
+                *)     new_mode=auto ;;
+            esac
+            write_state "$new_mode" "$CURRENT"
+            log "mode cycled to $new_mode" ;;
+        status)   cmd_status ;;
+        *) log "usage: dotarch-theme {run|apply|plan|set <auto|dark|light>|cycle|status}"; exit 2 ;;
+    esac
+}
+main "$@"
