@@ -85,5 +85,35 @@ check "malformed cache survives status"   "0"     "$?"
 check "sunrise rewritten well-formed"     "1"     "$(grep -cE '^sunrise=[0-9]{1,2}:[0-9]{2}$' "$TEST_HOME/.local/state/dotarch-theme/sun-cache")"
 check "source still valid"                "sun"   "$(grep '^source=' "$TEST_HOME/.local/state/dotarch-theme/sun-cache" | cut -d= -f2)"
 
+echo "T3: apply pipeline"
+sandbox set light >/dev/null
+check "state current=light" "light" "$(state_of current)"
+check "kitty symlink -> light" "theme-light.conf" "$(readlink "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "colors.css = light layer" "/* light layer */" "$(cat "$TEST_HOME/.config/waybar/colors.css")"
+grep -q "gsettings set org.gnome.desktop.interface color-scheme prefer-light" "$TEST_HOME/calls.log" \
+    && ok "gsettings prefer-light called" || fail "gsettings call missing"
+grep -q "pkill -USR1 -x kitty" "$TEST_HOME/calls.log"  && ok "kitty signaled"  || fail "kitty signal missing"
+grep -q "pkill -USR2 -x waybar" "$TEST_HOME/calls.log" && ok "waybar signaled" || fail "waybar signal missing"
+
+sandbox set dark >/dev/null
+check "kitty symlink -> dark" "Dark_Pastel.conf" "$(readlink "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "colors.css = dark layer" "/* dark layer */" "$(cat "$TEST_HOME/.config/waybar/colors.css")"
+
+echo "T3b: idempotent apply"
+new_home
+run_script set light >/dev/null
+calls=$(grep -c gsettings "$TEST_HOME/calls.log")
+run_script apply >/dev/null
+run_script apply >/dev/null
+check "no duplicate gsettings on no-op apply" "$calls" "$(grep -c gsettings "$TEST_HOME/calls.log")"
+
+echo "T3c: set auto resolves by time-of-day (fixed window via config)"
+new_home
+printf 'LOCATION=coords\nDAY_TIME=07:00\nNIGHT_TIME=20:00\n' > "$TEST_HOME/.config/dotarch-theme.conf"
+run_script set auto
+mode_now=$(date +%H%M)
+want=dark; [[ $mode_now -ge 0700 && $mode_now -lt 2000 ]] && want=light
+check "auto resolved by time of day" "$want" "$(state_of current)"
+
 echo; echo "passed=$PASS failed=$FAIL"
 [[ $FAIL -eq 0 ]]

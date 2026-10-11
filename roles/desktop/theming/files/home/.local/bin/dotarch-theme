@@ -145,6 +145,60 @@ effective_theme() { # -> dark|light
     if (( now < rise || now >= set_ )); then echo dark; else echo light; fi
 }
 
+apply_components() { # apply_components dark|light
+    local theme=$1 target="Dark_Pastel.conf"
+    [[ "$theme" == "light" ]] && target="theme-light.conf"
+    mkdir -p "$KITTY_DIR"
+    ln -sfn "$target" "$KITTY_DIR/current-theme.conf"
+    pkill -USR1 -x kitty 2>/dev/null || true
+
+    mkdir -p "$WAYBAR_DIR"
+    if [[ -f "$WAYBAR_DIR/colors-$theme.css" ]]; then
+        cp "$WAYBAR_DIR/colors-$theme.css" "$WAYBAR_DIR/.colors.css.tmp"
+        mv "$WAYBAR_DIR/.colors.css.tmp" "$WAYBAR_DIR/colors.css"
+    else
+        log "colors-$theme.css missing — waybar not switched"
+    fi
+    pkill -USR2 -x waybar 2>/dev/null || true
+
+    if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-$theme" 2>/dev/null \
+            || log "gsettings failed (no dbus session?) — GTK apps not switched"
+    else
+        log "gsettings not found — GTK apps not switched"
+    fi
+}
+
+apply() { # apply -> echoes effective theme applied (or already current)
+    bootstrap_state; read_state; sun_times
+    local target
+    target=$(effective_theme)
+    if [[ "$CURRENT" == "$target" ]]; then
+        log "already $target — nothing to apply"
+        echo "$target"; return 0
+    fi
+    apply_components "$target"
+    write_state "$MODE" "$target"
+    log "applied $target"
+    echo "$target"
+}
+
+cmd_set() { # cmd_set auto|dark|light
+    write_state "$1" "$CURRENT"
+    apply >/dev/null
+}
+
+cmd_cycle() {
+    local new_mode
+    case "$MODE" in
+        auto)  new_mode=dark ;;
+        dark)  new_mode=light ;;
+        light) new_mode=auto ;;
+        *)     new_mode=auto ;;
+    esac
+    cmd_set "$new_mode"
+}
+
 cmd_status() {
     bootstrap_state; read_state; sun_times
     local effective text class tooltip
@@ -164,26 +218,16 @@ cmd_status() {
 main() {
     local cmd=${1:-status}
     case "$cmd" in
-        run|apply|plan)
+        run|plan)
             log "$cmd not implemented yet"; exit 0 ;;
     esac
     case "$cmd" in
+        apply)    bootstrap_state; apply ;;
         set)
             [[ ${2:-} =~ ^(auto|dark|light)$ ]] || { log "usage: dotarch-theme set auto|dark|light"; exit 2; }
-            bootstrap_state; read_state; sun_times
-            write_state "$2" "$CURRENT"
-            log "mode set to $2 (apply/plan wired in later tasks)" ;;
-        cycle)
             bootstrap_state; read_state
-            local new_mode
-            case "$MODE" in
-                auto)  new_mode=dark ;;
-                dark)  new_mode=light ;;
-                light) new_mode=auto ;;
-                *)     new_mode=auto ;;
-            esac
-            write_state "$new_mode" "$CURRENT"
-            log "mode cycled to $new_mode" ;;
+            cmd_set "$2" ;;
+        cycle)    bootstrap_state; read_state; cmd_cycle ;;
         status)   cmd_status ;;
         *) log "usage: dotarch-theme {run|apply|plan|set <auto|dark|light>|cycle|status}"; exit 2 ;;
     esac
