@@ -1,0 +1,9 @@
+[Unit]
+Description=Day/night theme switching scheduler
+
+[Timer]
+OnBootSec=10s
+Unit=dotarch-theme.service
+
+[Install]
+WantedBy=default.target

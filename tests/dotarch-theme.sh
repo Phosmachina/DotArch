@@ -115,5 +115,30 @@ mode_now=$(date +%H%M)
 want=dark; [[ 10#$mode_now -ge 700 && 10#$mode_now -lt 2000 ]] && want=light
 check "auto resolved by time of day" "$want" "$(state_of current)"
 
+echo "T4: plan writes drop-in and re-arms timer"
+sandbox plan
+dropin="$TEST_HOME/.config/systemd/user/dotarch-theme.timer.d/schedule.conf"
+[[ -f "$dropin" ]] && ok "drop-in exists" || fail "drop-in missing"
+grep -qE '^\[Timer\]$' "$dropin" && ok "drop-in has [Timer]" || fail "no [Timer] section"
+grep -qE '^OnCalendar=\*-\*-\* (0?[0-9]|1[0-9]|2[0-3]):[0-5][0-9]:00$' "$dropin" \
+    && ok "OnCalendar HH:MM:00 format" || fail "OnCalendar format: $(cat "$dropin")"
+grep -q "systemctl --user daemon-reload" "$TEST_HOME/calls.log"  && ok "daemon-reload called"  || fail "daemon-reload missing"
+grep -q "systemctl --user restart dotarch-theme.timer" "$TEST_HOME/calls.log" && ok "timer restarted" || fail "timer restart missing"
+
+echo "T4b: run applies + plans"
+sandbox run
+check "run bootstrapped mode=auto" "auto" "$(state_of mode)"
+[[ -f "$TEST_HOME/.config/systemd/user/dotarch-theme.timer.d/schedule.conf" ]] \
+    && ok "run wrote drop-in" || fail "run drop-in missing"
+
+echo "T4c: plan survives dead systemctl"
+new_home
+printf '#!/bin/sh\nexit 1\n' > "$TEST_HOME/bin/systemctl"; chmod +x "$TEST_HOME/bin/systemctl"
+run_script plan
+rc=$?
+check "plan exits 0 when systemctl dead" "0" "$rc"
+[[ -f "$TEST_HOME/.config/systemd/user/dotarch-theme.timer.d/schedule.conf" ]] \
+    && ok "drop-in still written" || fail "drop-in missing despite dead systemctl"
+
 echo; echo "passed=$PASS failed=$FAIL"
 [[ $FAIL -eq 0 ]]

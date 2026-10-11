@@ -199,6 +199,35 @@ cmd_cycle() {
     cmd_set "$new_mode"
 }
 
+next_boundary() { # -> HH:MM of next switch (sunrise/sunset; tomorrow's sunrise approximated by today's)
+    local now rise set_
+    now=$(minutes_now); rise=$(minutes_of "$SUNRISE"); set_=$(minutes_of "$SUNSET")
+    if   (( now < rise )); then printf '%s' "$SUNRISE"
+    elif (( now < set_ )); then printf '%s' "$SUNSET"
+    else printf '%s' "$SUNRISE"
+    fi
+}
+
+plan() {
+    bootstrap_state; read_state; sun_times
+    local next
+    next=$(next_boundary)
+    mkdir -p "$TIMER_DROPIN_DIR"
+    printf '[Timer]\nOnCalendar=*-*-* %s:00\n' "$next" > "$TIMER_DROPIN"
+    if systemctl --user daemon-reload 2>/dev/null \
+       && systemctl --user restart dotarch-theme.timer 2>/dev/null; then
+        log "next theme switch at $next ($SOURCE)"
+    else
+        log "systemd user manager unreachable — timer not re-armed (will retry on next run)"
+    fi
+    return 0
+}
+
+run() {
+    apply >/dev/null
+    plan
+}
+
 cmd_status() {
     bootstrap_state; read_state; sun_times
     local effective text class tooltip
@@ -218,16 +247,21 @@ cmd_status() {
 main() {
     local cmd=${1:-status}
     case "$cmd" in
-        run|plan)
-            log "$cmd not implemented yet"; exit 0 ;;
+        run|set|cycle)
+            bootstrap_state
+            exec 9>"$LOCK_FILE"
+            flock 9
+            ;;
     esac
     case "$cmd" in
-        apply)    bootstrap_state; apply ;;
+        run)      run ;;
+        apply)    apply ;;
+        plan)     plan ;;
         set)
             [[ ${2:-} =~ ^(auto|dark|light)$ ]] || { log "usage: dotarch-theme set auto|dark|light"; exit 2; }
-            bootstrap_state; read_state
+            read_state
             cmd_set "$2" ;;
-        cycle)    bootstrap_state; read_state; cmd_cycle ;;
+        cycle)    read_state; cmd_cycle ;;
         status)   cmd_status ;;
         *) log "usage: dotarch-theme {run|apply|plan|set <auto|dark|light>|cycle|status}"; exit 2 ;;
     esac
