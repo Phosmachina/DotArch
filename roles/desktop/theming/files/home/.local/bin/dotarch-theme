@@ -232,7 +232,7 @@ cmd_status() {
     bootstrap_state; read_state; sun_times
     local effective text class tooltip
     effective=$(effective_theme)
-    if [[ "$effective" == "light" ]]; then text=""; else text=""; fi
+    if [[ "$effective" == "light" ]]; then text='\uf185'; else text='\uf186'; fi
     class="$effective"
     tooltip="Theme: $effective"
     if [[ "$MODE" == "auto" ]]; then

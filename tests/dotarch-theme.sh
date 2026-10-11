@@ -48,6 +48,8 @@ echo "T1b: status json shape"
 out=$(sandbox status --json)
 echo "$out" | grep -q '"text":' && ok "status has text" || fail "status text missing"
 echo "$out" | grep -qE '"class": "(dark|light)' && ok "status class dark|light" || fail "status class: $out"
+{ echo "$out" | grep -qF '\uf185' || echo "$out" | grep -qF '\uf186'; } \
+    && ok "status text is sun/moon glyph escape" || fail "status glyph missing: $out"
 
 echo "T1c: config fallback times"
 new_home
