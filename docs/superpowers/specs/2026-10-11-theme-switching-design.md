@@ -70,12 +70,16 @@ By the **theming role**:
 - `~/.local/bin/dotarch-theme` (0755) — the switcher CLI.
 - `~/.config/kitty/theme-light.conf` — authored light theme (light bg,
   dark fg, same hue family as Dark_Pastel).
-- `~/.config/kitty/current-theme.conf` — symlink managed by the script
-  (bootstrapped → `Dark_Pastel.conf`).
+- `~/.config/kitty/current-theme.conf` — real file managed by the script
+  (content copy of the active theme + per-theme `background_opacity`;
+  bootstrapped from `Dark_Pastel.conf`).
 - `~/.config/waybar/colors-light.css`, `~/.config/waybar/colors-dark.css`,
-  and `~/.config/waybar/colors.css` (active copy, initially = dark layer;
-  `colors-dark.css` is a near-empty no-op — the dark look comes from
-  `style.css` alone, which is why dark stays byte-identical).
+  and `~/.config/waybar/colors.css` (active copy, initially = dark full
+  stylesheet). Each `colors-<theme>.css` is a FULL stylesheet =
+  `waybar/style.css` content + theme layer (`#custom-theme` chip + overrides)
+  — regenerate them when `style.css` changes. Waybar loads `colors.css` via
+  the single-string `css` config key (an array is silently ignored by
+  waybar 0.15.0).
 - Package additions: `dconf` (gsettings needs the dconf backend to propagate
   to running apps). `gsettings-desktop-schemas` arrives via GTK deps.
 - Systemd user units (deployed only by the theming role):
@@ -129,15 +133,23 @@ emit the `css` key as `["style.css", "colors.css"]` (no `css` key otherwise).
 - `status --json` — read-only waybar JSON (text/class/tooltip). Never
   applies anything; the timer owns scheduling.
 
-### Apply pipeline (per component)
+### Apply pipeline (per component) — as shipped after live fixes
 
-1. **kitty**: flip `current-theme.conf` symlink → target theme file; then
-   `pkill -USR1 -x kitty` (full config reload including includes). New
-   windows read the symlink at startup anyway.
-2. **waybar**: atomically copy `colors-<theme>.css` → `colors.css`; CSS
-   hot-reload picks it up; also `pkill -USR2 -x waybar` as belt-and-braces.
-   The `css` array is `["style.css", "colors.css"]` so the layer overrides
-   equal-specificity rules in `style.css` by order.
+`apply` ALWAYS re-applies components (no "already current" skip): a state /
+reality divergence — e.g. an interrupted earlier apply — self-heals on the
+next command instead of sticking permanently.
+
+1. **kitty**: copy the theme file's CONTENT into `current-theme.conf` (a
+   real file — kitty's reload does not re-follow a swapped symlink include,
+   but does re-read include content), appending a per-theme
+   `background_opacity` (dark 0.7 / light 0.6 — kitty.conf sets no opacity
+   when theming is enabled, since the include parses first and a later
+   global value would override the per-theme one); then
+   `pkill --signal USR1 -x kitty`.
+2. **waybar**: atomically copy the full `colors-<theme>.css` →
+   `colors.css`, then `pkill --signal USR2 -x waybar` (SIGUSR2 re-reads the
+   loaded stylesheet; SIGUSR1/config reload does not re-read the css path on
+   waybar 0.15.0).
 3. **GTK**: `gsettings set org.gnome.desktop.interface color-scheme
    prefer-dark|prefer-light`. Failure-tolerant: no dbus/no gsettings → log
    and continue.

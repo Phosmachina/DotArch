@@ -1,6 +1,10 @@
-include {% if enable_theme_switch | default(false) %}current-theme.conf{% else %}Dark_Pastel.conf{% endif %}
+{% if enable_theme_switch | default(false) %}
+include current-theme.conf
+{% else %}
+include Dark_Pastel.conf
 
 background_opacity 0.7
+{% endif %}
 
 font_family JetbrainsMono Nerd Font
 bold_font        auto

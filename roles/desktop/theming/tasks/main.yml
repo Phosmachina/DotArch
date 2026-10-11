@@ -47,17 +47,18 @@
     mode: '0644'
   tags: [desktop, theme, config]
 
-- name: Check kitty current-theme symlink
+- name: Check kitty current-theme file
   ansible.builtin.stat:
     path: "{{ ansible_facts['user_dir'] }}/.config/kitty/current-theme.conf"
   register: theme_kitty_link
   tags: [desktop, theme, config]
 
-- name: Bootstrap kitty current-theme symlink (dark default)
-  ansible.builtin.file:
-    src: Dark_Pastel.conf
+- name: Bootstrap kitty current-theme file (dark, script-managed after)
+  ansible.builtin.copy:
+    src: "{{ ansible_facts['user_dir'] }}/.config/kitty/Dark_Pastel.conf"
     dest: "{{ ansible_facts['user_dir'] }}/.config/kitty/current-theme.conf"
-    state: link
+    remote_src: true
+    mode: '0644'
   when: not theme_kitty_link.stat.exists
   tags: [desktop, theme, config]
 

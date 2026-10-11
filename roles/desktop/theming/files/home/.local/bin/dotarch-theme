@@ -146,13 +146,29 @@ effective_theme() { # -> dark|light
 }
 
 apply_components() { # apply_components dark|light
-    local theme=$1 target="Dark_Pastel.conf"
-    [[ "$theme" == "light" ]] && target="theme-light.conf"
+    local theme=$1 target="Dark_Pastel.conf" opacity=0.7
+    [[ "$theme" == "light" ]] && { target="theme-light.conf"; opacity=0.6; }
+
+    # kitty: copy the theme CONTENT into current-theme.conf (a real file).
+    # kitty's config reload does not re-follow a swapped symlink include, but
+    # it does re-read the include file's content. Opacity is appended per
+    # theme because kitty.conf no longer sets it (last directive wins, and
+    # the include is parsed first).
     mkdir -p "$KITTY_DIR"
-    ln -sfn "$target" "$KITTY_DIR/current-theme.conf"
+    if [[ -f "$KITTY_DIR/$target" ]]; then
+        cp "$KITTY_DIR/$target" "$KITTY_DIR/.current-theme.tmp"
+        printf '\nbackground_opacity %s\n' "$opacity" >> "$KITTY_DIR/.current-theme.tmp"
+        mv "$KITTY_DIR/.current-theme.tmp" "$KITTY_DIR/current-theme.conf"
+    else
+        log "$target missing — kitty not switched"
+    fi
     # NB: use the --signal long form — procps-ng >= 4 parses "-USR1" as "-U SR1"
     pkill --signal USR1 -x kitty 2>/dev/null || true
 
+    # waybar: colors.css is a FULL stylesheet per theme. Waybar 0.15 silently
+    # ignores a css *array*, SIGUSR1 (config reload) does not re-read the css
+    # path, but SIGUSR2 re-reads the loaded stylesheet — so flip the single
+    # css file and send SIGUSR2.
     mkdir -p "$WAYBAR_DIR"
     if [[ -f "$WAYBAR_DIR/colors-$theme.css" ]]; then
         cp "$WAYBAR_DIR/colors-$theme.css" "$WAYBAR_DIR/.colors.css.tmp"
@@ -170,17 +186,18 @@ apply_components() { # apply_components dark|light
     fi
 }
 
-apply() { # apply -> echoes effective theme applied (or already current)
+apply() { # apply -> echoes effective theme; ALWAYS re-applies components so
+    # a state/reality divergence (e.g. an interrupted earlier apply) self-heals
     bootstrap_state; read_state; sun_times
     local target
     target=$(effective_theme)
-    if [[ "$CURRENT" == "$target" ]]; then
-        log "already $target — nothing to apply"
-        echo "$target"; return 0
-    fi
     apply_components "$target"
     write_state "$MODE" "$target"
-    log "applied $target"
+    if [[ "$CURRENT" == "$target" ]]; then
+        log "re-applied $target (state already agreed)"
+    else
+        log "applied $target"
+    fi
     echo "$target"
 }
 

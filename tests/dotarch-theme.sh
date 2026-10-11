@@ -22,9 +22,13 @@ new_home() {
     done
     printf '#!/bin/sh\necho Europe/Paris\n' > "$TEST_HOME/bin/timedatectl"
     chmod +x "$TEST_HOME/bin/timedatectl"
-    ln -s Dark_Pastel.conf "$TEST_HOME/.config/kitty/current-theme.conf"
-    printf '/* dark layer */\n' > "$TEST_HOME/.config/waybar/colors-dark.css"
-    printf '/* light layer */\n' > "$TEST_HOME/.config/waybar/colors-light.css"
+    # kitty fixtures: theme files the script copies content from
+    printf 'background            #000000\nforeground            #ffffff\n' > "$TEST_HOME/.config/kitty/Dark_Pastel.conf"
+    printf 'background            #fbfbfb\nforeground            #1a1a1a\n' > "$TEST_HOME/.config/kitty/theme-light.conf"
+    cp "$TEST_HOME/.config/kitty/Dark_Pastel.conf" "$TEST_HOME/.config/kitty/current-theme.conf"
+    # waybar fixtures: distinct full-file markers
+    printf '/* dark full */\n#custom-theme {}\n' > "$TEST_HOME/.config/waybar/colors-dark.css"
+    printf '/* light full */\nwindow#waybar { color: #2e2e2e; }\n' > "$TEST_HOME/.config/waybar/colors-light.css"
     cp "$TEST_HOME/.config/waybar/colors-dark.css" "$TEST_HOME/.config/waybar/colors.css"
 }
 run_script() { HOME="$TEST_HOME" PATH="$TEST_HOME/bin:$PATH" bash "$SCRIPT" "$@"; }
@@ -90,24 +94,30 @@ check "source still valid"                "sun"   "$(grep '^source=' "$TEST_HOME
 echo "T3: apply pipeline"
 sandbox set light >/dev/null
 check "state current=light" "light" "$(state_of current)"
-check "kitty symlink -> light" "theme-light.conf" "$(readlink "$TEST_HOME/.config/kitty/current-theme.conf")"
-check "colors.css = light layer" "/* light layer */" "$(cat "$TEST_HOME/.config/waybar/colors.css")"
+check "kitty theme content -> light" "1" "$(grep -c '^background  *#fbfbfb' "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "kitty light opacity appended" "1" "$(grep -c '^background_opacity 0.6' "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "colors.css = light full style" "1" "$(grep -c 'window#waybar { color: #2e2e2e; }' "$TEST_HOME/.config/waybar/colors.css")"
 grep -q "gsettings set org.gnome.desktop.interface color-scheme prefer-light" "$TEST_HOME/calls.log" \
     && ok "gsettings prefer-light called" || fail "gsettings call missing"
 grep -q "pkill --signal USR1 -x kitty" "$TEST_HOME/calls.log"  && ok "kitty signaled"  || fail "kitty signal missing"
 grep -q "pkill --signal USR2 -x waybar" "$TEST_HOME/calls.log" && ok "waybar signaled" || fail "waybar signal missing"
 
 sandbox set dark >/dev/null
-check "kitty symlink -> dark" "Dark_Pastel.conf" "$(readlink "$TEST_HOME/.config/kitty/current-theme.conf")"
-check "colors.css = dark layer" "/* dark layer */" "$(cat "$TEST_HOME/.config/waybar/colors.css")"
+check "kitty theme content -> dark" "1" "$(grep -c '^background  *#000000' "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "kitty dark opacity appended" "1" "$(grep -c '^background_opacity 0.7' "$TEST_HOME/.config/kitty/current-theme.conf")"
+check "colors.css = dark full style" "1" "$(grep -c '^/\* dark full \*/' "$TEST_HOME/.config/waybar/colors.css")"
 
-echo "T3b: idempotent apply"
+echo "T3b: apply is idempotent and self-healing (always re-applies)"
 new_home
 run_script set light >/dev/null
-calls=$(grep -c gsettings "$TEST_HOME/calls.log")
-run_script apply >/dev/null
-run_script apply >/dev/null
-check "no duplicate gsettings on no-op apply" "$calls" "$(grep -c gsettings "$TEST_HOME/calls.log")"
+run_script apply >/dev/null 2>&1
+rc=$?
+check "repeat apply exits 0" "0" "$rc"
+check "state stays light" "light" "$(state_of current)"
+# self-heal: corrupt reality, keep state -> next apply repairs components
+printf 'background            #000000\n' > "$TEST_HOME/.config/kitty/current-theme.conf"
+run_script set light >/dev/null
+check "diverged state self-heals to light" "1" "$(grep -c '^background  *#fbfbfb' "$TEST_HOME/.config/kitty/current-theme.conf")"
 
 echo "T3c: set auto resolves by time-of-day (fixed window via config)"
 new_home
