@@ -112,7 +112,7 @@ new_home
 printf 'LOCATION=coords\nDAY_TIME=07:00\nNIGHT_TIME=20:00\n' > "$TEST_HOME/.config/dotarch-theme.conf"
 run_script set auto
 mode_now=$(date +%H%M)
-want=dark; [[ $mode_now -ge 0700 && $mode_now -lt 2000 ]] && want=light
+want=dark; [[ 10#$mode_now -ge 700 && 10#$mode_now -lt 2000 ]] && want=light
 check "auto resolved by time of day" "$want" "$(state_of current)"
 
 echo; echo "passed=$PASS failed=$FAIL"
