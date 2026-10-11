@@ -184,9 +184,10 @@ apply() { # apply -> echoes effective theme applied (or already current)
     echo "$target"
 }
 
-cmd_set() { # cmd_set auto|dark|light
+cmd_set() { # cmd_set auto|dark|light — set mode, then run (apply + replan)
     write_state "$1" "$CURRENT"
     apply >/dev/null
+    plan
 }
 
 cmd_cycle() {

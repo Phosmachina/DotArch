@@ -117,6 +117,14 @@ mode_now=$(date +%H%M)
 want=dark; [[ 10#$mode_now -ge 700 && 10#$mode_now -lt 2000 ]] && want=light
 check "auto resolved by time of day" "$want" "$(state_of current)"
 
+echo "T3d: set replans the timer (spec: set = apply + plan)"
+new_home
+run_script set light >/dev/null
+[[ -f "$TEST_HOME/.config/systemd/user/dotarch-theme.timer.d/schedule.conf" ]] \
+    && ok "set wrote drop-in" || fail "set drop-in missing"
+grep -q "systemctl --user restart dotarch-theme.timer" "$TEST_HOME/calls.log" \
+    && ok "set re-armed timer" || fail "set timer restart missing"
+
 echo "T4: plan writes drop-in and re-arms timer"
 sandbox plan
 dropin="$TEST_HOME/.config/systemd/user/dotarch-theme.timer.d/schedule.conf"
