@@ -40,23 +40,101 @@ bootstrap_state() {
     [[ -f "$STATE_FILE" ]] || write_state auto ""
 }
 
-minutes_now() { echo $(( $(date +%H) * 60 + $(date +%M) )); }
-minutes_of() { echo $(( ${1%%:*} * 60 + ${1##*:} )); } # minutes_of HH:MM
+minutes_now() { echo $(( 10#$(date +%H) * 60 + 10#$(date +%M) )); }
+minutes_of() { echo $(( 10#${1%%:*} * 60 + 10#${1##*:} )); } # minutes_of HH:MM (10# = tolerate leading zeros)
 
-sun_times() { # sets SUNRISE SUNSET SOURCE; cached per date (upgraded to real sun math in Task 2)
+tz_coords() { # tz_coords TIMEZONE -> "LAT LON" or empty
+    case "$1" in
+        Europe/Paris)     echo "48.85 2.35" ;;
+        Europe/London)    echo "51.50 -0.12" ;;
+        Europe/Brussels)  echo "50.85 4.35" ;;
+        Europe/Amsterdam) echo "52.37 4.90" ;;
+        Europe/Berlin)    echo "52.52 13.40" ;;
+        Europe/Zurich)    echo "47.37 8.54" ;;
+        Europe/Madrid)    echo "40.42 -3.70" ;;
+        Europe/Lisbon)    echo "38.72 -9.14" ;;
+        Europe/Rome)      echo "41.90 12.50" ;;
+        *)                echo "" ;;
+    esac
+}
+
+system_timezone() {
+    local tz
+    tz=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+    if [[ -z "$tz" ]]; then
+        tz=$(readlink /etc/localtime 2>/dev/null || true)
+        tz=${tz##*zoneinfo/}
+    fi
+    printf '%s' "$tz"
+}
+
+compute_sun() { # compute_sun LAT LON -> "sunrise=HH:MM sunset=HH:MM" (local time, today)
+    python3 - "$1" "$2" <<'PYEOF'
+import math, sys
+from datetime import date, datetime
+
+lat, lon = float(sys.argv[1]), float(sys.argv[2])
+
+# Sunrise equation (short NOAA form), see Wikipedia "Sunrise equation"
+n = date.today().toordinal() - date(2000, 1, 1).toordinal() + 0.0008
+j_star = n - lon / 360.0
+m = (357.5291 + 0.98560028 * j_star) % 360.0
+c = (1.9148 * math.sin(math.radians(m)) + 0.02 * math.sin(math.radians(2 * m))
+     + 0.0003 * math.sin(math.radians(3 * m)))
+lam = (m + c + 180 + 102.9372) % 360.0
+j_transit = (2451545.0 + j_star + 0.0053 * math.sin(math.radians(m))
+             - 0.0069 * math.sin(math.radians(2 * lam)))
+delta = math.asin(math.sin(math.radians(lam)) * math.sin(math.radians(23.44)))
+cos_omega = ((math.sin(math.radians(-0.83)) - math.sin(math.radians(lat)) * math.sin(delta))
+             / (math.cos(math.radians(lat)) * math.cos(delta)))
+if not -1.0 <= cos_omega <= 1.0:
+    sys.exit(3)  # polar day/night -> caller falls back to fixed times
+omega = math.degrees(math.acos(cos_omega))
+
+def jd_to_local(jd):
+    return datetime.fromtimestamp((jd - 2440587.5) * 86400.0)
+
+print(f"sunrise={jd_to_local(j_transit - omega / 360.0):%H:%M} "
+      f"sunset={jd_to_local(j_transit + omega / 360.0):%H:%M}")
+PYEOF
+}
+
+sun_times() { # sets SUNRISE SUNSET SOURCE; cached per date, sun math with fixed fallback
     local today
     today=$(date +%F)
     if [[ -r "$SUN_CACHE" ]]; then
-        if [[ $(grep '^date=' "$SUN_CACHE" | cut -d= -f2) == "$today" ]]; then
-            SUNRISE=$(grep '^sunrise=' "$SUN_CACHE" | cut -d= -f2)
-            SUNSET=$(grep '^sunset=' "$SUN_CACHE" | cut -d= -f2)
-            SOURCE=$(grep '^source=' "$SUN_CACHE" | cut -d= -f2)
-            return 0
+        if [[ $(grep '^date=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true) == "$today" ]]; then
+            SUNRISE=$(grep '^sunrise=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
+            SUNSET=$(grep '^sunset=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
+            SOURCE=$(grep '^source=' "$SUN_CACHE" 2>/dev/null | cut -d= -f2 || true)
+            if [[ -n "$SUNRISE" && -n "$SUNSET" && -n "$SOURCE" ]]; then
+                return 0
+            fi
         fi
     fi
-    SUNRISE=$(config_value DAY_TIME 07:00)
-    SUNSET=$(config_value NIGHT_TIME 20:00)
-    SOURCE=fixed
+    local location lat lon latlon result
+    location=$(config_value LOCATION auto)
+    result=""
+    if [[ "$location" == "coords" ]]; then
+        lat=$(config_value LATITUDE ""); lon=$(config_value LONGITUDE "")
+        if [[ -n "$lat" && -n "$lon" ]]; then
+            result=$(compute_sun "$lat" "$lon" 2>/dev/null || true)
+        fi
+    else
+        latlon=$(tz_coords "$(system_timezone)")
+        if [[ -n "$latlon" ]]; then
+            result=$(compute_sun $latlon 2>/dev/null || true)
+        fi
+    fi
+    if [[ -n "$result" ]]; then
+        SUNRISE=$(printf '%s\n' "$result" | cut -d' ' -f1 | cut -d= -f2)
+        SUNSET=$(printf '%s\n' "$result" | cut -d' ' -f2 | cut -d= -f2)
+        SOURCE=sun
+    else
+        SUNRISE=$(config_value DAY_TIME 07:00)
+        SUNSET=$(config_value NIGHT_TIME 20:00)
+        SOURCE=fixed
+    fi
     printf 'date=%s\nsunrise=%s\nsunset=%s\nsource=%s\n' "$today" "$SUNRISE" "$SUNSET" "$SOURCE" > "$SUN_CACHE"
 }
 

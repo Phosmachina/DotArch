@@ -51,8 +51,31 @@ echo "$out" | grep -qE '"class": "(dark|light)' && ok "status class dark|light" 
 
 echo "T1c: config fallback times"
 new_home
+printf '#!/bin/sh\necho America/Sao_Paulo\n' > "$TEST_HOME/bin/timedatectl" # unmapped tz -> fixed defaults
 run_script set dark
 check "default DAY_TIME written to sun-cache" "07:00" "$(grep '^sunrise=' "$TEST_HOME/.local/state/dotarch-theme/sun-cache" | cut -d= -f2)"
+
+echo "T2: sun-based resolution (real python, Paris coords via stubbed timedatectl)"
+new_home
+run_script set dark >/dev/null
+cache="$TEST_HOME/.local/state/dotarch-theme/sun-cache"
+check "source is sun"        "sun"    "$(grep '^source=' "$cache" | cut -d= -f2)"
+sunrise=$(grep '^sunrise=' "$cache" | cut -d= -f2); sunset=$(grep '^sunset=' "$cache" | cut -d= -f2)
+check "sunrise HH:MM format" "1"      "$(echo "$sunrise" | grep -cE '^0?[4-9]:[0-5][0-9]$')"
+check "sunset HH:MM format"  "1"      "$(echo "$sunset" | grep -cE '^(1[6-9]|2[0-2]):[0-5][0-9]$')"
+# Paris ranges hold for any day of the year (sunrise 04:4x–08:4x, sunset 16:5x–21:5x)
+mtime=$(stat -c %Y "$cache")
+run_script status --json >/dev/null
+check "cache reused, not rewritten" "$mtime" "$(stat -c %Y "$cache")"
+
+echo "T2b: fixed fallback on empty coords"
+new_home
+printf 'LOCATION=coords\nDAY_TIME=09:37\nNIGHT_TIME=18:11\n' > "$TEST_HOME/.config/dotarch-theme.conf"
+run_script set dark
+cache="$TEST_HOME/.local/state/dotarch-theme/sun-cache"
+check "empty coords -> fixed source" "fixed" "$(grep '^source=' "$cache" | cut -d= -f2)"
+check "DAY_TIME honored"            "09:37" "$(grep '^sunrise=' "$cache" | cut -d= -f2)"
+check "NIGHT_TIME honored"          "18:11" "$(grep '^sunset=' "$cache" | cut -d= -f2)"
 
 echo; echo "passed=$PASS failed=$FAIL"
 [[ $FAIL -eq 0 ]]
