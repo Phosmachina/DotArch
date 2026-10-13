@@ -165,14 +165,14 @@ apply_components() { # apply_components dark|light
     # NB: use the --signal long form — procps-ng >= 4 parses "-USR1" as "-U SR1"
     pkill --signal USR1 -x kitty 2>/dev/null || true
 
-    # waybar: colors.css is a FULL stylesheet per theme. Waybar 0.15 silently
-    # ignores a css *array*, SIGUSR1 (config reload) does not re-read the css
-    # path, but SIGUSR2 re-reads the loaded stylesheet — so flip the single
-    # css file and send SIGUSR2.
+    # waybar: colors.css is a FULL stylesheet per theme, loaded through
+    # style.css's "@import" (waybar 0.15 has no "css" config key — the css
+    # array/string forms are silently ignored, and only startup or SIGUSR2's
+    # default "reload" action re-reads the chain). Write in place (same
+    # inode) and signal USR2.
     mkdir -p "$WAYBAR_DIR"
     if [[ -f "$WAYBAR_DIR/colors-$theme.css" ]]; then
-        cp "$WAYBAR_DIR/colors-$theme.css" "$WAYBAR_DIR/.colors.css.tmp"
-        mv "$WAYBAR_DIR/.colors.css.tmp" "$WAYBAR_DIR/colors.css"
+        cat "$WAYBAR_DIR/colors-$theme.css" > "$WAYBAR_DIR/colors.css"
     else
         log "colors-$theme.css missing — waybar not switched"
     fi

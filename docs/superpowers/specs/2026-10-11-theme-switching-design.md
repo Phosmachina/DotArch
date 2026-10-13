@@ -77,9 +77,11 @@ By the **theming role**:
   and `~/.config/waybar/colors.css` (active copy, initially = dark full
   stylesheet). Each `colors-<theme>.css` is a FULL stylesheet =
   `waybar/style.css` content + theme layer (`#custom-theme` chip + overrides)
-  — regenerate them when `style.css` changes. Waybar loads `colors.css` via
-  the single-string `css` config key (an array is silently ignored by
-  waybar 0.15.0).
+  — regenerate them when the base styling changes. Loading chain: waybar
+  0.15.0 has NO working `css` config key (string or array — silently
+  ignored), so the waybar role templates `style.css` itself: themed mode
+  renders it as a one-line `@import url("file://…/colors.css")`, unthemed
+  mode renders the original base stylesheet.
 - Package additions: `dconf` (gsettings needs the dconf backend to propagate
   to running apps). `gsettings-desktop-schemas` arrives via GTK deps.
 - Systemd user units (deployed only by the theming role):
@@ -146,10 +148,12 @@ next command instead of sticking permanently.
    when theming is enabled, since the include parses first and a later
    global value would override the per-theme one); then
    `pkill --signal USR1 -x kitty`.
-2. **waybar**: atomically copy the full `colors-<theme>.css` →
-   `colors.css`, then `pkill --signal USR2 -x waybar` (SIGUSR2 re-reads the
-   loaded stylesheet; SIGUSR1/config reload does not re-read the css path on
-   waybar 0.15.0).
+2. **waybar**: write the full `colors-<theme>.css` into `colors.css` IN
+   PLACE (same inode), then `pkill --signal USR2 -x waybar` — on waybar
+   0.15.0 the signals are configurable actions (`on-sigusr2` defaults to
+   "reload"), and that reload re-reads the whole `style.css` → `@import`
+   chain. (`reload_style_on_change` does NOT watch imported files, and
+   inode-replacing writes orphan any watcher — hence in-place + signal.)
 3. **GTK**: `gsettings set org.gnome.desktop.interface color-scheme
    prefer-dark|prefer-light`. Failure-tolerant: no dbus/no gsettings → log
    and continue.
