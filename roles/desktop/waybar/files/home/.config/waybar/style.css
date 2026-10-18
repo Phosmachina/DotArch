@@ -247,3 +247,26 @@ tooltip label {
     color: #ff5555;
     background-color: rgba(255, 85, 85, 0.25);
 }
+
+/* Theme toggle module (desktop/theming) — chip matches the module pill set
+   above; amber when a theme is pinned. */
+#custom-theme {
+    background-color: rgba(25, 25, 35, 0.75);
+    padding: 0 12px;
+    margin: 0 4px;
+    border-radius: 10px;
+    color: #f0f0f0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#custom-theme:hover {
+    background-color: rgba(35, 35, 50, 0.85);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#custom-theme.pinned {
+    color: #e6b450;
+}

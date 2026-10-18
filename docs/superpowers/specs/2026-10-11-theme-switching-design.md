@@ -34,10 +34,14 @@ Everything is dark-only and statically deployed by Ansible:
   built-in table (e.g. `Europe/Paris → 48.85, 2.35`). Accuracy anywhere in
   mainland France is within ~±20 min of true sunset — acceptable for theming.
   Explicit `theme_latitude`/`theme_longitude` override for precision.
-- **Scope (v1, "core")**: kitty, waybar, GTK color-scheme (which drives
-  Firefox/Betterbird when they use the system theme, plus libadwaita apps
-  like Vicinae). Hyprland borders, qimgv, and a wallpaper pair are explicit
-  non-goals for v1.
+- **Scope**: GTK color-scheme only (drives Firefox/Betterbird when they use
+  the system theme, plus libadwaita apps like Vicinae). **Reduced 2026-10-13
+  by user decision**: kitty and waybar are STATIC DARK (their pre-feature
+  configs restored; the waybar `#custom-theme` chip lives in the static
+  `style.css`). Earlier v1 also themed kitty + waybar — those mechanisms
+  were removed (kitty theme files, waybar color layers, per-theme opacity,
+  reload signaling). Non-goals throughout: Hyprland borders, qimgv,
+  wallpaper pair.
 - **Scheduling mechanism**: a systemd user timer fires exactly at each theme
   boundary; the triggered service applies the theme and plans the next
   boundary ("self-rescheduling timer"). The waybar module is a dumb display
@@ -135,28 +139,22 @@ emit the `css` key as `["style.css", "colors.css"]` (no `css` key otherwise).
 - `status --json` — read-only waybar JSON (text/class/tooltip). Never
   applies anything; the timer owns scheduling.
 
-### Apply pipeline (per component) — as shipped after live fixes
+### Apply pipeline — GTK-only (scope reduced 2026-10-13)
 
-`apply` ALWAYS re-applies components (no "already current" skip): a state /
-reality divergence — e.g. an interrupted earlier apply — self-heals on the
-next command instead of sticking permanently.
+`apply` ALWAYS re-applies (no "already current" skip): a state / reality
+divergence — e.g. an interrupted earlier apply — self-heals on the next
+command instead of sticking permanently.
 
-1. **kitty**: copy the theme file's CONTENT into `current-theme.conf` (a
-   real file — kitty's reload does not re-follow a swapped symlink include,
-   but does re-read include content), appending a per-theme
-   `background_opacity` (dark 0.7 / light 0.6 — kitty.conf sets no opacity
-   when theming is enabled, since the include parses first and a later
-   global value would override the per-theme one); then
-   `pkill --signal USR1 -x kitty`.
-2. **waybar**: write the full `colors-<theme>.css` into `colors.css` IN
-   PLACE (same inode), then `pkill --signal USR2 -x waybar` — on waybar
-   0.15.0 the signals are configurable actions (`on-sigusr2` defaults to
-   "reload"), and that reload re-reads the whole `style.css` → `@import`
-   chain. (`reload_style_on_change` does NOT watch imported files, and
-   inode-replacing writes orphan any watcher — hence in-place + signal.)
-3. **GTK**: `gsettings set org.gnome.desktop.interface color-scheme
+1. **GTK**: `gsettings set org.gnome.desktop.interface color-scheme
    prefer-dark|prefer-light`. Failure-tolerant: no dbus/no gsettings → log
    and continue.
+
+(Historical: v1 also flipped kitty via a content-copied `current-theme.conf`
++ SIGUSR1 — kitty's reload does not re-follow a swapped symlink include —
+and waybar via an in-place-rewritten `colors.css` imported from
+`style.css` + SIGUSR2's default "reload" action. Removed with the scope
+reduction; recorded here because the findings still hold if per-app theming
+ever returns.)
 
 ### Waybar module
 

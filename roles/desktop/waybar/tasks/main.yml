@@ -17,9 +17,9 @@
     mode: '0755'
   tags: [desktop, waybar, config]
 
-- name: Template Waybar stylesheet
-  ansible.builtin.template:
-    src: home/.config/waybar/style.css.j2
+- name: Copy Waybar stylesheet
+  ansible.builtin.copy:
+    src: files/home/.config/waybar/style.css
     dest: "{{ ansible_facts['user_dir'] }}/.config/waybar/style.css"
     mode: '0644'
   tags: [desktop, waybar, config]

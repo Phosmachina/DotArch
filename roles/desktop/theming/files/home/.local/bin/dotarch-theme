@@ -9,8 +9,6 @@ SUN_CACHE="$STATE_DIR/sun-cache"
 LOCK_FILE="$STATE_DIR/.lock"
 CONFIG_FILE="$HOME/.config/dotarch-theme.conf"
 
-KITTY_DIR="$HOME/.config/kitty"
-WAYBAR_DIR="$HOME/.config/waybar"
 TIMER_DROPIN_DIR="$HOME/.config/systemd/user/dotarch-theme.timer.d"
 TIMER_DROPIN="$TIMER_DROPIN_DIR/schedule.conf"
 
@@ -145,39 +143,10 @@ effective_theme() { # -> dark|light
     if (( now < rise || now >= set_ )); then echo dark; else echo light; fi
 }
 
-apply_components() { # apply_components dark|light
-    local theme=$1 target="Dark_Pastel.conf" opacity=0.7
-    [[ "$theme" == "light" ]] && { target="theme-light.conf"; opacity=0.6; }
-
-    # kitty: copy the theme CONTENT into current-theme.conf (a real file).
-    # kitty's config reload does not re-follow a swapped symlink include, but
-    # it does re-read the include file's content. Opacity is appended per
-    # theme because kitty.conf no longer sets it (last directive wins, and
-    # the include is parsed first).
-    mkdir -p "$KITTY_DIR"
-    if [[ -f "$KITTY_DIR/$target" ]]; then
-        cp "$KITTY_DIR/$target" "$KITTY_DIR/.current-theme.tmp"
-        printf '\nbackground_opacity %s\n' "$opacity" >> "$KITTY_DIR/.current-theme.tmp"
-        mv "$KITTY_DIR/.current-theme.tmp" "$KITTY_DIR/current-theme.conf"
-    else
-        log "$target missing — kitty not switched"
-    fi
-    # NB: use the --signal long form — procps-ng >= 4 parses "-USR1" as "-U SR1"
-    pkill --signal USR1 -x kitty 2>/dev/null || true
-
-    # waybar: colors.css is a FULL stylesheet per theme, loaded through
-    # style.css's "@import" (waybar 0.15 has no "css" config key — the css
-    # array/string forms are silently ignored, and only startup or SIGUSR2's
-    # default "reload" action re-reads the chain). Write in place (same
-    # inode) and signal USR2.
-    mkdir -p "$WAYBAR_DIR"
-    if [[ -f "$WAYBAR_DIR/colors-$theme.css" ]]; then
-        cat "$WAYBAR_DIR/colors-$theme.css" > "$WAYBAR_DIR/colors.css"
-    else
-        log "colors-$theme.css missing — waybar not switched"
-    fi
-    pkill --signal USR2 -x waybar 2>/dev/null || true
-
+apply_components() { # apply_components dark|light — GTK color-scheme only
+    # (kitty and waybar are intentionally NOT themed: static dark per user
+    # choice 2026-10-13; this drives Firefox/Betterbird/libadwaita apps)
+    local theme=$1
     if command -v gsettings >/dev/null 2>&1; then
         gsettings set org.gnome.desktop.interface color-scheme "prefer-$theme" 2>/dev/null \
             || log "gsettings failed (no dbus session?) — GTK apps not switched"
