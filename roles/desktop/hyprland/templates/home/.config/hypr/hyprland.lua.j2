@@ -154,16 +154,31 @@ hl.window_rule({
     },
 })
 
--- Float the Bitwarden extension popup; it shares the firefox class, the
--- "Extension: (<name>)" title prefix is how Firefox names extension popups.
-hl.window_rule({
-    name = "bitwarden-popup",
-    match = {
-        class = "^firefox$",
-        title = "^Extension: \\(Bitwarden Password Manager\\).*$",
-    },
-    float = true,
-})
+-- Float the Bitwarden extension popup. Firefox maps the popup with a
+-- generic "Mozilla Firefox" title and only sets "Extension: (Bitwarden
+-- Password Manager) - ..." AFTER map, and reuses the same toplevel across
+-- popup open/close — so a map-time window_rule can never match. React to
+-- title changes and activations instead. Dispatchers only execute when
+-- passed to hl.dispatch().
+local function float_bitwarden_popup(w)
+    local okClass, cls = pcall(function() return w.class end)
+    if not okClass or cls ~= "firefox" then
+        return
+    end
+    local okT, t = pcall(function() return w.title end)
+    if not okT or not t or not t:find("Extension: (Bitwarden Password Manager)", 1, true) then
+        return
+    end
+    local okF, floating = pcall(function() return w.floating end)
+    if okF and floating then
+        return
+    end
+    hl.dispatch(hl.dsp.focus({ window = w }))
+    hl.dispatch(hl.dsp.window.float({ action = "on" }))
+end
+
+hl.on("window.title", float_bitwarden_popup)
+hl.on("window.active", float_bitwarden_popup)
 
 hl.layer_rule({
     name = "layerrule-1",
