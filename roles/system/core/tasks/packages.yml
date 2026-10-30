@@ -34,6 +34,9 @@
       - reflector
       - jq
       - handlr-regex
+      - aria2 # multi-connection downloads (yt-dlp external downloader)
+      - yt-dlp
+      - wl-clipboard
     state: present
   when: ansible_facts.distribution == 'Archlinux'
   tags: [system]
