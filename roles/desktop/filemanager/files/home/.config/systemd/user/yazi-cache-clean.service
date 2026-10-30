@@ -1,0 +1,6 @@
+[Unit]
+Description=Delete yazi preview cache entries older than 30 days
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/find /home/michel/.cache/yazi -type f -mtime +30 -delete

@@ -17,6 +17,9 @@ sort_translit = true
 ratios = [1, 3, 4]
 
 [preview]
+# Persistent preview cache — default location is /tmp (tmpfs), wiped at every reboot
+cache_dir = "/home/michel/.cache/yazi"
+
 # Tab size for text preview
 tab_size = 2
 
