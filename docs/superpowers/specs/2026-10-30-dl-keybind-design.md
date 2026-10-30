@@ -134,3 +134,24 @@ conversion beyond the audio preset.
 - Deploy note: `--tags` cannot reach roles through the meta-role — use a
   scoped `/tmp` playbook with `ANSIBLE_ROLES_PATH` and
   `-e target=laptop` (known deploy quirk).
+
+## Implementation findings (2026-10-30, resolved during build)
+
+- yt-dlp NA-fallback template syntax is **comma for alternates, pipe for
+  literal default**: `%(uploader,channel|Unknown)s`. The pipe-only form
+  (`%(uploader|channel|Unknown)s`) prints the remainder literally. The
+  global flag is `--output-na-placeholder` (not `--na-placeholder`).
+- External-downloader invocation: `--downloader aria2c
+  '--downloader-args=aria2c:-c -x3 -s3 -k 1M'` (the old
+  `--external-downloader-args` form warns). Verified via `-v` that
+  aria2c is actually invoked; yt-dlp silently uses its native downloader
+  for protocols aria2c cannot handle.
+- `vicinae dmenu` contract confirmed on 0.29.2: newline entries on stdin,
+  prints the selected entry verbatim to stdout (exit 0); Escape prints
+  nothing and exits 1. `-f data` accepted.
+- Scripts installed to `/usr/bin` (not `~/.local/bin` as this spec
+  originally said): keybind-triggered commands need the compositor PATH,
+  same as `transcript`. Deployed via the existing `scripts.yml` loop.
+- Deployed manually to the host ahead of the next full role run (the
+  working tree holds in-flight VPN work not ready to ship); the role
+  converges idempotently on the next deploy.
