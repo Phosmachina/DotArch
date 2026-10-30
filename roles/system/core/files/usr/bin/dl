@@ -1,0 +1,49 @@
+#!/bin/bash
+# dl — download the clipboard URL (yt-dlp) at a chosen quality.
+# Bound to Super+Shift+D. See docs/superpowers/specs/2026-10-30-dl-keybind-design.md
+
+set -u
+
+notify() { notify-send -a dl "$@"; }
+
+url=$(wl-paste --no-newline 2>/dev/null \
+  | grep -oE 'https?://[^[:space:]]+' | head -n1 \
+  | sed 's/[.,;:)]*$//')
+if [ -z "$url" ]; then
+  notify -u critical "No URL in clipboard"
+  exit 1
+fi
+
+if command -v vicinae >/dev/null 2>&1; then
+  choice=$(printf '%s\n' \
+    '1080p (default)' '720p' '2160p (4K)' 'Audio only (m4a)' \
+    | vicinae dmenu -f data -n 'Download' -s 'Quality' -p 'Download quality')
+  [ -z "$choice" ] && exit 0   # Esc
+else
+  choice='1080p (default)'
+  notify "vicinae unavailable — using 1080p"
+fi
+
+case $choice in
+  '1080p (default)') height=1080 ;;
+  '720p')            height=720 ;;
+  '2160p (4K)')      height=2160 ;;
+  'Audio only (m4a)') height=audio ;;
+  *)                 height=1080 ;;
+esac
+
+title=$(yt-dlp -e --no-warnings "$url" 2>/dev/null | head -n1)
+[ -z "$title" ] && title=$url
+
+slug=$(printf '%s' "$url" \
+  | sed -e 's|https\?://||' -e 's|[^a-zA-Z0-9]\+|-|g' -e 's|^-*||' -e 's|-*$||' \
+  | tr 'A-Z' 'a-z' | cut -c1-40)
+[ -z "$slug" ] && slug=dl
+unit="dl-${slug}"
+systemctl --user is-active --quiet "$unit" 2>/dev/null && unit="dl-${slug}-$RANDOM"
+
+systemd-run --user --collect --unit="$unit" \
+  --setenv="DL_UNIT=$unit" --setenv="DL_TITLE=$title" \
+  /usr/bin/dl-worker "$url" "$height"
+
+notify "Download started" "$title"

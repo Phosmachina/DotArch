@@ -1,0 +1,33 @@
+#!/bin/bash
+# dl-worker — runs inside a transient systemd user unit spawned by dl.
+# Streams yt-dlp output to the journal (progress lines included) and emits
+# structured markers consumed by dl-status.
+
+set -u
+url=$1
+height=$2
+title=${DL_TITLE:-$url}
+unit=${DL_UNIT:-dl-worker}
+
+dir="$HOME/Downloads/youtube-dl"
+printf 'DL_START %s | %s\n' "$url" "$title"
+
+if [ "$height" = audio ]; then
+  fmt=(-f bestaudio -x --audio-format m4a)
+else
+  fmt=(-f "bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best")
+fi
+
+if yt-dlp \
+  --downloader aria2c \
+  '--downloader-args=aria2c:-c -x3 -s3 -k 1M' \
+  -P "$dir" \
+  -o '%(uploader,channel|Unknown)s/%(title)s [%(id)s].%(ext)s' \
+  "${fmt[@]}" "$url"; then
+  printf 'DL_RESULT OK %s\n' "$title"
+  notify-send -a dl "Download finished" "$title"
+else
+  tail=$(journalctl --user -u "$unit" -o cat -n 12 2>/dev/null | grep -v '^DL_' | tail -n 3)
+  printf 'DL_RESULT FAIL %s\n' "$title"
+  notify-send -a dl -u critical "Download failed" "${title}\n${tail}"
+fi
