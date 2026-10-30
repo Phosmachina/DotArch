@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=dl — download status
+Comment=In-progress and recent downloads (yt-dlp)
+Exec=/usr/bin/dl-status
+Icon=folder-download
+Categories=Utility;
+Keywords=dl;download;yt-dlp;history;

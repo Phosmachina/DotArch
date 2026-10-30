@@ -1,0 +1,31 @@
+#!/bin/bash
+# dl-status — show in-progress and recent downloads in a vicinae list.
+# In-progress: live systemd user units (dl-*); history: DL_RESULT journal markers.
+
+set -u
+lines=()
+
+while read -r unit _ state _; do
+  unit=${unit%.service}
+  pct=$(journalctl --user -u "$unit" -o cat -n 60 2>/dev/null \
+    | grep -oE '[0-9.]+%' | tail -n1)
+  [ -n "$pct" ] && pct=" ${pct}"
+  lines+=("▶ ${unit#dl-} (${state}${pct})")
+done < <(systemctl --user list-units 'dl-*' --type=service --no-legend --plain 2>/dev/null)
+
+mapfile -t hist < <(journalctl --user -u 'dl-*' -o cat 2>/dev/null \
+  | grep '^DL_RESULT' | tail -n 10)
+for entry in "${hist[@]}"; do
+  case $entry in
+    'DL_RESULT OK '*)   lines+=("✓ ${entry#DL_RESULT OK }") ;;
+    'DL_RESULT FAIL '*) lines+=("✗ ${entry#DL_RESULT FAIL }") ;;
+  esac
+done
+
+if [ ${#lines[@]} -eq 0 ]; then
+  notify-send -a dl "No downloads yet"
+  exit 0
+fi
+
+printf '%s\n' "${lines[@]}" \
+  | vicinae dmenu -f data -n 'dl' -s '{count} downloads' -p 'In progress & history'
