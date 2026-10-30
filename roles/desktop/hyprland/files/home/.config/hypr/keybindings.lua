@@ -190,6 +190,9 @@ hl.bind(mainMod .. " + n", hl.dsp.exec_cmd("swaync-client -t"))
 -- Transcript (audio recording and transcription)
 hl.bind(mainMod .. " + a", hl.dsp.exec_cmd("transcript"))
 
+-- Web download (clipboard URL → yt-dlp)
+hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd("dl"))
+
 -- Video playback controls
 hl.bind(mainMod .. " + d", hl.dsp.submap("video-note"))
 hl.define_submap("video-note", function()
