@@ -154,6 +154,17 @@ hl.window_rule({
     },
 })
 
+-- Float the Bitwarden extension popup; it shares the firefox class, the
+-- "Extension: (<name>)" title prefix is how Firefox names extension popups.
+hl.window_rule({
+    name = "bitwarden-popup",
+    match = {
+        class = "^firefox$",
+        title = "^Extension: \\(Bitwarden Password Manager\\).*$",
+    },
+    float = true,
+})
+
 hl.layer_rule({
     name = "layerrule-1",
     match = { namespace = "vicinae" },
