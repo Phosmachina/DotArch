@@ -4,6 +4,17 @@ local terminal = "kitty"
 local menu = "vicinae toggle"
 local mainMod = "SUPER"
 
+-- Extract the active window from its group so commands below target the
+-- window, never the group container. Group-native binds (SUPER+K, G,
+-- brackets) are untouched, and built-in groupbar tab-header drags still
+-- work (see the mouse drag bind).
+local function ungroupActive()
+    local w = hl.get_active_window()
+    if w and w.group then
+        hl.dispatch(hl.dsp.window.move({ out_of_group = true }))
+    end
+end
+
 -- BASIC KEYBINDS
 
 -- Terminal
@@ -18,8 +29,11 @@ hl.bind("SUPER + SHIFT + Q", hl.dsp.exit())
 -- Reload configuration
 hl.bind(mainMod .. " + escape", hl.dsp.exec_cmd("hyprctl reload"))
 
--- Toggle floating
-hl.bind("SUPER + SHIFT + F", hl.dsp.window.float({ action = "toggle" }))
+-- Toggle floating (window-first: leave the group before floating)
+hl.bind("SUPER + SHIFT + F", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+end)
 
 -- Application launcher
 hl.bind(mainMod .. " + space", hl.dsp.exec_cmd(menu))
@@ -92,11 +106,23 @@ hl.bind("SUPER + CTRL + up", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "0 5
 hl.bind("SUPER + CTRL + left", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "5% 0"'))
 hl.bind("SUPER + CTRL + right", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "-5% 0"'))
 
--- Move windows
-hl.bind("SUPER + SHIFT + left", hl.dsp.window.move({ direction = "l" }))
-hl.bind("SUPER + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
-hl.bind("SUPER + SHIFT + up", hl.dsp.window.move({ direction = "u" }))
-hl.bind("SUPER + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
+-- Move windows (window-first: the window leaves its group, the group stays)
+hl.bind("SUPER + SHIFT + left", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.move({ direction = "l" }))
+end)
+hl.bind("SUPER + SHIFT + down", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.move({ direction = "d" }))
+end)
+hl.bind("SUPER + SHIFT + up", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.move({ direction = "u" }))
+end)
+hl.bind("SUPER + SHIFT + right", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.move({ direction = "r" }))
+end)
 
 -- WORKSPACES
 
@@ -104,7 +130,10 @@ hl.bind("SUPER + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
 for i = 1, 9 do
     local workspace = string.format("%02d", i)
     hl.bind(mainMod .. " + " .. i, hl.dsp.focus({ workspace = workspace }))
-    hl.bind("SUPER + SHIFT + " .. i, hl.dsp.window.move({ workspace = workspace }))
+    hl.bind("SUPER + SHIFT + " .. i, function()
+        ungroupActive()
+        hl.dispatch(hl.dsp.window.move({ workspace = workspace }))
+    end)
 end
 
 -- Swap workspaces
@@ -122,7 +151,10 @@ hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("~/.config/hypr/scripts/worksp
 
 -- Toggle special workspace (scratchpad)
 hl.bind(mainMod .. " + grave", hl.dsp.workspace.toggle_special("magic"))
-hl.bind("SUPER + SHIFT + grave", hl.dsp.window.move({ workspace = "special:magic" }))
+hl.bind("SUPER + SHIFT + grave", function()
+    ungroupActive()
+    hl.dispatch(hl.dsp.window.move({ workspace = "special:magic" }))
+end)
 
 -- MEDIA & VOLUME
 
