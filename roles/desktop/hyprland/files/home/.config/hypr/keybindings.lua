@@ -89,7 +89,24 @@ hl.define_submap("preselect", function()
 end)
 
 -- Mouse bindings
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
+-- Window-first drag: grabbing the body extracts the focused window from
+-- its group; grabbing the tab strip (top ~20px; groupbar is 14px) keeps
+-- the built-in per-tab header drag. Position must be checked BEFORE
+-- extracting, and only counts when the cursor is inside the active
+-- window's tile (not over empty space or another monitor).
+hl.bind(mainMod .. " + mouse:272", function()
+    local w      = hl.get_active_window()
+    local cursor = hl.get_cursor_pos()
+    if w and cursor and w.group and w.at and w.size then
+        local inTabStrip = cursor.y - w.at.y <= 20
+        local inTile     = cursor.x >= w.at.x and cursor.x < w.at.x + w.size.x
+            and cursor.y >= w.at.y and cursor.y < w.at.y + w.size.y
+        if inTile and not inTabStrip then
+            ungroupActive()
+        end
+    end
+    hl.dispatch(hl.dsp.window.drag())
+end, { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- FOCUS MOVEMENT
