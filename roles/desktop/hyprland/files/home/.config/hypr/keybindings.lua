@@ -20,6 +20,33 @@ local function stepFor(len)
     return math.max(10, math.floor(len * 0.05))
 end
 
+-- Floating windows: the dispatcher grows them symmetrically (±d/2 per
+-- edge), which pushes windows off-screen near monitor edges. Instead move
+-- ONE boundary per axis — the edge facing the monitor center — and pin the
+-- opposite edge by compensating the position after the resize.
+local function resizeFloatingEdge(w, sx, sy)
+    local m = hl.get_active_monitor()
+    if not m then return end
+    local addr, oldW, oldH = w.address, w.size.x, w.size.y
+    local growRightEdge  = (w.at.x + oldW / 2) < (m.x + m.width / 2)
+    local growBottomEdge = (w.at.y + oldH / 2) < (m.y + m.height / 2)
+    -- on the right/bottom half the boundary is the LEFT/TOP edge, so the
+    -- dispatcher delta flips sign (→ shrinks a right-half window)
+    local dx = (growRightEdge  and 1 or -1) * sx * stepFor(oldW)
+    local dy = (growBottomEdge and 1 or -1) * sy * stepFor(oldH)
+    hl.dispatch(hl.dsp.window.resize({ x = dx, y = dy, relative = true }))
+    local w2 = hl.get_window("address:" .. addr)
+    if not w2 then return end
+    -- clamp safety: compensate by what was ACTUALLY applied (min-size
+    -- clamping can shrink the delta), not by what we asked for
+    local ax, ay = w2.size.x - oldW, w2.size.y - oldH
+    local mx = (dx ~= 0 and ax ~= 0) and (growRightEdge and (ax / 2) or (-ax / 2)) or 0
+    local my = (dy ~= 0 and ay ~= 0) and (growBottomEdge and (ay / 2) or (-ay / 2)) or 0
+    if mx ~= 0 or my ~= 0 then
+        hl.dispatch(hl.dsp.window.move({ x = mx, y = my, relative = true }))
+    end
+end
+
 -- Resize the focused window. Arrows push the window's boundary in the
 -- arrow direction (→/↓ = +, ←/↑ = −). For tiled windows the dispatcher
 -- moves the split boundary in the delta's direction regardless of which
@@ -28,7 +55,8 @@ local function resizeDir(sx, sy)
     local w = hl.get_active_window()
     if not w or (w.fullscreen and w.fullscreen ~= 0) then return end
     if w.floating then
-        return -- single-edge handler arrives with the floating task
+        resizeFloatingEdge(w, sx, sy)
+        return
     end
     hl.dispatch(hl.dsp.window.resize({
         x = sx * stepFor(w.size.x),
