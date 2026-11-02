@@ -158,6 +158,10 @@ hl.bind(mainMod .. " + mouse:272", function()
     hl.dispatch(hl.dsp.window.drag())
 end, { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+-- Super + three-finger tap (libinput middle-button tap) starts an
+-- interactive resize: finger motion resizes the corner nearest the
+-- cursor, any tap/click ends it. Bare taps still middle-click-paste.
+hl.bind("SUPER + mouse:274", hl.dsp.window.resize())
 
 -- FOCUS MOVEMENT
 
