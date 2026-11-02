@@ -15,6 +15,28 @@ local function ungroupActive()
     end
 end
 
+-- Keyboard resize step: 5% of the resized axis, floored, minimum 10px
+local function stepFor(len)
+    return math.max(10, math.floor(len * 0.05))
+end
+
+-- Resize the focused window. Arrows push the window's boundary in the
+-- arrow direction (→/↓ = +, ←/↑ = −). For tiled windows the dispatcher
+-- moves the split boundary in the delta's direction regardless of which
+-- side the window is on — no position math needed.
+local function resizeDir(sx, sy)
+    local w = hl.get_active_window()
+    if not w or (w.fullscreen and w.fullscreen ~= 0) then return end
+    if w.floating then
+        return -- single-edge handler arrives with the floating task
+    end
+    hl.dispatch(hl.dsp.window.resize({
+        x = sx * stepFor(w.size.x),
+        y = sy * stepFor(w.size.y),
+        relative = true,
+    }))
+end
+
 -- BASIC KEYBINDS
 
 -- Terminal
@@ -117,11 +139,11 @@ hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "d" }))
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "u" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "r" }))
 
--- Resize focused window (percent deltas via hyprctl; hl.dsp.window.resize only takes pixels)
-hl.bind("SUPER + CTRL + down", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "0 -5%"'))
-hl.bind("SUPER + CTRL + up", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "0 5%"'))
-hl.bind("SUPER + CTRL + left", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "5% 0"'))
-hl.bind("SUPER + CTRL + right", hl.dsp.exec_cmd('hyprctl dispatch resizeactive "-5% 0"'))
+-- Resize focused window — arrows push the boundary (→/↓ positive, ←/↑ negative)
+hl.bind("SUPER + CTRL + left",  function() resizeDir(-1, 0) end)
+hl.bind("SUPER + CTRL + right", function() resizeDir(1, 0) end)
+hl.bind("SUPER + CTRL + up",    function() resizeDir(0, -1) end)
+hl.bind("SUPER + CTRL + down",  function() resizeDir(0, 1) end)
 
 -- Move windows (window-first: the window leaves its group, the group stays)
 hl.bind("SUPER + SHIFT + left", function()
