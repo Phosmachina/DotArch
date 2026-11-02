@@ -1,46 +1,46 @@
 #!/usr/bin/env bash
+# Swap the contents of the current workspace with a picked one.
+# Mechanism: move every window current -> tmp, target -> current, tmp ->
+# target. Moving by window (not by renaming workspaces) sidesteps Hyprland's
+# workspace name/ID normalization; window.move carries whole groups natively.
+# hyprctl dispatch takes a Lua expression (Hyprland >= 0.55 Lua config).
 
-# Get current workspace ID and Name
-# We need the ID for operations and Name for display
-CURRENT_JSON=$(hyprctl activeworkspace -j)
-CURRENT_ID=$(echo "$CURRENT_JSON" | jq -r '.id')
-CURRENT_NAME=$(echo "$CURRENT_JSON" | jq -r '.name')
+CURRENT_NAME=$(hyprctl activeworkspace -j | jq -r '.name')
 
-# Define a temporary ID for swapping
-# Using a high number to avoid conflicts with typical workspace IDs
-TEMP_ID=9999
-
-# Get list of other active workspaces excluding the current one
-# Format: "ID: Name"
-# We exclude the current workspace to avoid swapping with self
-LIST=$(hyprctl workspaces -j | jq -r --argjson current "$CURRENT_ID" '.[] | select(.id != $current) | "\(.id): \(.name)"' | sort -n)
+# Other open workspaces, labeled with their monitor
+LIST=$(hyprctl workspaces -j | jq -r \
+    --arg current "$CURRENT_NAME" \
+    '.[] | select(.name | test("^[0-9]+$")) | select(.name != $current) | "\(.name) (\(.monitor))"' \
+    | sort -n)
 
 if [ -z "$LIST" ]; then
-    notify-send "Swap Workspaces" "No other active workspaces found."
+    notify-send "Swap workspaces" "No other workspaces are open."
     exit 0
 fi
 
-# Select target workspace using vicinae dmenu
-# We use -p to set the prompt
-SELECTED=$(echo "$LIST" | vicinae dmenu -p "Swap workspace $CURRENT_NAME with:")
+SELECTED=$(echo "$LIST" | vicinae dmenu -p "Swap $CURRENT_NAME with:")
+[ -z "$SELECTED" ] && exit 0
 
-if [ -z "$SELECTED" ]; then
+TARGET_NAME=${SELECTED%% *}
+
+if [ "$TARGET_NAME" = "$CURRENT_NAME" ]; then
     exit 0
 fi
 
-# Extract Target ID from selection (format "ID: Name")
-TARGET_ID=$(echo "$SELECTED" | cut -d':' -f1)
+# Special workspaces are invisible to waybar's workspace module, so the
+# shuffle never flashes or leaves an empty-labeled chip in the bar
+TMP="special:swapping"
 
-if [ -z "$TARGET_ID" ]; then
-    notify-send "Swap Workspaces" "Invalid selection."
-    exit 1
-fi
+move_all() { # $1 = source workspace name, $2 = destination workspace name
+    hyprctl -j clients | jq -r --arg ws "$1" \
+        '.[] | select(.workspace.name == $ws) | .address' | \
+    while read -r addr; do
+        hyprctl dispatch "hl.dsp.window.move({window=hl.get_window(\"address:$addr\"), workspace='$2'})" >/dev/null
+    done
+}
 
-# Swap logic using the renaming technique:
-# 1. Rename Current Workspace -> Temp ID (vacating Current ID)
-# 2. Rename Target Workspace -> Current ID (moving Target content to Current ID)
-# 3. Rename Temp ID (old Current) -> Target ID (moving Current content to Target ID)
-# 4. Ensure we focus the workspace with the "Current ID"
-
-# Use --batch to ensure atomicity and avoid race conditions where IDs might not be freed immediately
-hyprctl --batch "dispatch renameworkspace $CURRENT_ID $TEMP_ID ; dispatch renameworkspace $TARGET_ID $CURRENT_ID ; dispatch renameworkspace $TEMP_ID $TARGET_ID ; dispatch workspace $CURRENT_ID"
+move_all "$CURRENT_NAME" "$TMP" && \
+move_all "$TARGET_NAME" "$CURRENT_NAME" && \
+move_all "$TMP" "$TARGET_NAME" && \
+hyprctl dispatch "hl.dsp.focus({workspace='$CURRENT_NAME'})" || \
+    notify-send "Swap workspaces" "Swap $CURRENT_NAME <-> $TARGET_NAME failed"
