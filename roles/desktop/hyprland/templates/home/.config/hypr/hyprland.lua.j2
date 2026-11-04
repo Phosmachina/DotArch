@@ -173,9 +173,6 @@ local BW_POPUP_W, BW_POPUP_H = 400, 700
 local bw_parent_win = nil
 local bw_prev_win = nil
 
--- Addresses already refitted to the default popup size this session
-local bw_fitted = {}
-
 -- Last hook-run timestamp per address: our own focus() dispatch echoes a
 -- window.active event that re-enters the hook within the same interaction,
 -- and that echo would read w.size mid-resize (garbage values)
@@ -242,16 +239,13 @@ local function float_bitwarden_popup(w)
     if not (okF and floating) then
         hl.dispatch(hl.dsp.window.float({ action = "on" }))
     end
-    -- Refit to the default size ONCE per window (address-keyed): the float
-    -- inherits the tile/group size, which may be bigger OR smaller than a
-    -- popup. After the first fit the size is the user's — manual resizes
-    -- persist across opens. Must run AFTER the float dispatch — tiled
-    -- resize moves split boundaries instead of sizing the window.
-    local okA, addr = pcall(function() return w.address end)
-    if okA and addr and not bw_fitted[addr] then
-        bw_fitted[addr] = true
-        hl.dispatch(hl.dsp.window.resize({ x = BW_POPUP_W, y = BW_POPUP_H, window = w }))
-    end
+    -- ALWAYS refit: Firefox re-inherits the group tile size on every popup
+    -- reopen (the group swallow overrides the window size; deny_from_group
+    -- does not prevent it), so a once-per-window fit misses reopens. When
+    -- the size already matches, the resize is a no-op; a manual user resize
+    -- is intentionally not persisted across opens. Must run AFTER the float
+    -- dispatch — tiled resize moves split boundaries instead of sizing.
+    hl.dispatch(hl.dsp.window.resize({ x = BW_POPUP_W, y = BW_POPUP_H, window = w }))
     -- Center on the opener window (global coords), using the KNOWN default
     -- size: w.size updates per-axis over separate frames after the resize
     -- above, so any read can catch a mixed mid-flight snapshot ([400,351]
