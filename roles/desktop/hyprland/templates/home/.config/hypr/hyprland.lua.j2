@@ -169,11 +169,20 @@ local function float_bitwarden_popup(w)
     if not okT or not t or not t:find("Extension: (Bitwarden Password Manager)", 1, true) then
         return
     end
+    -- Firefox can swallow the popup into its tab group; on 0.57 floating a
+    -- group member floats the whole group (layout target = group). Pop the
+    -- popup out first and deny regrouping, then float it alone.
+    hl.dispatch(hl.dsp.focus({ window = w }))
+    if w.group then
+        hl.dispatch(hl.dsp.window.move({ out_of_group = true }))
+    end
+    pcall(function()
+        hl.dispatch(hl.dsp.window.deny_from_group())
+    end)
     local okF, floating = pcall(function() return w.floating end)
     if okF and floating then
         return
     end
-    hl.dispatch(hl.dsp.focus({ window = w }))
     hl.dispatch(hl.dsp.window.float({ action = "on" }))
 end
 
