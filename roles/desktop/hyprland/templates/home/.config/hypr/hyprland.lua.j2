@@ -227,10 +227,13 @@ local function float_bitwarden_popup(w)
     -- by the GLOBAL animations master — per-window set_prop "animation" does
     -- not affect it (tested). Toggle animations off around our dispatches;
     -- runtime config changes apply via the immediate prop refresh.
+    -- NOTE: hl.get_config takes an option-path STRING ("animations:enabled"),
+    -- not zero args — a bare call throws on every popup activation.
     local anim_was_on = true
-    pcall(function()
-        anim_was_on = hl.get_config().animations.enabled
-    end)
+    local okCfg, animVal = pcall(hl.get_config, "animations:enabled")
+    if okCfg and type(animVal) == "boolean" then
+        anim_was_on = animVal
+    end
     pcall(function()
         hl.config({ animations = { enabled = false } })
         hl.exec_scheduled_prop_refresh_immediately()
