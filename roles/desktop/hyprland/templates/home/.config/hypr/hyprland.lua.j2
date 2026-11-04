@@ -160,6 +160,10 @@ hl.window_rule({
 -- popup open/close — so a map-time window_rule can never match. React to
 -- title changes and activations instead. Dispatchers only execute when
 -- passed to hl.dispatch().
+-- Popup default size (logical px) — Firefox's requested popup geometry is
+-- not exposed by Hyprland, so set it explicitly; tweak to taste.
+local BW_POPUP_W, BW_POPUP_H = 400, 700
+
 local function float_bitwarden_popup(w)
     local okClass, cls = pcall(function() return w.class end)
     if not okClass or cls ~= "firefox" then
@@ -180,10 +184,18 @@ local function float_bitwarden_popup(w)
         hl.dispatch(hl.dsp.window.deny_from_group())
     end)
     local okF, floating = pcall(function() return w.floating end)
-    if okF and floating then
-        return
+    if not (okF and floating) then
+        hl.dispatch(hl.dsp.window.float({ action = "on" }))
     end
-    hl.dispatch(hl.dsp.window.float({ action = "on" }))
+    -- Floating keeps the inherited tile/group size; re-fit to the default
+    -- unless the user sized it down themselves (snap back only when BOTH
+    -- axes exceed the default). Must run AFTER the float dispatch — tiled
+    -- resize moves split boundaries instead of sizing the window.
+    local okS, size = pcall(function() return w.size end)
+    if okS and size and size.x and size.y
+        and size.x > BW_POPUP_W and size.y > BW_POPUP_H then
+        hl.dispatch(hl.dsp.window.resize({ x = BW_POPUP_W, y = BW_POPUP_H, window = w }))
+    end
 end
 
 hl.on("window.title", float_bitwarden_popup)
