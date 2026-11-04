@@ -300,6 +300,35 @@ end
 hl.on("window.active", bw_track_parent)
 hl.on("window.title", bw_track_parent)
 
+-- The popup maps and is swallowed into the focused group BEFORE its title
+-- event lets float_bitwarden_popup act, so the map/swallow would animate
+-- outside that hook's animation toggle. Kill animations at firefox-window
+-- open, restore after 600 ms (the popup hook restores sooner when it runs;
+-- the timer covers non-popup firefox windows — rare toplevel opens).
+hl.on("window.open", function(w)
+    local okC, cls = pcall(function() return w.class end)
+    if not okC or cls ~= "firefox" then
+        return
+    end
+    local was_on = true
+    local okCfg, v = pcall(hl.get_config, "animations:enabled")
+    if okCfg and type(v) == "boolean" then
+        was_on = v
+    end
+    pcall(function()
+        hl.config({ animations = { enabled = false } })
+        hl.exec_scheduled_prop_refresh_immediately()
+    end)
+    pcall(function()
+        hl.timer(function()
+            pcall(function()
+                hl.config({ animations = { enabled = was_on } })
+                hl.exec_scheduled_prop_refresh_immediately()
+            end)
+        end, { type = "oneshot", timeout = 600 })
+    end)
+end)
+
 hl.layer_rule({
     name = "layerrule-1",
     match = { namespace = "vicinae" },
