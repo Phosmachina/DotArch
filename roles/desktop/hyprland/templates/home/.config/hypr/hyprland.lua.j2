@@ -178,6 +178,10 @@ local bw_prev_win = nil
 -- and that echo would read w.size mid-resize (garbage values)
 local bw_last_act = {}
 
+-- Where we last placed the popup (per address), to tell "still where I
+-- put it" from "the user dragged it"
+local bw_placed = {}
+
 local function bw_clock()
     local ok, t = pcall(function() return os.clock() end)
     if ok then
@@ -213,6 +217,10 @@ local function float_bitwarden_popup(w)
     -- Firefox can swallow the popup into its tab group; on 0.57 floating a
     -- group member floats the whole group (layout target = group). Pop the
     -- popup out first and deny regrouping, then float it alone.
+    -- Capture group membership BEFORE extraction: re-swallowing at popup
+    -- reopen counts as a fresh open and must recenter.
+    local okG, grouped = pcall(function() return w.group end)
+    local was_grouped = okG and grouped ~= nil
     hl.dispatch(hl.dsp.focus({ window = w }))
     if w.group then
         hl.dispatch(hl.dsp.window.move({ out_of_group = true }))
@@ -246,25 +254,36 @@ local function float_bitwarden_popup(w)
     -- is intentionally not persisted across opens. Must run AFTER the float
     -- dispatch — tiled resize moves split boundaries instead of sizing.
     hl.dispatch(hl.dsp.window.resize({ x = BW_POPUP_W, y = BW_POPUP_H, window = w }))
-    -- Center on the opener window (global coords), using the KNOWN default
-    -- size: w.size updates per-axis over separate frames after the resize
-    -- above, so any read can catch a mixed mid-flight snapshot ([400,351]
-    -- was observed). A user-resized popup recenters with a small offset —
-    -- acceptable; reads would be worse. If the "parent" is the popup
-    -- itself (its pre-popup title stole the tracker slot), use the
-    -- previous distinct firefox window.
+    -- Center on the opener ONLY at genuine opens: fresh window (no record),
+    -- re-swallowed at reopen (was_grouped), or still sitting where we
+    -- placed it (parent moved → follow). If the user dragged the popup
+    -- elsewhere, respect that — no recentering on hover/re-activation.
+    -- Uses the KNOWN default size: w.size updates per-axis across frames
+    -- after the resize above (mixed [400,351] snapshots observed). If the
+    -- "parent" is the popup itself (its pre-popup title stole the tracker
+    -- slot), fall back to the previous distinct firefox window.
     local parent = bw_parent_win
     local okPAa, pa = pcall(function() return parent and parent.address end)
     local okWa, wa = pcall(function() return w.address end)
     if okPAa and okWa and pa == wa and bw_prev_win then
         parent = bw_prev_win
     end
-    local okPA, pat = pcall(function() return parent and parent.at end)
-    local okPS, psize = pcall(function() return parent and parent.size end)
-    if okPA and okPS and pat and psize and psize.x and psize.y then
-        local px = pat.x + (psize.x - BW_POPUP_W) / 2
-        local py = pat.y + (psize.y - BW_POPUP_H) / 2
-        hl.dispatch(hl.dsp.window.move({ x = px, y = py, window = w }))
+    local placed = okWa and wa and bw_placed[wa] or nil
+    local okAt, wat = pcall(function() return w.at end)
+    local still_ours = placed and okAt and wat
+        and math.abs(wat.x - placed.x) < 20
+        and math.abs(wat.y - placed.y) < 20
+    if (not placed) or was_grouped or still_ours then
+        local okPA, pat = pcall(function() return parent and parent.at end)
+        local okPS, psize = pcall(function() return parent and parent.size end)
+        if okPA and okPS and pat and psize and psize.x and psize.y then
+            local px = pat.x + (psize.x - BW_POPUP_W) / 2
+            local py = pat.y + (psize.y - BW_POPUP_H) / 2
+            hl.dispatch(hl.dsp.window.move({ x = px, y = py, window = w }))
+            if okWa and wa then
+                bw_placed[wa] = { x = px, y = py }
+            end
+        end
     end
     -- Restore animations to their prior state
     pcall(function()
@@ -327,6 +346,50 @@ hl.on("window.open", function(w)
             end)
         end, { type = "oneshot", timeout = 600 })
     end)
+end)
+
+-- GENERAL (herbstluftwm-style): a newly opened FLOATING window is centered
+-- on the window that was active just before it opened ("opener"/parent).
+-- Two-slot active tracker with fallback — a new window's own focus-steal
+-- would otherwise make it its own parent. Tiled windows are untouched
+-- (the popup opens tiled and is owned by float_bitwarden_popup above).
+local gen_active = nil
+local gen_active_prev = nil
+
+hl.on("window.active", function(w)
+    local okA, a = pcall(function() return w.address end)
+    local okC, c = pcall(function() return gen_active and gen_active.address end)
+    if okA and okC and a == c then
+        return
+    end
+    if gen_active then
+        gen_active_prev = gen_active
+    end
+    gen_active = w
+end)
+
+hl.on("window.open", function(w)
+    local okF, floating = pcall(function() return w.floating end)
+    if not okF or not floating then
+        return
+    end
+    local parent = gen_active
+    local okPP, pp = pcall(function() return parent and parent.address end)
+    local okWA, wa = pcall(function() return w.address end)
+    if okPP and okWA and pp == wa and gen_active_prev then
+        parent = gen_active_prev
+    end
+    local okPA, pat = pcall(function() return parent and parent.at end)
+    local okPS, psize = pcall(function() return parent and parent.size end)
+    local okS, size = pcall(function() return w.size end)
+    if okPA and okPS and okS and pat and psize and size
+        and psize.x and psize.y and size.x and size.y then
+        hl.dispatch(hl.dsp.window.move({
+            x = pat.x + (psize.x - size.x) / 2,
+            y = pat.y + (psize.y - size.y) / 2,
+            window = w,
+        }))
+    end
 end)
 
 hl.layer_rule({
