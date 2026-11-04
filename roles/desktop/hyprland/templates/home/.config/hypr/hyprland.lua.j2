@@ -164,14 +164,54 @@ hl.window_rule({
 -- not exposed by Hyprland, so set it explicitly; tweak to taste.
 local BW_POPUP_W, BW_POPUP_H = 400, 700
 
+-- Most recent non-popup firefox window = assumed opener ("parent"); the
+-- popup is centered on it. New windows steal focus at map, so reading the
+-- active window inside the popup hook would return the popup itself. The
+-- popup also maps with a PRE-popup title ("Mozilla Firefox"), which passes
+-- the non-popup filter and steals the parent slot — so keep the previous
+-- distinct window too and fall back to it when the "parent" is the popup.
+local bw_parent_win = nil
+local bw_prev_win = nil
+
+-- Addresses already refitted to the default popup size this session
+local bw_fitted = {}
+
+-- Last hook-run timestamp per address: our own focus() dispatch echoes a
+-- window.active event that re-enters the hook within the same interaction,
+-- and that echo would read w.size mid-resize (garbage values)
+local bw_last_act = {}
+
+local function bw_clock()
+    local ok, t = pcall(function() return os.clock() end)
+    if ok then
+        return t
+    end
+    return nil
+end
+
+local function bw_is_popup(t)
+    return t ~= nil and t:find("Extension: (Bitwarden Password Manager)", 1, true)
+end
+
 local function float_bitwarden_popup(w)
     local okClass, cls = pcall(function() return w.class end)
     if not okClass or cls ~= "firefox" then
         return
     end
     local okT, t = pcall(function() return w.title end)
-    if not okT or not t or not t:find("Extension: (Bitwarden Password Manager)", 1, true) then
+    if not okT or not bw_is_popup(t) then
         return
+    end
+    -- Swallow the echo of our own dispatches (re-entry within 0.3 s)
+    local okA0, addr0 = pcall(function() return w.address end)
+    if okA0 and addr0 then
+        local now = bw_clock()
+        if now and bw_last_act[addr0] and (now - bw_last_act[addr0]) < 0.3 then
+            return
+        end
+        if now then
+            bw_last_act[addr0] = now
+        end
     end
     -- Firefox can swallow the popup into its tab group; on 0.57 floating a
     -- group member floats the whole group (layout target = group). Pop the
@@ -183,23 +223,85 @@ local function float_bitwarden_popup(w)
     pcall(function()
         hl.dispatch(hl.dsp.window.deny_from_group())
     end)
+    -- Instant popup: the geometry morph (float/resize/move below) is governed
+    -- by the GLOBAL animations master — per-window set_prop "animation" does
+    -- not affect it (tested). Toggle animations off around our dispatches;
+    -- runtime config changes apply via the immediate prop refresh.
+    local anim_was_on = true
+    pcall(function()
+        anim_was_on = hl.get_config().animations.enabled
+    end)
+    pcall(function()
+        hl.config({ animations = { enabled = false } })
+        hl.exec_scheduled_prop_refresh_immediately()
+    end)
     local okF, floating = pcall(function() return w.floating end)
     if not (okF and floating) then
         hl.dispatch(hl.dsp.window.float({ action = "on" }))
     end
-    -- Floating keeps the inherited tile/group size; re-fit to the default
-    -- unless the user sized it down themselves (snap back only when BOTH
-    -- axes exceed the default). Must run AFTER the float dispatch — tiled
+    -- Refit to the default size ONCE per window (address-keyed): the float
+    -- inherits the tile/group size, which may be bigger OR smaller than a
+    -- popup. After the first fit the size is the user's — manual resizes
+    -- persist across opens. Must run AFTER the float dispatch — tiled
     -- resize moves split boundaries instead of sizing the window.
-    local okS, size = pcall(function() return w.size end)
-    if okS and size and size.x and size.y
-        and size.x > BW_POPUP_W and size.y > BW_POPUP_H then
+    local okA, addr = pcall(function() return w.address end)
+    if okA and addr and not bw_fitted[addr] then
+        bw_fitted[addr] = true
         hl.dispatch(hl.dsp.window.resize({ x = BW_POPUP_W, y = BW_POPUP_H, window = w }))
     end
+    -- Center on the opener window (global coords), using the KNOWN default
+    -- size: w.size updates per-axis over separate frames after the resize
+    -- above, so any read can catch a mixed mid-flight snapshot ([400,351]
+    -- was observed). A user-resized popup recenters with a small offset —
+    -- acceptable; reads would be worse. If the "parent" is the popup
+    -- itself (its pre-popup title stole the tracker slot), use the
+    -- previous distinct firefox window.
+    local parent = bw_parent_win
+    local okPAa, pa = pcall(function() return parent and parent.address end)
+    local okWa, wa = pcall(function() return w.address end)
+    if okPAa and okWa and pa == wa and bw_prev_win then
+        parent = bw_prev_win
+    end
+    local okPA, pat = pcall(function() return parent and parent.at end)
+    local okPS, psize = pcall(function() return parent and parent.size end)
+    if okPA and okPS and pat and psize and psize.x and psize.y then
+        local px = pat.x + (psize.x - BW_POPUP_W) / 2
+        local py = pat.y + (psize.y - BW_POPUP_H) / 2
+        hl.dispatch(hl.dsp.window.move({ x = px, y = py, window = w }))
+    end
+    -- Restore animations to their prior state
+    pcall(function()
+        hl.config({ animations = { enabled = anim_was_on } })
+        hl.exec_scheduled_prop_refresh_immediately()
+    end)
 end
 
 hl.on("window.title", float_bitwarden_popup)
 hl.on("window.active", float_bitwarden_popup)
+
+-- Track the popup's likely opener: the latest active non-popup firefox window
+local function bw_track_parent(win)
+    local okC, cls = pcall(function() return win.class end)
+    if not okC or cls ~= "firefox" then
+        return
+    end
+    local okT, t = pcall(function() return win.title end)
+    if not okT or bw_is_popup(t) then
+        return
+    end
+    local okWa2, wa2 = pcall(function() return win.address end)
+    local okPa2, pa2 = pcall(function() return bw_parent_win and bw_parent_win.address end)
+    if okWa2 and okPa2 and wa2 == pa2 then
+        return
+    end
+    if bw_parent_win then
+        bw_prev_win = bw_parent_win
+    end
+    bw_parent_win = win
+end
+
+hl.on("window.active", bw_track_parent)
+hl.on("window.title", bw_track_parent)
 
 hl.layer_rule({
     name = "layerrule-1",
