@@ -59,9 +59,15 @@ Requête (dictée) :
 - `mode` : `"smart"` (défaut) ou `{"type": "verbatim"}` pour `--raw`.
   Le mode smart est incompatible avec diarization/timestamps — non utilisés ici.
 - `language_codes` : omis → auto-détection avec code-switching (85+ langues).
-- Réponse : texte dans `steps[].content[].text`. Le chemin d'extraction jq
-  exact sera **figé par un smoke test curl réel** (première étape du plan,
-  une fois les crédits chargés) avant d'écrire le parsing.
+- Réponse : texte dans `steps[].content[].text`, extraction jq confirmée :
+  `[.steps[].content[]?.text // empty] | join("")`.
+- **Vocabulaire custom envoyé dans les deux modes** (smart et verbatim) :
+  smoke test 2026-11-10 — sans vocabulaire, « hyprland et waybar sur
+  archlinux » (TTS) devient « le Wi-Fi sur un Linux » ; avec, restitution
+  parfaite y compris la casse.
+- Smoke test 2026-11-10 (compte prépayé, ~13 s d'audio) : smart et verbatim
+  en ~2,9 s, fillers retirés et auto-correction fondue en smart, loanword
+  EN conservé, usage 315 tokens audio + 35 sortie ≈ 0,001 $/dictée.
 - Tarif : ~0,005 $/min en blend (2 $/M tokens audio entrée, 12 $/M sortie).
 
 ## Changements du script
@@ -106,9 +112,9 @@ ou dans l'env — jamais dans le dépôt. Aucun changement vault / `encrypt.sh`.
   - nouveaux : construction de requête smart/verbatim (mode, vocabulaire
     injecté seulement si le fichier existe), extraction de texte depuis une
     fixture de réponse Interactions, `load_gemini_key` env→fichier, message 402.
-- **Banc réel** (après recharge des crédits) : échantillons espeak-ng FR avec
-  fillers, auto-correction et loanwords EN ; comparer smart vs verbatim ;
-  vérifier la latence. Revalidation qualité dans la lignée du banc Voxtral.
+- **Banc réel** : smoke test curl effectué 2026-11-10 (résultats dans la
+  section API ci-dessus) ; reste à valider sur dictées réelles de
+  l'utilisateur après déploiement.
 - **Déploiement** : tests unitaires verts → `sudo cp` vers `/usr/bin/transcript`
   pour la phase de test (validation par dictées réelles) → déploiement ansible
   (`scripts.yml` copie déjà le fichier du dépôt) pour officialiser.
