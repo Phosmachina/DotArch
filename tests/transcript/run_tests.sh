@@ -76,6 +76,26 @@ fi
 reload_counters
 assert_eq "$curl_calls" "3" "api_call makes exactly 3 attempts"
 
+# --- api_call: persistent 402 surfaces a top-up hint ---
+: >"$fake_dir/curl"
+: >"$fake_dir/err402"
+curl() {
+    printf 'prepaid balance\n402\n'
+    return 0
+}
+if api_call "dictation" https://example.com >/dev/null 2>"$fake_dir/err402"; then
+    echo "FAIL - api_call must fail on persistent 402"
+    failures=$((failures + 1))
+else
+    echo "ok - api_call fails on persistent 402"
+fi
+if grep -q "402" "$fake_dir/err402" && grep -Eqi "top up|recharge|balance" "$fake_dir/err402"; then
+    echo "ok - 402 error hints at topping up the balance"
+else
+    echo "FAIL - 402 error must hint at topping up the balance"
+    failures=$((failures + 1))
+fi
+
 # --- llm_clean: returns model content ---
 api_call() { printf '%s' '{"choices":[{"message":{"content":"Cleaned text."}}]}'; }
 out=$(printf 'raw txt' | llm_clean light)

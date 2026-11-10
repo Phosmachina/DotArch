@@ -143,7 +143,11 @@ api_call() {
         fi
         [[ "$attempt" -lt 3 ]] && sleep $((attempt * 2))
     done
-    echo "Error: API call failed after 3 attempts ($description, status: ${http_code:-no response})" >&2
+    if [[ "$http_code" == "402" ]]; then
+        echo "Error: API call failed after 3 attempts ($description, HTTP 402 — prepaid balance depleted, top up the provider account)" >&2
+    else
+        echo "Error: API call failed after 3 attempts ($description, status: ${http_code:-no response})" >&2
+    fi
     return 1
 }
 
