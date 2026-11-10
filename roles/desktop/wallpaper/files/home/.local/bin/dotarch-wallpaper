@@ -99,9 +99,8 @@ pool_for() {
 }
 
 current_wallpaper() {
-    # Path of the loaded wallpaper (empty when hyprpaper is down or idle).
-    hyprctl hyprpaper listloaded 2>/dev/null \
-        | sed -n 's/^[^/]*\(\/.*\)$/\1/p' | head -n1 || true
+    # Last image WE set (hyprpaper 0.8.5 exposes no listloaded query).
+    cat "$STATE_DIR/current" 2>/dev/null || true
 }
 
 rotate() {
@@ -117,12 +116,12 @@ rotate() {
         log "theme=$theme: no candidate in $dir, keeping current wallpaper"
         return 0
     fi
-    if ! hyprctl hyprpaper preload "$pick"; then
+    if ! hyprctl hyprpaper wallpaper ",$pick"; then
         log "hyprpaper IPC failed (daemon not running?)"
         return 1
     fi
-    hyprctl hyprpaper wallpaper ",$pick"
-    hyprctl hyprpaper unload all
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$pick" >"$STATE_DIR/current"
     log "theme=$theme: $(basename "$pick")"
 }
 
@@ -150,7 +149,7 @@ sync_fallback() {
         sort -t$'\t' -k4,4n "$cache" | pool_for "$band" "" >"$tsv"
         total=$(wc -l <"$tsv")
         if ((total < 1)); then continue; fi
-        step=$((total / FALLBACK_PER_BAND))
+        step=$(( (total + FALLBACK_PER_BAND - 1) / FALLBACK_PER_BAND ))
         if ((step < 1)); then step=1; fi
         picked=$(awk -v s="$step" '(NR-1) % s == 0' "$tsv" | cut -f1)
         if [[ -z "$picked" ]]; then continue; fi
