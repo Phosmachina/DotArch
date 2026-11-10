@@ -96,24 +96,6 @@ else
     failures=$((failures + 1))
 fi
 
-# --- llm_clean: returns model content ---
-api_call() { printf '%s' '{"choices":[{"message":{"content":"Cleaned text."}}]}'; }
-out=$(printf 'raw txt' | llm_clean light)
-assert_eq "$out" "Cleaned text." "llm_clean returns model content"
-
-# --- llm_clean: falls back to input on API failure ---
-api_call() {
-    echo "boom" >&2
-    return 1
-}
-out=$(printf 'raw txt' | llm_clean full)
-assert_eq "$out" "raw txt" "llm_clean falls back to input on API failure"
-
-# --- llm_clean: empty input passes through without API call ---
-api_call() { printf '%s' '{"choices":[{"message":{"content":"should not be called"}}]}'; }
-out=$(printf '' | llm_clean light)
-assert_eq "$out" "" "llm_clean passes empty input through"
-
 # --- format_txt ---
 out=$(printf '{"text":"  hello world"}' | format_txt)
 assert_eq "$out" "hello world" "format_txt strips leading spaces"
@@ -169,9 +151,9 @@ else
     echo "ok - empty transcript fails transcription"
 fi
 rm -f "$fake_flac"
-# Restore the script's init value: a later assert checks the default clean
-# level, and this block mutated the global to exercise raw mode.
-clean_level="full"
+# Restore the script's init value ("smart"): a later assert checks the
+# default clean level, and this block mutated the global to exercise raw mode.
+clean_level="smart"
 
 # --- has_speech: punctuation-only whisper output is not speech ---
 if has_speech "" || has_speech "..." || has_speech " .  "; then
@@ -204,7 +186,7 @@ assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "job_clear removes its
 rm -rf "$jobs_dir"
 
 # --- default clean level (script init value, before parse_args mutations) ---
-assert_eq "$clean_level" "full" "default clean level is full"
+assert_eq "$clean_level" "smart" "default clean level is smart"
 
 # --- start_recording must NOT register the live recording for trap cleanup ---
 # (the start invocation exits immediately; its EXIT trap must not delete the
@@ -228,7 +210,6 @@ unset -f arecord
 # real timings and by the waits below).
 jobs_dir="$(mktemp -d)"
 recording_info="$(mktemp)"
-last_raw_file="$(mktemp)"
 last_out_file="$(mktemp)"
 arecord() {
     command sleep 30
@@ -242,7 +223,7 @@ command sleep 1.5
 assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "detached job cleans its marker (no-speech path)"
 assert_eq "$( [[ -e "$wavpath" ]] && echo leaked || echo cleaned )" "cleaned" "detached job removes its wav via trap"
 kill "$rpid" 2>/dev/null || true
-rm -rf "$jobs_dir" "$recording_info" "$last_raw_file" "$last_out_file"
+rm -rf "$jobs_dir" "$recording_info" "$last_out_file"
 unset -f arecord
 
 # --- load_token: env then file ---
@@ -276,16 +257,22 @@ assert_eq "$(emit_vocabulary)" "" "emit_vocabulary silent when the file is empty
 rm -f "$vocabulary_file"
 
 # --- parse_args ---
-clean_level="light"; srt_flag=0; input_file=""
-parse_args --clean full myfile.wav --srt
-assert_eq "$clean_level" "full" "parse_args reads --clean level"
+clean_level="smart"; srt_flag=0; input_file=""
+parse_args myfile.wav --srt
 assert_eq "$input_file" "myfile.wav" "parse_args captures the file"
 assert_eq "$srt_flag" "1" "parse_args reads --srt"
 
-clean_level="light"; srt_flag=0; input_file=""
+clean_level="smart"; srt_flag=0; input_file=""
 parse_args --raw
 assert_eq "$clean_level" "raw" "--raw selects raw level"
 assert_eq "$input_file" "" "--raw sets no file"
+
+if (parse_args --clean full) 2>/dev/null; then
+    echo "FAIL - --clean must be rejected"
+    failures=$((failures + 1))
+else
+    echo "ok - --clean is rejected"
+fi
 
 rm -rf "$fake_dir"
 
