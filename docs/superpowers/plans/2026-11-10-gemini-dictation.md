@@ -530,6 +530,146 @@ git commit -m "feat(transcript): dictation via Gemini smart transcription, drop 
 
 ---
 
+### Task 4b: préserver les audios « rejetés » (récupérabilité des échecs silencieux)
+
+Ajout 2026-11-10 soir, demande utilisateur après une dictée perdue (job 21:42
+ayant pris le chemin « pas de parole » : wav supprimé par le trap, /tmp en
+tmpfs → contenu irrécupérable). Les deux chemins silencieux — trim vide
+(`prepare_audio` échoue) et transcription vide (`has_speech` faux) —
+préservent désormais l'enregistrement original pour retranscription manuelle.
+
+**Files:**
+- Modify: `roles/system/core/files/usr/bin/transcript` — nouvelle fonction `preserve_rejected` (près de `preserve`/helpers, après `cleanup_temps` ~ligne 108), deux call-sites dans `stop_recording`, sweep étendu dans `start_recording` (~ligne 153)
+- Test: `tests/transcript/run_tests.sh` (insertion après les tests `job markers`, ~ligne 129)
+
+**Interfaces:**
+- Consumes: rien de nouveau.
+- Produces: `preserve_rejected AUDIO` — déplace un fichier NON VIDE vers `/tmp/transcript-rejected-<horodatage>-<pid>.wav` (no-op silencieuse sur fichier absent/vide) ; sweep `start_recording` purgent les rejets >60 min.
+
+- [ ] **Step 1: écrire les tests en échec**
+
+Après le bloc `job markers` (après `rm -rf "$jobs_dir"`), ajouter :
+
+```bash
+
+# --- preserve_rejected: keeps non-empty audio, ignores empty/absent ---
+probe="$(mktemp /tmp/recording_probeXXXXXX.wav)"
+printf 'wav-bytes' > "$probe"
+preserve_rejected "$probe"
+kept="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -newer "$fake_dir/curl" -print -quit 2>/dev/null)"
+if [[ -n "$kept" ]] && [[ "$(cat "$kept" 2>/dev/null)" == "wav-bytes" ]] && [[ ! -e "$probe" ]]; then
+    echo "ok - preserve_rejected moves non-empty audio out of the trap's reach"
+    rm -f "$kept"
+else
+    echo "FAIL - preserve_rejected did not preserve the audio"
+    failures=$((failures + 1))
+    rm -f "$probe" /tmp/transcript-rejected-*.wav
+fi
+: > "$probe"
+preserve_rejected "$probe"
+leftover="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+if [[ ! -e "$probe" ]] && [[ -z "$leftover" ]]; then
+    echo "ok - preserve_rejected skips empty files (left for trap cleanup)"
+    rm -f "$probe"
+else
+    echo "FAIL - preserve_rejected must skip empty files"
+    failures=$((failures + 1))
+    rm -f "$probe" /tmp/transcript-rejected-*.wav
+fi
+```
+
+Puis, dans le test `stop_recording` existant, juste après
+`read -r rpid wavpath < "$recording_info"` et avant `stop_recording`, ajouter
+(le wav non vide déclenche la préservation au lieu de la suppression) :
+
+```bash
+printf 'silent-but-nonempty-wav' > "$wavpath"
+```
+
+et remplacer l'assert de nettoyage :
+
+```bash
+assert_eq "$( [[ -e "$wavpath" ]] && echo leaked || echo cleaned )" "cleaned" "detached job removes the wav via trap"
+```
+
+par :
+
+```bash
+rejected="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+if [[ ! -e "$wavpath" ]] && [[ -n "$rejected" ]]; then
+    echo "ok - no-speech path preserves the recording for manual recovery"
+    rm -f "$rejected"
+else
+    echo "FAIL - no-speech path must preserve the recording"
+    failures=$((failures + 1))
+    rm -f "$wavpath" /tmp/transcript-rejected-*.wav
+fi
+```
+
+- [ ] **Step 2: vérifier l'échec**
+
+Run: `bash tests/transcript/run_tests.sh`
+Expected: FAIL `preserve_rejected: command not found` (assert vide) puis FAIL du test stop_recording intégré (wav non préservé).
+
+- [ ] **Step 3: implémenter**
+
+Après `cleanup_temps`, ajouter :
+
+```bash
+# Keeps a dictation whose processing found no speech: silent failures stay
+# recoverable (the job's trap would otherwise delete the wav). Non-empty
+# audio only — empty files hold nothing to recover. start_recording sweeps
+# /tmp/transcript-rejected-*.wav older than 60 minutes, like orphaned
+# recordings.
+preserve_rejected() {
+    local audio="$1"
+    [[ -s "$audio" ]] || return 0
+    mv "$audio" "/tmp/transcript-rejected-$(date +%Y%m%d-%H%M%S)-$$.wav" 2>/dev/null || true
+}
+```
+
+Dans `start_recording`, étendre le sweep :
+
+```bash
+    find /tmp -maxdepth 1 \( -name 'recording_*.wav' -o -name 'transcript-rejected-*.wav' \) -mmin +60 -delete 2>/dev/null
+```
+
+Dans `stop_recording`, les deux chemins silencieux préservent (le `mv` sort
+le fichier de `temp_files`, le trap ne le trouve plus) :
+
+```bash
+        processed_audio=""
+        if ! processed_audio=$(prepare_audio "$tempfile"); then
+            preserve_rejected "$tempfile"
+            job_clear
+            exit 0
+        fi
+```
+
+```bash
+        if ! has_speech "$text"; then
+            preserve_rejected "$tempfile"
+            job_clear
+            exit 0
+        fi
+```
+
+- [ ] **Step 4: vérifier le passage**
+
+Run: `bash tests/transcript/run_tests.sh`
+Expected: `All tests passed.`
+Run: `bash -n roles/system/core/files/usr/bin/transcript`
+Expected: rien.
+
+- [ ] **Step 5: commit**
+
+```bash
+git add roles/system/core/files/usr/bin/transcript tests/transcript/run_tests.sh
+git commit -m "feat(transcript): preserve no-speech recordings for manual recovery"
+```
+
+---
+
 ### Task 5: waybar — retrait de l'état « cleaning »
 
 **Files:**
