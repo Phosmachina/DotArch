@@ -24,6 +24,13 @@ file_model="openai/whisper-large-v3-turbo"
 llm_model="deepseek-ai/DeepSeek-V4.1-Flash"
 api_base="https://api.deepinfra.com"
 
+# Dictation: one Gemini call — smart mode rewrites (fillers dropped,
+# self-corrections folded, punctuation) like Gboard's dictation; --raw picks
+# verbatim. Language auto-detects with FR/EN code-switching.
+gemini_model="models/gemini-3.5-transcribe"
+gemini_api_base="https://generativelanguage.googleapis.com"
+gemini_key=""
+
 # Silence-removal threshold: must sit ABOVE the mic's noise floor and BELOW
 # speech. Measured on this host's Blue Snowball 2026-08-20 (input at 100%):
 # ambient max 3.9% / RMS 0.9%, real speech sustained ~1-1.5% (peak 7.9%) —
@@ -36,6 +43,8 @@ jobs_dir="${XDG_RUNTIME_DIR:-/tmp}/transcript-jobs"
 last_raw_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last-raw.txt"
 last_out_file="${XDG_RUNTIME_DIR:-/tmp}/transcript-last.txt"
 token_file="$HOME/.config/transcript/token"
+gemini_key_file="$HOME/.config/transcript/gemini_key"
+vocabulary_file="$HOME/.config/transcript/vocabulary"
 recording_info="/tmp/recording_info"
 
 auth_token=""
@@ -125,6 +134,29 @@ load_token() {
     else
         return 1
     fi
+}
+
+load_gemini_key() {
+    if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+        printf '%s' "$GEMINI_API_KEY"
+    elif [[ -r "$gemini_key_file" ]]; then
+        head -n 1 "$gemini_key_file" | tr -d '[:space:]'
+    else
+        return 1
+    fi
+}
+
+# Emits the custom_vocabulary JSON array from $vocabulary_file (one term per
+# line; blank lines and # comments skipped; capped at 1000 per the API), or
+# nothing when there is nothing to send. Sent in BOTH smart and verbatim
+# modes — the live smoke test showed jargon degrades badly without it
+# ("hyprland et waybar sur archlinux" heard as "le Wi-Fi sur un Linux").
+emit_vocabulary() {
+    [[ -r "$vocabulary_file" ]] || return 0
+    local terms
+    terms=$(grep -vE '^[[:space:]]*(#|$)' "$vocabulary_file" | head -1000)
+    [[ -z "$terms" ]] && return 0
+    printf '%s\n' "$terms" | jq -Rsc 'split("\n") | map(select(length > 0))'
 }
 
 api_call() {

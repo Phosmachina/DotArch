@@ -199,6 +199,27 @@ assert_eq "$(load_token)" "file-token" "load_token reads the token file"
 rm -f "$token_file"
 export DEEPINFRA_API_TOKEN="test-token"
 
+# --- load_gemini_key: env then file ---
+export GEMINI_API_KEY="gem-key-env"
+assert_eq "$(load_gemini_key)" "gem-key-env" "load_gemini_key prefers the env var"
+unset GEMINI_API_KEY
+gemini_key_file="$(mktemp)"
+printf 'gem-key-file\n' > "$gemini_key_file"
+assert_eq "$(load_gemini_key)" "gem-key-file" "load_gemini_key reads the key file"
+rm -f "$gemini_key_file"
+export GEMINI_API_KEY="gem-key-env"
+
+# --- emit_vocabulary: file -> JSON array; absent/empty -> nothing ---
+vocabulary_file="$(mktemp)"
+printf 'hyprland\n\n# comment\n   \nwaybar\n' > "$vocabulary_file"
+assert_eq "$(emit_vocabulary)" '["hyprland","waybar"]' "emit_vocabulary skips blanks and comments"
+rm -f "$vocabulary_file"
+assert_eq "$(emit_vocabulary)" "" "emit_vocabulary silent without a file"
+vocabulary_file="$(mktemp)"
+: > "$vocabulary_file"
+assert_eq "$(emit_vocabulary)" "" "emit_vocabulary silent when the file is empty"
+rm -f "$vocabulary_file"
+
 # --- parse_args ---
 clean_level="light"; srt_flag=0; input_file=""
 parse_args --clean full myfile.wav --srt
