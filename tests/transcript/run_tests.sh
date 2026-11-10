@@ -118,6 +118,61 @@ assert_eq "$out" "" "llm_clean passes empty input through"
 out=$(printf '{"text":"  hello world"}' | format_txt)
 assert_eq "$out" "hello world" "format_txt strips leading spaces"
 
+# --- transcribe_dictation: smart mode, inline flac, no vocab without file ---
+gemini_key="test-key"
+vocabulary_file="/nonexistent"
+fake_flac="$(mktemp)"
+printf 'flac-bytes' > "$fake_flac"
+api_call() { cat >"$fake_dir/req.json"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"Bonjour. "}],"bogus":1},{"content":[]},{"content":[{"type":"text","text":"Suite."}]}]}'; }
+clean_level="smart"
+out=$(transcribe_dictation "$fake_flac")
+assert_eq "$out" "Bonjour. Suite." "transcribe_dictation joins step texts"
+jq -e '.generation_config.transcription_config.mode == "smart"' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - smart mode requested" \
+    || { echo "FAIL - smart mode not requested"; failures=$((failures + 1)); }
+jq -e '.generation_config.transcription_config | has("custom_vocabulary") | not' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - custom_vocabulary omitted without a file" \
+    || { echo "FAIL - custom_vocabulary present without a file"; failures=$((failures + 1)); }
+jq -e '.model == "models/gemini-3.5-transcribe" and .input[0].mime_type == "audio/flac" and (.input[0].data | type == "string")' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - inline flac input and model id" \
+    || { echo "FAIL - model or inline input wrong"; failures=$((failures + 1)); }
+
+# --- transcribe_dictation: raw level -> verbatim mode ---
+clean_level="raw"
+out=$(transcribe_dictation "$fake_flac")
+jq -e '.generation_config.transcription_config.mode == {"type": "verbatim"}' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - raw level requests verbatim" \
+    || { echo "FAIL - raw level must request verbatim"; failures=$((failures + 1)); }
+
+# --- transcribe_dictation: vocabulary injected when the file exists ---
+vocabulary_file="$fake_dir/vocab"
+printf 'hyprland\nwaybar\n' > "$vocabulary_file"
+out=$(transcribe_dictation "$fake_flac")
+jq -e '.generation_config.transcription_config.custom_vocabulary == ["hyprland","waybar"]' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - custom_vocabulary injected" \
+    || { echo "FAIL - custom_vocabulary not injected"; failures=$((failures + 1)); }
+rm -f "$vocabulary_file"
+
+# --- transcribe_dictation: API failure and empty text propagate ---
+api_call() { return 1; }
+if transcribe_dictation "$fake_flac" 2>/dev/null; then
+    echo "FAIL - API failure must fail transcription"
+    failures=$((failures + 1))
+else
+    echo "ok - API failure fails transcription"
+fi
+api_call() { printf '%s' '{"steps":[]}'; }
+if transcribe_dictation "$fake_flac" 2>/dev/null; then
+    echo "FAIL - empty transcript must fail transcription"
+    failures=$((failures + 1))
+else
+    echo "ok - empty transcript fails transcription"
+fi
+rm -f "$fake_flac"
+# Restore the script's init value: a later assert checks the default clean
+# level, and this block mutated the global to exercise raw mode.
+clean_level="full"
+
 # --- has_speech: punctuation-only whisper output is not speech ---
 if has_speech "" || has_speech "..." || has_speech " .  "; then
     echo "FAIL - punctuation-only/empty text must not count as speech"

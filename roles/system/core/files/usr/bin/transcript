@@ -344,6 +344,49 @@ transcribe_audio() {
     api_call "ASR inference" "${args[@]}"
 }
 
+# Transcribes dictation audio via the Gemini Interactions API — one call
+# replacing the old ASR + LLM-cleanup chain. $clean_level drives the mode:
+# "raw" -> verbatim (exact words), anything else -> smart (Google's dictation
+# rewriting: fillers dropped, self-corrections folded, punctuation and
+# formatting applied). Language auto-detects with code-switching; the custom
+# vocabulary rides along in both modes. Prints the transcribed text.
+transcribe_dictation() {
+    local file="$1" b64 mode_json vocab response text
+    b64=$(base64 -w0 "$file")
+
+    if [[ "$clean_level" == "raw" ]]; then
+        mode_json='{"type": "verbatim"}'
+    else
+        mode_json='"smart"'
+    fi
+
+    vocab=$(emit_vocabulary) || vocab=""
+    local vocab_arg="null"
+    [[ -n "$vocab" ]] && vocab_arg="$vocab"
+
+    if ! response=$(jq -n --arg model "$gemini_model" --arg b64 "$b64" \
+            --argjson mode "$mode_json" --argjson vocab "$vocab_arg" \
+            '{model: $model,
+              input: [{type: "audio", data: $b64, mime_type: "audio/flac"}],
+              generation_config: {transcription_config:
+                ({mode: $mode} + (if $vocab then {custom_vocabulary: $vocab} else {} end))
+              }}' \
+        | api_call "Gemini dictation" \
+            -X POST \
+            -H "x-goog-api-key: ${gemini_key}" \
+            -H "Content-Type: application/json" \
+            -d @- \
+            "${gemini_api_base}/v1beta/interactions"); then
+        return 1
+    fi
+
+    # REST responses carry no top-level output_text: text lives in the steps'
+    # content parts (extraction path confirmed against the live API).
+    text=$(printf '%s' "$response" | jq -r '[.steps[].content[]?.text // empty] | join("")')
+    [[ -n "$text" ]] || return 1
+    printf '%s' "$text"
+}
+
 # llm_clean LEVEL - cleans the transcript from stdin, prints cleaned text.
 # Dictation must never hard-fail on the optional stage: falls back to input.
 llm_clean() {
