@@ -238,11 +238,6 @@ tooltip label {
     color: #f1fa8c;
 }
 
-#custom-transcript.cleaning {
-    color: #bd93f9;
-    animation: pulse 1s infinite;
-}
-
 #custom-transcript.error {
     color: #ff5555;
     background-color: rgba(255, 85, 85, 0.25);

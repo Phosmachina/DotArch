@@ -13,8 +13,8 @@ if [[ -r "$recording_info" ]]; then
 fi
 
 if [[ "$state" != "recording" ]]; then
-    # Priority: transcribing > cleaning > error (work in progress wins;
-    # a finished job's error stays visible until the next recording).
+    # Priority: transcribing > error (work in progress wins; a finished
+    # job's error stays visible until the next recording).
     for f in "$jobs_dir"/job-*; do
         [[ -e "$f" ]] || continue
         phase=$(<"$f")
@@ -22,7 +22,6 @@ if [[ "$state" != "recording" ]]; then
         kill -0 "$pid" 2>/dev/null || [[ "$phase" == "error" ]] || continue
         case "$phase" in
             transcribing) state="transcribing" ;;
-            cleaning) [[ "$state" == "idle" || "$state" == "error" ]] && state="cleaning" ;;
             error) [[ "$state" == "idle" ]] && state="error" ;;
         esac
         [[ "$state" == "transcribing" ]] && break
@@ -32,7 +31,6 @@ fi
 case "$state" in
     recording) text="🎤"; class="recording" ;;
     transcribing) text="⏳"; class="transcribing" ;;
-    cleaning) text="✨ clean"; class="cleaning" ;;
     error) text="❌"; class="error" ;;
     *) text="🎙️"; class="idle" ;;
 esac
