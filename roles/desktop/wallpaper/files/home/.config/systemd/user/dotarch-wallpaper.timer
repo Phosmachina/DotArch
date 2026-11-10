@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly wallpaper rotation with jitter
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=15m
+Persistent=true
+Unit=dotarch-wallpaper.service
+
+[Install]
+WantedBy=timers.target

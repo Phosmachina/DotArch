@@ -1,0 +1,9 @@
+[Unit]
+Description=Rotate wallpaper when the dotarch-theme state changes
+
+[Path]
+PathModified=%h/.local/state/dotarch-theme/state
+Unit=dotarch-wallpaper.service
+
+[Install]
+WantedBy=paths.target

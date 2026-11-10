@@ -1,0 +1,6 @@
+[Unit]
+Description=Theme-aware wallpaper rotation (hyprpaper)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/dotarch-wallpaper
