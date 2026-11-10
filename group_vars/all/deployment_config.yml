@@ -32,6 +32,10 @@ theme_longitude: ""
 theme_day_time: "07:00"         # fallback sunrise when location unknown
 theme_night_time: "20:00"       # fallback sunset when location unknown
 
+# Wallpaper rotation (desktop/wallpaper)
+enable_wallpaper: true
+wallpaper_gold_dir: "/mnt/POOL_1/DATA/DESIGN/Wallpapers/themefoxx"   # NFS source pool (must match the script default)
+
 # Hostname overrides (laptop if a battery is detected)
 laptop_hostname: ""     # Override for laptop systems
 desktop_hostname: ""    # Override for desktop systems

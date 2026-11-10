@@ -1,0 +1,128 @@
+---
+# Wallpaper role — theme-aware rotation via hyprpaper + luminance pools.
+# Spec: docs/superpowers/specs/2026-11-10-wallpaper-rotation-design.md
+
+- name: Install hyprpaper from AUR (Arch)
+  ansible.builtin.shell: 'yay -Sy --noconfirm hyprpaper'  # noqa: command-instead-of-shell
+  become: true
+  become_user: '{{ ansible_user }}'
+  changed_when: true
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [desktop, wallpaper, package]
+
+- name: Install imagemagick (Arch)
+  become: true
+  community.general.pacman:
+    name: imagemagick
+    state: present
+  when: ansible_facts.distribution == 'Archlinux'
+  tags: [desktop, wallpaper, package]
+
+- name: Create wallpaper directories
+  ansible.builtin.file:
+    path: '{{ ansible_facts["user_dir"] }}/{{ item }}'
+    state: directory
+    mode: '0755'
+  loop:
+    - '.local/bin'
+    - '.local/state/dotarch-wallpaper'
+    - 'Images/Wallpapers'
+    - '.config/hypr'
+    - '.config/systemd/user'
+  tags: [desktop, wallpaper, config]
+
+- name: Install dotarch-wallpaper
+  ansible.builtin.copy:
+    src: 'home/.local/bin/dotarch-wallpaper'
+    dest: '{{ ansible_facts["user_dir"] }}/.local/bin/dotarch-wallpaper'
+    mode: '0755'
+  tags: [desktop, wallpaper, config]
+
+- name: Copy hyprpaper configuration
+  ansible.builtin.copy:
+    src: 'home/.config/hypr/hyprpaper.conf'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/hypr/hyprpaper.conf'
+    mode: '0644'
+  tags: [desktop, wallpaper, config]
+
+- name: Copy startup wallpaper
+  ansible.builtin.copy:
+    src: 'home/Images/Wallpapers/1.jpg'
+    dest: '{{ ansible_facts["user_dir"] }}/Images/Wallpapers/1.jpg'
+    mode: '0644'
+  tags: [desktop, wallpaper, config]
+
+- name: Install systemd user units
+  ansible.builtin.copy:
+    src: 'home/.config/systemd/user/{{ item }}'
+    dest: '{{ ansible_facts["user_dir"] }}/.config/systemd/user/{{ item }}'
+    mode: '0644'
+  loop:
+    - dotarch-wallpaper.service
+    - dotarch-wallpaper.timer
+    - dotarch-wallpaper-theme.path
+  tags: [desktop, wallpaper, config]
+
+- name: Check the gold wallpaper dir on the NFS
+  ansible.builtin.stat:
+    path: '{{ wallpaper_gold_dir }}'
+  register: wallpaper_gold
+  tags: [desktop, wallpaper, config]
+
+- name: Synchronize local fallback wallpapers (10 dark + 10 light)
+  # noqa: command-instead-of-shell
+  ansible.builtin.shell: >-
+    {{ ansible_facts["user_dir"] }}/.local/bin/dotarch-wallpaper
+    sync-fallback {{ ansible_facts["user_dir"] }}/Images/Wallpapers
+  register: wallpaper_sync
+  changed_when: "'no changes' not in (wallpaper_sync.stdout | default(''))"
+  when: wallpaper_gold.stat.exists | default(false)
+  tags: [desktop, wallpaper, config]
+
+- name: Skip note when the gold dir is absent
+  ansible.builtin.debug:
+    msg: >
+      Gold dir {{ wallpaper_gold_dir }} not found — fallback sync skipped
+      (host without the NFS pool).
+  when: not (wallpaper_gold.stat.exists | default(false))
+  tags: [desktop, wallpaper, config]
+
+- name: Remove legacy hyprpaper rotation units and scripts
+  ansible.builtin.file:
+    path: '{{ ansible_facts["user_dir"] }}/{{ item }}'
+    state: absent
+  loop:
+    - '.config/systemd/user/hyprpaper.service'
+    - '.config/systemd/user/hyprpaper.timer'
+    - '.config/hypr/scripts/hyprpaper-hourly.sh'
+    - '.config/hypr/scripts/random-wallpaper.sh'
+  tags: [desktop, wallpaper, config]
+
+- name: Resolve ansible_user uid
+  ansible.builtin.command: id -u {{ ansible_user }}
+  register: wallpaper_uid
+  changed_when: false
+  tags: [desktop, wallpaper, config]
+
+- name: Activate wallpaper units (and drop the legacy timer)
+  ansible.builtin.shell: |
+    systemctl --user daemon-reload
+    systemctl --user disable --now hyprpaper.timer 2>/dev/null || true
+    systemctl --user enable --now dotarch-wallpaper.timer
+    systemctl --user enable --now dotarch-wallpaper-theme.path
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ wallpaper_uid.stdout }}"
+  register: wallpaper_units_activate
+  failed_when: false
+  changed_when: true
+  # noqa: command-instead-of-shell command-instead-of-module
+  tags: [desktop, wallpaper, config]
+
+- name: Warn when the user manager was unreachable
+  ansible.builtin.debug:
+    msg: >
+      Could not reach the systemd user manager (deploy from a pure SSH
+      context?). The units will activate at next graphical login, or re-run
+      this role logged in.
+  when: wallpaper_units_activate.rc | default(0) != 0
+  tags: [desktop, wallpaper, config]

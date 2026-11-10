@@ -55,6 +55,12 @@
   tags: [desktop]
   when: enable_theme_switch | default(true)
 
+- name: Include wallpaper rotation
+  ansible.builtin.include_role:
+    name: desktop/wallpaper
+  tags: [desktop, wallpaper]
+  when: enable_wallpaper | default(true)
+
 - name: Include notification center
   ansible.builtin.include_role:
     name: desktop/notifications

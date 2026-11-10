@@ -18,6 +18,8 @@ hl.on("hyprland.start", function()
         "syncthing",
         "lxpolkit",
         "voxtype daemon",
+        "hyprpaper",
+        "sh -c 'sleep 3 && $HOME/.local/bin/dotarch-wallpaper'",
     }) do
         hl.dispatch(hl.dsp.exec_cmd(cmd))
     end
