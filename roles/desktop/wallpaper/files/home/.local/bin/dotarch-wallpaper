@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# dotarch-wallpaper — theme-aware wallpaper rotation for hyprpaper.
+# Spec: docs/superpowers/specs/2026-11-10-wallpaper-rotation-design.md
+#
+# Usage:
+#   dotarch-wallpaper                    rotate once (timer / path unit / login)
+#   dotarch-wallpaper candidates         print the pool for the current theme
+#   dotarch-wallpaper sync-fallback DEST deterministic 10 dark + 10 light copy
+set -euo pipefail
+
+# ---- Tunables (dir paths env-overridable for testing) ----
+GOLD_DIR="${DOTARCH_WALLPAPER_GOLD:-/mnt/POOL_1/DATA/DESIGN/Wallpapers/themefoxx}"
+FALLBACK_DIR="${DOTARCH_WALLPAPER_FALLBACK:-$HOME/Images/Wallpapers}"
+THEME_STATE="${DOTARCH_WALLPAPER_THEME_STATE:-$HOME/.local/state/dotarch-theme/state}"
+STATE_DIR="${DOTARCH_WALLPAPER_STATE:-$HOME/.local/state/dotarch-wallpaper}"
+LUMA_BOUNDARY=100        # dark pool: luma < BOUNDARY; light pool: luma >= BOUNDARY
+NFS_TIMEOUT=2            # seconds to probe the gold dir
+CACHE_NAME=".luminance.tsv"
+FALLBACK_PER_BAND=10     # sync-fallback: images per band
+
+log() { printf 'dotarch-wallpaper: %s\n' "$*" >&2; }
+
+theme_current() {
+    # dark|light from the dotarch-theme state file; dark on any failure.
+    local value
+    value=$(sed -n 's/^current=//p' "$THEME_STATE" 2>/dev/null | tail -n1 || true)
+    if [[ "$value" == light ]]; then echo light; else echo dark; fi
+}
+
+source_dir() {
+    # Gold dir when reachable within NFS_TIMEOUT, else local fallback.
+    if timeout "$NFS_TIMEOUT" stat -c %s "$GOLD_DIR" >/dev/null 2>&1; then
+        printf '%s\n' "$GOLD_DIR"
+    else
+        log "gold dir unreachable, falling back to $FALLBACK_DIR"
+        printf '%s\n' "$FALLBACK_DIR"
+    fi
+}
+
+luminance_of() {
+    # Mean gray level 0..255 of a 64x64 thumbnail of $1.
+    magick "$1"[0] -colorspace Gray -resize 64x64 \
+        -format '%[fx:int(mean*255+0.5)]' info: 2>/dev/null || true
+}
+
+cache_path() {
+    # Shared TSV beside the images when writable, else one in STATE_DIR.
+    mkdir -p "$STATE_DIR"
+    if touch "$1/$CACHE_NAME" 2>/dev/null; then
+        printf '%s\n' "$1/$CACHE_NAME"
+    else
+        log "cache not writable in $1, using $STATE_DIR"
+        printf '%s\n' "$STATE_DIR/luminance-fallback.tsv"
+    fi
+}
+
+ensure_cache() {
+    # $1 dir, $2 cache file. Incremental rows keyed path|mtime|size, atomic swap.
+    local dir="$1" cache="$2" f mtime size luma computed=0 key
+    local -A have=()
+    if [[ -s "$cache" ]]; then
+        while IFS=$'\t' read -r f mtime size luma; do
+            have["$f|$mtime|$size"]=$luma
+        done <"$cache"
+    fi
+    local tmp
+    tmp=$(mktemp "${cache}.XXXXXX")
+    while IFS= read -r -d '' f; do
+        mtime=$(stat -c %Y "$f" 2>/dev/null) || continue
+        size=$(stat -c %s "$f" 2>/dev/null) || continue
+        key="$f|$mtime|$size"
+        if [[ -n "${have[$key]:-}" ]]; then
+            luma=${have[$key]}
+        else
+            luma=$(luminance_of "$f")
+            [[ "$luma" =~ ^[0-9]+$ ]] || continue
+            computed=$((computed + 1))
+        fi
+        printf '%s\t%s\t%s\t%s\n' "$f" "$mtime" "$size" "$luma"
+    done < <(find "$dir" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) -print0 | sort -z) \
+        >"$tmp"
+    (
+        flock -x 8 2>/dev/null || true
+        mv -f "$tmp" "$cache"
+    ) 8>>"$cache"
+    if ((computed > 0)); then log "computed $computed luminance rows"; fi
+}
+
+pool_for() {
+    # $1 theme, $2 basename to exclude (optional). stdin: TSV; stdout: paths.
+    local excl="${2:-}"
+    if [[ "$1" == light ]]; then
+        awk -F'\t' -v b="$LUMA_BOUNDARY" -v e="$excl" \
+            '{ nb=$1; sub(".*/","",nb); if ($4+0 >= b && nb != e) print $1 }'
+    else
+        awk -F'\t' -v b="$LUMA_BOUNDARY" -v e="$excl" \
+            '{ nb=$1; sub(".*/","",nb); if ($4+0 < b && nb != e) print $1 }'
+    fi
+}
+
+current_wallpaper() {
+    # Path of the loaded wallpaper (empty when hyprpaper is down or idle).
+    hyprctl hyprpaper listloaded 2>/dev/null \
+        | sed -n 's/^[^/]*\(\/.*\)$/\1/p' | head -n1 || true
+}
+
+rotate() {
+    local theme dir cache current="" current_base="" pick
+    theme=$(theme_current)
+    dir=$(source_dir)
+    cache=$(cache_path "$dir")
+    ensure_cache "$dir" "$cache"
+    current=$(current_wallpaper)
+    if [[ -n "$current" ]]; then current_base=$(basename "$current"); fi
+    pick=$(pool_for "$theme" "$current_base" <"$cache" | shuf -n1 || true)
+    if [[ -z "$pick" ]]; then
+        log "theme=$theme: no candidate in $dir, keeping current wallpaper"
+        return 0
+    fi
+    if ! hyprctl hyprpaper preload "$pick"; then
+        log "hyprpaper IPC failed (daemon not running?)"
+        return 1
+    fi
+    hyprctl hyprpaper wallpaper ",$pick"
+    hyprctl hyprpaper unload all
+    log "theme=$theme: $(basename "$pick")"
+}
+
+cmd_candidates() {
+    local theme dir cache
+    theme=$(theme_current)
+    dir=$(source_dir)
+    cache=$(cache_path "$dir")
+    ensure_cache "$dir" "$cache"
+    pool_for "$theme" "" <"$cache"
+}
+
+sync_fallback() {
+    # Deterministic sample (FALLBACK_PER_BAND per band, evenly spaced by
+    # luminance rank) copied from the source dir into $1.
+    local dest="${1:?sync-fallback needs a destination}"
+    local dir cache band tsv total step picked out copied=0 tmpdir rel dst
+    dir=$(source_dir)
+    cache=$(cache_path "$dir")
+    ensure_cache "$dir" "$cache"
+    mkdir -p "$dest"
+    tmpdir=$(mktemp -d "${STATE_DIR}/sync.XXXXXX")
+    for band in dark light; do
+        tsv="$tmpdir/$band.tsv"
+        sort -t$'\t' -k4,4n "$cache" | pool_for "$band" "" >"$tsv"
+        total=$(wc -l <"$tsv")
+        if ((total < 1)); then continue; fi
+        step=$((total / FALLBACK_PER_BAND))
+        if ((step < 1)); then step=1; fi
+        picked=$(awk -v s="$step" '(NR-1) % s == 0' "$tsv" | cut -f1)
+        if [[ -z "$picked" ]]; then continue; fi
+        out=$(
+            while IFS= read -r src; do
+                rel=${src#"$dir"/}
+                dst="$dest/$(printf '%s' "$rel" | tr '/' '_')"
+                if [[ ! -e "$dst" ]] || ! cmp -s -- "$src" "$dst"; then
+                    cp -f -- "$src" "$dst"
+                    printf 'copied %s\n' "$(basename "$dst")"
+                fi
+            done <<<"$picked"
+        )
+        if [[ -n "$out" ]]; then
+            printf '%s\n' "$out"
+            copied=1
+        fi
+    done
+    rm -rf "$tmpdir"
+    if ((copied == 0)); then echo "sync-fallback: no changes"; fi
+}
+
+case "${1:-rotate}" in
+    rotate)
+        rotate
+        ;;
+    candidates)
+        cmd_candidates
+        ;;
+    sync-fallback)
+        shift
+        sync_fallback "${1:-}"
+        ;;
+    *)
+        printf 'usage: %s [rotate|candidates|sync-fallback DEST]\n' "${0##*/}" >&2
+        exit 64
+        ;;
+esac
