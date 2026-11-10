@@ -185,6 +185,31 @@ job_clear
 assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "job_clear removes its marker"
 rm -rf "$jobs_dir"
 
+# --- preserve_rejected: keeps non-empty audio, ignores empty/absent ---
+probe="$(mktemp /tmp/recording_probeXXXXXX.wav)"
+printf 'wav-bytes' > "$probe"
+preserve_rejected "$probe"
+kept="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -newer "$fake_dir/curl" -print -quit 2>/dev/null)"
+if [[ -n "$kept" ]] && [[ "$(cat "$kept" 2>/dev/null)" == "wav-bytes" ]] && [[ ! -e "$probe" ]]; then
+    echo "ok - preserve_rejected moves non-empty audio out of the trap's reach"
+    rm -f "$kept"
+else
+    echo "FAIL - preserve_rejected did not preserve the audio"
+    failures=$((failures + 1))
+    rm -f "$probe" /tmp/transcript-rejected-*.wav
+fi
+: > "$probe"
+preserve_rejected "$probe"
+leftover="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+if [[ -e "$probe" ]] && [[ -z "$leftover" ]]; then
+    echo "ok - preserve_rejected skips empty files (left for trap cleanup)"
+    rm -f "$probe"
+else
+    echo "FAIL - preserve_rejected must skip empty files"
+    failures=$((failures + 1))
+    rm -f "$probe" /tmp/transcript-rejected-*.wav
+fi
+
 # --- default clean level (script init value, before parse_args mutations) ---
 assert_eq "$clean_level" "smart" "default clean level is smart"
 
@@ -217,11 +242,20 @@ arecord() {
 temp_files=()
 start_recording
 read -r rpid wavpath < "$recording_info"
+printf 'silent-but-nonempty-wav' > "$wavpath"
 stop_recording
 assert_eq "$( [[ -f "$recording_info" ]] && echo present || echo gone )" "gone" "stop_recording frees the toggle immediately"
 command sleep 1.5
 assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "detached job cleans its marker (no-speech path)"
-assert_eq "$( [[ -e "$wavpath" ]] && echo leaked || echo cleaned )" "cleaned" "detached job removes its wav via trap"
+rejected="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+if [[ ! -e "$wavpath" ]] && [[ -n "$rejected" ]]; then
+    echo "ok - no-speech path preserves the recording for manual recovery"
+    rm -f "$rejected"
+else
+    echo "FAIL - no-speech path must preserve the recording"
+    failures=$((failures + 1))
+    rm -f "$wavpath" /tmp/transcript-rejected-*.wav
+fi
 kill "$rpid" 2>/dev/null || true
 rm -rf "$jobs_dir" "$recording_info" "$last_out_file"
 unset -f arecord

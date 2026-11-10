@@ -107,6 +107,17 @@ cleanup_temps() {
     done
 }
 
+# Keeps a dictation whose processing found no speech: silent failures stay
+# recoverable (the job's trap would otherwise delete the wav). Non-empty
+# audio only — empty files hold nothing to recover. start_recording sweeps
+# /tmp/transcript-rejected-*.wav older than 60 minutes, like orphaned
+# recordings.
+preserve_rejected() {
+    local audio="$1"
+    [[ -s "$audio" ]] || return 0
+    mv "$audio" "/tmp/transcript-rejected-$(date +%Y%m%d-%H%M%S)-$$.wav" 2>/dev/null || true
+}
+
 check_dependencies() {
     local dependency
     for dependency in "${dependencies[@]}"; do
@@ -177,7 +188,7 @@ api_call() {
 start_recording() {
     # Sweep wavs orphaned by crashed sessions — old files only, because a
     # dictation still being processed in the background owns a live wav.
-    find /tmp -maxdepth 1 -name 'recording_*.wav' -mmin +60 -delete 2>/dev/null
+    find /tmp -maxdepth 1 \( -name 'recording_*.wav' -o -name 'transcript-rejected-*.wav' \) -mmin +60 -delete 2>/dev/null
     clear_stale_jobs
     local tempfile record_pid
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
@@ -205,6 +216,7 @@ stop_recording() {
 
         processed_audio=""
         if ! processed_audio=$(prepare_audio "$tempfile"); then
+            preserve_rejected "$tempfile"
             job_clear
             exit 0
         fi
@@ -218,6 +230,7 @@ stop_recording() {
             exit 1
         fi
         if ! has_speech "$text"; then
+            preserve_rejected "$tempfile"
             job_clear
             exit 0
         fi
