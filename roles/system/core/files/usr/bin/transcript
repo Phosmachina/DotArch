@@ -345,8 +345,11 @@ transcribe_audio() {
 # formatting applied). Language auto-detects with code-switching; the custom
 # vocabulary rides along in both modes. Prints the transcribed text.
 transcribe_dictation() {
-    local file="$1" b64 mode_json vocab response text
-    b64=$(base64 -w0 "$file")
+    local file="$1" mode_json vocab response text b64_file
+    # base64 rides in a temp file, not an argv string: MAX_ARG_STRLEN (128 KiB
+    # per argument) breaks jq on dictations longer than ~10 s of speech.
+    b64_file=$(mktemp /tmp/transcript-b64-XXXXXX.txt)
+    base64 -w0 "$file" > "$b64_file"
 
     if [[ "$clean_level" == "raw" ]]; then
         mode_json='{"type": "verbatim"}'
@@ -358,7 +361,7 @@ transcribe_dictation() {
     local vocab_arg="null"
     [[ -n "$vocab" ]] && vocab_arg="$vocab"
 
-    if ! response=$(jq -n --arg model "$gemini_model" --arg b64 "$b64" \
+    if ! response=$(jq -n --arg model "$gemini_model" --rawfile b64 "$b64_file" \
             --argjson mode "$mode_json" --argjson vocab "$vocab_arg" \
             '{model: $model,
               input: [{type: "audio", data: $b64, mime_type: "audio/flac"}],
@@ -371,12 +374,17 @@ transcribe_dictation() {
             -H "Content-Type: application/json" \
             -d @- \
             "${gemini_api_base}/v1beta/interactions"); then
+        rm -f "$b64_file"
         return 1
     fi
 
     # REST responses carry no top-level output_text: text lives in the steps'
     # content parts (extraction path confirmed against the live API).
     text=$(printf '%s' "$response" | jq -r '[.steps[].content[]?.text // empty] | join("")')
+    # Removal belongs here (after extraction, before any return/print): the
+    # function runs inside $(...) so register_temp cannot reach the caller's
+    # EXIT trap — explicit rm on every exit path is the cleanup.
+    rm -f "$b64_file"
     [[ -n "$text" ]] || return 1
     printf '%s' "$text"
 }

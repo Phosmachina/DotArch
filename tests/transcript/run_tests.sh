@@ -150,6 +150,23 @@ if transcribe_dictation "$fake_flac" 2>/dev/null; then
 else
     echo "ok - empty transcript fails transcription"
 fi
+
+# --- transcribe_dictation: >128 KiB of audio must not die on MAX_ARG_STRLEN ---
+clean_level="smart"
+api_call() { cat >"$fake_dir/req.json"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"ok"}]}]}'; }
+big_flac="$(mktemp)"
+head -c 150000 /dev/zero > "$big_flac"
+if out=$(transcribe_dictation "$big_flac"); then
+    echo "ok - 150 KiB audio survives the argv limit"
+else
+    echo "FAIL - large audio must transcribe (MAX_ARG_STRLEN regression)"
+    failures=$((failures + 1))
+fi
+jq -e '(.input[0].data | length) > 190000' "$fake_dir/req.json" >/dev/null \
+    && echo "ok - large request captured with full payload" \
+    || { echo "FAIL - large request payload not captured"; failures=$((failures + 1)); }
+assert_eq "$(find /tmp -maxdepth 1 -name 'transcript-b64-*.txt' | wc -l)" "0" "b64 temp file removed after transcription"
+rm -f "$big_flac"
 rm -f "$fake_flac"
 # Restore the script's init value ("smart"): a later assert checks the
 # default clean level, and this block mutated the global to exercise raw mode.
