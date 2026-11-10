@@ -23,12 +23,24 @@ export DEEPINFRA_API_TOKEN="test-token"
 # shellcheck source=../../../../roles/system/core/files/usr/bin/transcript
 # shellcheck disable=SC1091
 source "$SCRIPT_UNDER_TEST"
+# Keep the real api_call body: fakes below override the function wholesale
+# (unset -f would leave nothing), and the retry regression must drive the
+# REAL api_call retry loop.
+real_api_call="$(declare -f api_call)"
+# Capture the init default before any test mutates the global: later asserts
+# compare against this snapshot instead of a hardcoded (tautological) value.
+init_clean_level="$clean_level"
+assert_eq "$init_clean_level" "smart" "script initializes clean level to smart"
 
 # Fakes defined after sourcing override the script's real commands.
 # The fakes count via files: api_call invokes curl inside a command
 # substitution (and is itself captured with $(...) below), so counters kept
 # in shell variables would be lost to subshells and never reach the asserts.
 fake_dir="$(mktemp -d)"
+# Reference stamped at suite start: /tmp leftover asserts below only count
+# files newer than this, so an in-flight real dictation job on the host
+# cannot false-fail the suite.
+suite_ref="$(mktemp)"
 sleeps=()
 sleep() { printf '%s\n' "$*" >>"$fake_dir/sleeps"; }
 # Pull the file-based counters back into shell variables for assertions.
@@ -36,6 +48,30 @@ reload_counters() {
     mapfile -t _curl_log <"$fake_dir/curl"
     curl_calls=${#_curl_log[@]}
     mapfile -t sleeps <"$fake_dir/sleeps"
+}
+
+# api_call fake helper: capture the request body passed via -d @file (the
+# request no longer rides on stdin — retries must be able to resend it).
+capture_req() {
+    local a
+    for a in "$@"; do
+        [[ "$a" == -d@/* ]] && cat "${a#-d@}" >"$fake_dir/req.json"
+    done
+}
+
+# /tmp hygiene on a live host: /tmp may hold genuinely preserved dictations
+# (transcript-rejected-*.wav). Snapshot the pre-existing set before each
+# preservation test; failure cleanup removes only files that appeared since,
+# i.e. the ones this suite created.
+snapshot_rejected() {
+    find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -printf '%f\n' 2>/dev/null | sort
+}
+rm_new_rejected() { # $1: snapshot file holding pre-existing basenames
+    local name
+    while IFS= read -r name; do
+        [[ -e "/tmp/$name" ]] || continue
+        grep -qxF "$name" "$1" || rm -f "/tmp/$name"
+    done < <(snapshot_rejected)
 }
 
 # --- api_call: retries until success ---
@@ -105,7 +141,7 @@ gemini_key="test-key"
 vocabulary_file="/nonexistent"
 fake_flac="$(mktemp)"
 printf 'flac-bytes' > "$fake_flac"
-api_call() { cat >"$fake_dir/req.json"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"Bonjour. "}],"bogus":1},{"content":[]},{"content":[{"type":"text","text":"Suite."}]}]}'; }
+api_call() { capture_req "$@"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"Bonjour. "}],"bogus":1},{"content":[]},{"content":[{"type":"text","text":"Suite."}]}]}'; }
 clean_level="smart"
 out=$(transcribe_dictation "$fake_flac")
 assert_eq "$out" "Bonjour. Suite." "transcribe_dictation joins step texts"
@@ -151,9 +187,55 @@ else
     echo "ok - empty transcript fails transcription"
 fi
 
+# --- retries must resend the full body (it rides in -d @file, not stdin) ---
+gemini_key="test-key"; clean_level="smart"; vocabulary_file="/nonexistent"
+eval "$real_api_call" # exercise the REAL api_call + its retry loop
+: >"$fake_dir/attempts"
+rm -f "$fake_dir/reqbad"
+curl() {
+    local a path="" n
+    for a in "$@"; do
+        [[ "$a" == -d@/* ]] && path="${a#-d@}"
+    done
+    n=$(( $(wc -l <"$fake_dir/attempts") + 1 ))
+    if [[ -n "$path" && -f "$path" ]]; then
+        printf '%s %s\n' "$(wc -c <"$path")" "$(md5sum <"$path" | cut -d' ' -f1)" >>"$fake_dir/attempts"
+        # Attempt 3's body must still be the full, valid request.
+        if (( n == 3 )) && ! jq -e '.model' "$path" >/dev/null 2>&1; then
+            printf 'bad\n' >"$fake_dir/reqbad"
+        fi
+    else
+        printf '0 missing\n' >>"$fake_dir/attempts"
+    fi
+    if (( n < 3 )); then printf 'boom\n500\n'; else printf '{"steps":[{"content":[{"type":"text","text":"ok"}]}]}\n200\n'; fi
+}
+if out=$(transcribe_dictation "$fake_flac"); then
+    echo "ok - transcribe_dictation succeeds through the real retry loop"
+else
+    echo "FAIL - transcribe_dictation must succeed on the 3rd attempt"
+    failures=$((failures + 1))
+fi
+mapfile -t _att <"$fake_dir/attempts" || true
+assert_eq "${#_att[@]}" "3" "retry loop made 3 attempts"
+if [[ -n "${_att[0]:-}" && "${_att[0]%% *}" != "0" && "${_att[0]}" == "${_att[1]:-}" && "${_att[1]:-}" == "${_att[2]:-}" ]]; then
+    echo "ok - every attempt resent the same non-empty body (${_att[0]%% *} bytes)"
+else
+    echo "FAIL - retry attempts must resend identical non-empty bodies (got: ${_att[*]:-none})"
+    failures=$((failures + 1))
+fi
+if [[ -e "$fake_dir/reqbad" ]]; then
+    echo "FAIL - attempt 3 body must be valid JSON with .model"
+    failures=$((failures + 1))
+else
+    echo "ok - attempt 3 body was the full valid request (jq -e .model)"
+fi
+assert_eq "$(find /tmp -maxdepth 1 -name 'transcript-req-*.json' -newer "$suite_ref" | wc -l)" "0" \
+    "request temp file removed after transcription"
+# The next block restores its own api_call fake.
+
 # --- transcribe_dictation: >128 KiB of audio must not die on MAX_ARG_STRLEN ---
 clean_level="smart"
-api_call() { cat >"$fake_dir/req.json"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"ok"}]}]}'; }
+api_call() { capture_req "$@"; printf '%s' '{"steps":[{"content":[{"type":"text","text":"ok"}]}]}'; }
 big_flac="$(mktemp)"
 head -c 150000 /dev/zero > "$big_flac"
 if out=$(transcribe_dictation "$big_flac"); then
@@ -165,14 +247,16 @@ fi
 jq -e '(.input[0].data | length) > 190000' "$fake_dir/req.json" >/dev/null \
     && echo "ok - large request captured with full payload" \
     || { echo "FAIL - large request payload not captured"; failures=$((failures + 1)); }
-assert_eq "$(find /tmp -maxdepth 1 -name 'transcript-b64-*.txt' | wc -l)" "0" "b64 temp file removed after transcription"
+assert_eq "$(find /tmp -maxdepth 1 -name 'transcript-b64-*.txt' -newer "$suite_ref" | wc -l)" "0" \
+    "b64 temp file removed after transcription"
 rm -f "$big_flac"
 rm -f "$fake_flac"
-# Restore the script's init value ("smart"): a later assert checks the
-# default clean level, and this block mutated the global to exercise raw mode.
-clean_level="smart"
+# Restore the captured init value: a later assert checks the clean level
+# round-trips to what the script initialized, and this block mutated the
+# global to exercise raw mode.
+clean_level="$init_clean_level"
 
-# --- has_speech: punctuation-only whisper output is not speech ---
+# --- has_speech: punctuation-only transcription output is not speech ---
 if has_speech "" || has_speech "..." || has_speech " .  "; then
     echo "FAIL - punctuation-only/empty text must not count as speech"
     failures=$((failures + 1))
@@ -203,32 +287,40 @@ assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "job_clear removes its
 rm -rf "$jobs_dir"
 
 # --- preserve_rejected: keeps non-empty audio, ignores empty/absent ---
+# Rejected-file finds are scoped to this suite's pid (preserve_rejected names
+# files ...-$$ .wav) and to files newer than suite start, so a live host's
+# real preserved dictations can neither be deleted nor false-match.
+rejected_pre="$(mktemp)"
+snapshot_rejected >"$rejected_pre"
 probe="$(mktemp /tmp/recording_probeXXXXXX.wav)"
 printf 'wav-bytes' > "$probe"
 preserve_rejected "$probe"
-kept="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -newer "$fake_dir/curl" -print -quit 2>/dev/null)"
+kept="$(find /tmp -maxdepth 1 -name "transcript-rejected-*-$$.wav" -newer "$suite_ref" -print -quit 2>/dev/null)"
 if [[ -n "$kept" ]] && [[ "$(cat "$kept" 2>/dev/null)" == "wav-bytes" ]] && [[ ! -e "$probe" ]]; then
     echo "ok - preserve_rejected moves non-empty audio out of the trap's reach"
     rm -f "$kept"
 else
     echo "FAIL - preserve_rejected did not preserve the audio"
     failures=$((failures + 1))
-    rm -f "$probe" /tmp/transcript-rejected-*.wav
+    rm -f "$probe"
+    rm_new_rejected "$rejected_pre"
 fi
 : > "$probe"
 preserve_rejected "$probe"
-leftover="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+leftover="$(find /tmp -maxdepth 1 -name "transcript-rejected-*-$$.wav" -newer "$suite_ref" -print -quit 2>/dev/null)"
 if [[ -e "$probe" ]] && [[ -z "$leftover" ]]; then
     echo "ok - preserve_rejected skips empty files (left for trap cleanup)"
     rm -f "$probe"
 else
     echo "FAIL - preserve_rejected must skip empty files"
     failures=$((failures + 1))
-    rm -f "$probe" /tmp/transcript-rejected-*.wav
+    rm -f "$probe"
+    rm_new_rejected "$rejected_pre"
 fi
+rm -f "$rejected_pre"
 
-# --- default clean level (script init value, before parse_args mutations) ---
-assert_eq "$clean_level" "smart" "default clean level is smart"
+# --- default clean level (must round-trip to the captured init value) ---
+assert_eq "$clean_level" "$init_clean_level" "default clean level unchanged from init (smart)"
 
 # --- start_recording must NOT register the live recording for trap cleanup ---
 # (the start invocation exits immediately; its EXIT trap must not delete the
@@ -241,9 +333,12 @@ arecord() {
 # Reset in test scope (shellcheck cannot see the sourced script's assignment).
 temp_files=()
 start_recording
+read -r _ startwav < "$recording_info"
 assert_eq "${#temp_files[@]}" "0" "start_recording leaves the live recording out of trap cleanup"
 kill "$(awk '{print $1}' "$recording_info")" 2>/dev/null || true
-rm -f "$recording_info" "$(sed 's/^[0-9]* //' "$recording_info" 2>/dev/null)" /tmp/recording_*.wav
+# Only this test's own wav: a glob over /tmp/recording_*.wav could delete a
+# live recording made on the host while the suite runs.
+rm -f "$recording_info" "$startwav"
 rm -rf "$jobs_dir"
 unset -f arecord
 
@@ -257,6 +352,8 @@ arecord() {
     command sleep 30
 }
 temp_files=()
+rejected_pre="$(mktemp)"
+snapshot_rejected >"$rejected_pre"
 start_recording
 read -r rpid wavpath < "$recording_info"
 printf 'silent-but-nonempty-wav' > "$wavpath"
@@ -264,18 +361,56 @@ stop_recording
 assert_eq "$( [[ -f "$recording_info" ]] && echo present || echo gone )" "gone" "stop_recording frees the toggle immediately"
 command sleep 1.5
 assert_eq "$(find "$jobs_dir" -name 'job-*' | wc -l)" "0" "detached job cleans its marker (no-speech path)"
-rejected="$(find /tmp -maxdepth 1 -name 'transcript-rejected-*.wav' -print -quit 2>/dev/null)"
+rejected="$(find /tmp -maxdepth 1 -name "transcript-rejected-*-$$.wav" -newer "$suite_ref" -print -quit 2>/dev/null)"
 if [[ ! -e "$wavpath" ]] && [[ -n "$rejected" ]]; then
     echo "ok - no-speech path preserves the recording for manual recovery"
     rm -f "$rejected"
 else
     echo "FAIL - no-speech path must preserve the recording"
     failures=$((failures + 1))
-    rm -f "$wavpath" /tmp/transcript-rejected-*.wav
+    rm -f "$wavpath"
+    rm_new_rejected "$rejected_pre"
 fi
 kill "$rpid" 2>/dev/null || true
 rm -rf "$jobs_dir" "$recording_info" "$last_out_file"
+rm -f "$rejected_pre"
 unset -f arecord
+
+# --- stop_recording error path: transcription failure preserves the wav too ---
+jobs_dir="$(mktemp -d)"
+recording_info="$(mktemp)"
+last_out_file="$(mktemp)"
+arecord() {
+    command sleep 30
+}
+prepare_audio() { printf '%s\n' "$fake_dir/err-path.flac"; return 0; }
+transcribe_dictation() { return 1; }
+temp_files=()
+rejected_pre="$(mktemp)"
+snapshot_rejected >"$rejected_pre"
+start_recording
+read -r rpid wavpath < "$recording_info"
+printf 'wav-for-error-path' > "$wavpath"
+stop_recording
+assert_eq "$( [[ -f "$recording_info" ]] && echo present || echo gone )" "gone" "stop_recording frees the toggle (error path)"
+command sleep 1.5
+err_marker="$(find "$jobs_dir" -name 'job-*' -type f -print -quit 2>/dev/null)"
+err_kept="$(find /tmp -maxdepth 1 -name "transcript-rejected-*-$$.wav" -newer "$suite_ref" -print -quit 2>/dev/null)"
+if [[ -n "$err_marker" && "$(cat "$err_marker" 2>/dev/null)" == "error" \
+    && -n "$err_kept" && "$(cat "$err_kept" 2>/dev/null)" == "wav-for-error-path" \
+    && ! -e "$wavpath" ]]; then
+    echo "ok - transcription-error path preserves the recording and marks error"
+    rm -f "$err_kept"
+else
+    echo "FAIL - transcription-error path must preserve the recording"
+    failures=$((failures + 1))
+    rm -f "$wavpath"
+    rm_new_rejected "$rejected_pre"
+fi
+kill "$rpid" 2>/dev/null || true
+rm -rf "$jobs_dir" "$recording_info" "$last_out_file"
+rm -f "$rejected_pre"
+unset -f arecord prepare_audio transcribe_dictation
 
 # --- load_token: env then file ---
 assert_eq "$(load_token)" "test-token" "load_token prefers the env var"
@@ -326,6 +461,7 @@ else
 fi
 
 rm -rf "$fake_dir"
+rm -f "$suite_ref"
 
 # --- summary ---
 if [[ "$failures" -eq 0 ]]; then

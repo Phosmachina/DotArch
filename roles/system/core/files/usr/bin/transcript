@@ -186,9 +186,11 @@ api_call() {
 }
 
 start_recording() {
-    # Sweep wavs orphaned by crashed sessions — old files only, because a
-    # dictation still being processed in the background owns a live wav.
-    find /tmp -maxdepth 1 \( -name 'recording_*.wav' -o -name 'transcript-rejected-*.wav' \) -mmin +60 -delete 2>/dev/null
+    # Sweep wavs and leaked request temps orphaned by crashed sessions — old
+    # files only, because a dictation still being processed in the background
+    # owns a live wav (and its b64/req temps).
+    find /tmp -maxdepth 1 \( -name 'recording_*.wav' -o -name 'transcript-rejected-*.wav' \
+        -o -name 'transcript-b64-*.txt' -o -name 'transcript-req-*.json' \) -mmin +60 -delete 2>/dev/null
     clear_stale_jobs
     local tempfile record_pid
     tempfile=$(mktemp /tmp/recording_XXXXXX.wav)
@@ -226,6 +228,9 @@ stop_recording() {
 
         text=""
         if ! text=$(transcribe_dictation "$processed_audio"); then
+            # API errors lose dictations just like the no-speech case that
+            # sparked preservation — keep the wav before the trap deletes it.
+            preserve_rejected "$tempfile"
             job_state error
             exit 1
         fi
@@ -345,11 +350,16 @@ transcribe_audio() {
 # formatting applied). Language auto-detects with code-switching; the custom
 # vocabulary rides along in both modes. Prints the transcribed text.
 transcribe_dictation() {
-    local file="$1" mode_json vocab response text b64_file
-    # base64 rides in a temp file, not an argv string: MAX_ARG_STRLEN (128 KiB
-    # per argument) breaks jq on dictations longer than ~10 s of speech.
+    local file="$1" mode_json vocab response text b64_file req_file
+    # Both bulk payloads ride in temp files, not argv or pipes: base64 in an
+    # argv string breaks MAX_ARG_STRLEN (128 KiB per argument) on dictations
+    # longer than ~10 s of speech, and piping the JSON request into api_call
+    # would let attempt 1's curl consume stdin, leaving retries 2-3 with an
+    # empty body (Content-Length: 0) — transient failures would become
+    # permanent. With -d @file every attempt resends the full request.
     b64_file=$(mktemp /tmp/transcript-b64-XXXXXX.txt)
     base64 -w0 "$file" > "$b64_file"
+    req_file=$(mktemp /tmp/transcript-req-XXXXXX.json)
 
     if [[ "$clean_level" == "raw" ]]; then
         mode_json='{"type": "verbatim"}'
@@ -361,20 +371,20 @@ transcribe_dictation() {
     local vocab_arg="null"
     [[ -n "$vocab" ]] && vocab_arg="$vocab"
 
-    if ! response=$(jq -n --arg model "$gemini_model" --rawfile b64 "$b64_file" \
+    if ! jq -n --arg model "$gemini_model" --rawfile b64 "$b64_file" \
             --argjson mode "$mode_json" --argjson vocab "$vocab_arg" \
             '{model: $model,
               input: [{type: "audio", data: $b64, mime_type: "audio/flac"}],
               generation_config: {transcription_config:
                 ({mode: $mode} + (if $vocab then {custom_vocabulary: $vocab} else {} end))
-              }}' \
-        | api_call "Gemini dictation" \
+              }}' > "$req_file" \
+        || ! response=$(api_call "Gemini dictation" \
             -X POST \
             -H "x-goog-api-key: ${gemini_key}" \
             -H "Content-Type: application/json" \
-            -d @- \
+            -d@"$req_file" \
             "${gemini_api_base}/v1beta/interactions"); then
-        rm -f "$b64_file"
+        rm -f "$b64_file" "$req_file"
         return 1
     fi
 
@@ -383,8 +393,9 @@ transcribe_dictation() {
     text=$(printf '%s' "$response" | jq -r '[.steps[].content[]?.text // empty] | join("")')
     # Removal belongs here (after extraction, before any return/print): the
     # function runs inside $(...) so register_temp cannot reach the caller's
-    # EXIT trap — explicit rm on every exit path is the cleanup.
-    rm -f "$b64_file"
+    # EXIT trap — explicit rm of both temp files on every exit path is the
+    # cleanup.
+    rm -f "$b64_file" "$req_file"
     [[ -n "$text" ]] || return 1
     printf '%s' "$text"
 }
